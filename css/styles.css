@@ -568,6 +568,33 @@ textarea {
     font-size: 1.3em;
 }
 
+/* Estado de pagos */
+.payment-stats {
+    display: grid;
+    gap: 15px;
+}
+
+.payment-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #3498db;
+}
+
+.payment-stat-label {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.payment-stat-value {
+    font-weight: 700;
+    font-size: 1.2em;
+    color: #3498db;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .container {
@@ -577,3 +604,78 @@ textarea {
     .logo-section {
         flex-direction: column;
         text-align: center;
+        gap: 15px;
+    }
+    
+    .company-info h1 {
+        font-size: 2em;
+    }
+    
+    .tabs {
+        flex-direction: column;
+    }
+    
+    .tab-button {
+        min-width: 100%;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .service-tabs {
+        flex-direction: column;
+    }
+    
+    .service-tab {
+        text-align: center;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .btn-primary, .btn-secondary {
+        width: 100%;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filters {
+        flex-direction: column;
+    }
+    
+    .filters input, .filters select {
+        min-width: 100%;
+    }
+    
+    .ventas-grid, .clientes-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .reportes-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .modal-content {
+        margin: 10% auto;
+        width: 95%;
+        padding: 20px;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .stat-icon {
+        font-size: 2.5em;
+    }
+}
