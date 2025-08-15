@@ -1410,3 +1410,274 @@ input[list] {
         background: linear-gradient(135deg, #1a252f 0%, #2c3e50 100%);
     }
 }
+
+/* 🎨 CSS MEJORADO - COLORES MÁS VISIBLES Y CONTRASTADOS */
+/* AGREGAR AL FINAL DEL ARCHIVO styles.css */
+
+/* ===== OVERRIDE DE COLORES PARA MAYOR CONTRASTE ===== */
+.enum-badge,
+.sale-status {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 8px 12px !important;
+    border-radius: 20px !important;
+    font-size: 0.9em !important;
+    font-weight: 700 !important;
+    text-transform: capitalize !important;
+    border: 2px solid !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
+}
+
+/* ===== ESTADOS DE PAGO - COLORES SUPER VISIBLES ===== */
+.sale-status.no_pagado,
+.enum-badge[style*="#dc2626"],
+.enum-badge[style*="#ef4444"] {
+    background: #fecaca !important;
+    color: #991b1b !important;
+    border-color: #f87171 !important;
+}
+
+.sale-status.parcialmente_pagado,
+.enum-badge[style*="#d97706"],
+.enum-badge[style*="#f59e0b"] {
+    background: #fed7aa !important;
+    color: #c2410c !important;
+    border-color: #fb923c !important;
+}
+
+.sale-status.pagado_completo,
+.enum-badge[style*="#059669"],
+.enum-badge[style*="#10b981"] {
+    background: #bbf7d0 !important;
+    color: #14532d !important;
+    border-color: #4ade80 !important;
+}
+
+/* ===== ESTADOS DE VENTA ===== */
+.sale-status.pendiente {
+    background: #e2e8f0 !important;
+    color: #334155 !important;
+    border-color: #94a3b8 !important;
+}
+
+.sale-status.confirmada {
+    background: #dcfce7 !important;
+    color: #15803d !important;
+    border-color: #4ade80 !important;
+}
+
+.sale-status.cancelada {
+    background: #fee2e2 !important;
+    color: #dc2626 !important;
+    border-color: #fca5a5 !important;
+}
+
+.sale-status.finalizada {
+    background: #e9d5ff !important;
+    color: #6b21a8 !important;
+    border-color: #a855f7 !important;
+}
+
+/* ===== TEXTOS DE SERVICIOS MÁS CONTRASTADOS ===== */
+.service-description {
+    font-weight: 800 !important;
+    color: #111827 !important;
+    font-size: 1.15em !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
+}
+
+.service-price {
+    color: #047857 !important;
+    font-weight: 900 !important;
+    font-size: 1.4em !important;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+    background: linear-gradient(135deg, #047857, #059669) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+}
+
+.service-provider {
+    color: #4b5563 !important;
+    font-weight: 600 !important;
+    background: #f3f4f6 !important;
+    padding: 4px 8px !important;
+    border-radius: 8px !important;
+    font-size: 0.85em !important;
+    border: 1px solid #d1d5db !important;
+}
+
+/* ===== MARGEN DE SERVICIOS MÁS VISIBLE ===== */
+.service-margin {
+    font-weight: 800 !important;
+    padding: 6px 12px !important;
+    border-radius: 15px !important;
+    font-size: 0.95em !important;
+    border: 2px solid !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
+}
+
+.service-margin[style*="#27ae60"],
+.service-margin[style*="color: #27ae60"] {
+    background: #dcfce7 !important;
+    color: #14532d !important;
+    border-color: #16a34a !important;
+}
+
+.service-margin[style*="#e74c3c"],
+.service-margin[style*="color: #e74c3c"] {
+    background: #fee2e2 !important;
+    color: #991b1b !important;
+    border-color: #dc2626 !important;
+}
+
+/* ===== DISPLAY DE MARGEN MÁS CONTRASTADO ===== */
+.margen-display {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%) !important;
+    border: 3px solid #22c55e !important;
+    border-left: 8px solid #15803d !important;
+    color: #14532d !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2) !important;
+    padding: 15px !important;
+}
+
+.margen-display strong {
+    color: #166534 !important;
+    font-weight: 900 !important;
+    font-size: 1.1em !important;
+}
+
+/* ===== TOTALES CON MEJOR CONTRASTE ===== */
+.total-amount {
+    font-size: 2em !important;
+    font-weight: 900 !important;
+    color: #ffffff !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;
+    background: linear-gradient(135deg, #ffffff, #f8fafc) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+}
+
+.cost-amount {
+    color: #f59e0b !important;
+    font-weight: 800 !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+}
+
+.margin-amount {
+    font-weight: 900 !important;
+    font-size: 1.3em !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+}
+
+/* ===== TOTAL BREAKDOWN MÁS CONTRASTADO ===== */
+.total-breakdown {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+    border: 3px solid #334155 !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4) !important;
+}
+
+.total-row {
+    border-bottom: 2px solid rgba(255,255,255,0.2) !important;
+    padding: 12px 0 !important;
+}
+
+.total-margin {
+    background: rgba(255,255,255,0.15) !important;
+    border: 1px solid rgba(255,255,255,0.2) !important;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.2) !important;
+}
+
+/* ===== BADGES PERSONALIZADOS POR TIPO - MÁS CONTRASTADOS ===== */
+.badge-vuelo,
+.service-item[data-tipo="vuelo"] .service-description::before {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%) !important;
+    color: #1e3a8a !important;
+    border-color: #3b82f6 !important;
+}
+
+.badge-hotel,
+.service-item[data-tipo="hotel"] .service-description::before {
+    background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%) !important;
+    color: #581c87 !important;
+    border-color: #8b5cf6 !important;
+}
+
+.badge-traslado,
+.service-item[data-tipo="traslado"] .service-description::before {
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%) !important;
+    color: #14532d !important;
+    border-color: #22c55e !important;
+}
+
+.badge-excursion,
+.service-item[data-tipo="excursion"] .service-description::before {
+    background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%) !important;
+    color: #9a3412 !important;
+    border-color: #ea580c !important;
+}
+
+/* ===== EFECTOS HOVER MEJORADOS ===== */
+.service-item-mejorado:hover .service-description {
+    color: #1d4ed8 !important;
+    transform: scale(1.02) !important;
+    transition: all 0.3s ease !important;
+}
+
+.service-item-mejorado:hover .service-price {
+    color: #065f46 !important;
+    transform: scale(1.05) !important;
+    transition: all 0.3s ease !important;
+}
+
+.enum-badge:hover,
+.sale-status:hover {
+    transform: scale(1.05) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+    transition: all 0.3s ease !important;
+}
+
+/* ===== ANIMACIONES PARA COLORES ===== */
+@keyframes colorPulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.8; }
+    100% { opacity: 1; }
+}
+
+.service-margin {
+    animation: colorPulse 2s ease-in-out infinite !important;
+}
+
+/* ===== CONTRASTE PARA TEXTO OSCURO ===== */
+.service-header {
+    background: rgba(255,255,255,0.8) !important;
+    border-radius: 8px !important;
+    padding: 8px !important;
+    margin: -4px !important;
+}
+
+/* ===== RESPONSIVE PARA COLORES ===== */
+@media (max-width: 768px) {
+    .service-price {
+        font-size: 1.2em !important;
+    }
+    
+    .service-description {
+        font-size: 1em !important;
+    }
+    
+    .enum-badge,
+    .sale-status {
+        font-size: 0.8em !important;
+        padding: 6px 10px !important;
+    }
+    
+    .margen-display {
+        padding: 12px !important;
+        font-size: 13px !important;
+    }
+}
