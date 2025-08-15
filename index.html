@@ -81,123 +81,259 @@
             </div>
         </div>
 
-        <!-- Nueva Venta -->
-        <div id="nueva-venta" class="tab-content">
-            <div class="form-container">
-                <h3>✈️ Crear Nueva Venta</h3>
-                
-                <!-- Información del Cliente -->
-                <div class="form-section">
-                    <h4>👤 Información del Cliente</h4>
-                    <div class="form-row">
-                        <input type="text" id="cliente-nombre" placeholder="Nombre completo" required>
-                        <input type="email" id="cliente-email" placeholder="Email">
-                    </div>
-                    <div class="form-row">
-                        <input type="tel" id="cliente-telefono" placeholder="Teléfono">
-                        <input type="text" id="cliente-documento" placeholder="DNI/Pasaporte">
-                    </div>
+        <!-- Reemplaza la sección "Nueva Venta" en tu index.html con esto: -->
+
+<!-- Nueva Venta -->
+<div id="nueva-venta" class="tab-content">
+    <div class="form-container">
+        <h3>✈️ Crear Nueva Venta</h3>
+        
+        <!-- Información del Cliente -->
+        <div class="form-section">
+            <h4>👤 Información del Cliente</h4>
+            <div class="form-row">
+                <div>
+                    <label for="cliente-nombre">Nombre Completo *</label>
+                    <input type="text" id="cliente-nombre" placeholder="Ej: Juan Pérez" required>
+                    <small>💡 Escriba para buscar clientes existentes</small>
                 </div>
-
-                <!-- Información de la Venta -->
-                <div class="form-section">
-                    <h4>📋 Información de la Venta</h4>
-                    <div class="form-row">
-                        <input type="date" id="fecha-viaje-inicio" required>
-                        <input type="date" id="fecha-viaje-fin">
-                    </div>
-                    <textarea id="observaciones-venta" placeholder="Observaciones generales de la venta"></textarea>
-                </div>
-
-                <!-- Servicios -->
-                <div class="form-section">
-                    <h4>🎯 Agregar Servicios</h4>
-                    <div class="service-tabs">
-                        <button type="button" class="service-tab active" onclick="showServiceTab('vuelo')">✈️ Vuelos</button>
-                        <button type="button" class="service-tab" onclick="showServiceTab('hotel')">🏨 Hoteles</button>
-                        <button type="button" class="service-tab" onclick="showServiceTab('traslado')">🚌 Traslados</button>
-                        <button type="button" class="service-tab" onclick="showServiceTab('excursion')">🗺️ Excursiones</button>
-                    </div>
-
-                    <!-- Formulario Vuelos -->
-                    <div id="service-vuelo" class="service-form active">
-                        <div class="form-row">
-                            <input type="text" id="vuelo-descripcion" placeholder="Ej: BUE-MIA ida y vuelta">
-                            <select id="vuelo-tipo">
-                                <option value="ida">Solo Ida</option>
-                                <option value="ida_vuelta">Ida y Vuelta</option>
-                                <option value="multitramo">Multitramo</option>
-                            </select>
-                        </div>
-                        <div class="form-row">
-                            <input type="number" id="vuelo-precio" placeholder="Precio" step="0.01">
-                            <input type="number" id="vuelo-pasajeros" placeholder="Pasajeros" min="1" value="1">
-                        </div>
-                        <button type="button" onclick="agregarServicio('vuelo')" class="btn-add-service">➕ Agregar Vuelo</button>
-                    </div>
-
-                    <!-- Formulario Hoteles -->
-                    <div id="service-hotel" class="service-form">
-                        <div class="form-row">
-                            <input type="text" id="hotel-nombre" placeholder="Nombre del hotel">
-                            <input type="text" id="hotel-ciudad" placeholder="Ciudad">
-                        </div>
-                        <div class="form-row">
-                            <input type="date" id="hotel-checkin" placeholder="Check-in">
-                            <input type="date" id="hotel-checkout" placeholder="Check-out">
-                        </div>
-                        <div class="form-row">
-                            <input type="number" id="hotel-precio" placeholder="Precio total" step="0.01">
-                            <input type="number" id="hotel-huespedes" placeholder="Huéspedes" min="1" value="1">
-                        </div>
-                        <button type="button" onclick="agregarServicio('hotel')" class="btn-add-service">➕ Agregar Hotel</button>
-                    </div>
-
-                    <!-- Formulario Traslados -->
-                    <div id="service-traslado" class="service-form">
-                        <div class="form-row">
-                            <input type="text" id="traslado-origen" placeholder="Origen">
-                            <input type="text" id="traslado-destino" placeholder="Destino">
-                        </div>
-                        <div class="form-row">
-                            <input type="date" id="traslado-fecha" placeholder="Fecha">
-                            <input type="number" id="traslado-precio" placeholder="Precio" step="0.01">
-                        </div>
-                        <button type="button" onclick="agregarServicio('traslado')" class="btn-add-service">➕ Agregar Traslado</button>
-                    </div>
-
-                    <!-- Formulario Excursiones -->
-                    <div id="service-excursion" class="service-form">
-                        <div class="form-row">
-                            <input type="text" id="excursion-nombre" placeholder="Nombre de la excursión">
-                            <input type="date" id="excursion-fecha" placeholder="Fecha">
-                        </div>
-                        <div class="form-row">
-                            <input type="number" id="excursion-precio" placeholder="Precio" step="0.01">
-                            <input type="number" id="excursion-participantes" placeholder="Participantes" min="1" value="1">
-                        </div>
-                        <button type="button" onclick="agregarServicio('excursion')" class="btn-add-service">➕ Agregar Excursión</button>
-                    </div>
-                </div>
-
-                <!-- Servicios Agregados -->
-                <div class="form-section">
-                    <h4>📝 Servicios Agregados</h4>
-                    <div id="servicios-lista" class="services-list">
-                        <p class="no-services">No hay servicios agregados</p>
-                    </div>
-                    <div class="total-section">
-                        <p class="total-amount">Total: $<span id="total-venta">0</span></p>
-                    </div>
-                </div>
-
-                <!-- Botones de Acción -->
-                <div class="form-actions">
-                    <button type="button" onclick="limpiarFormulario()" class="btn-secondary">🗑️ Limpiar</button>
-                    <button type="button" onclick="crearVenta()" class="btn-primary">💾 Crear Venta</button>
+                <div>
+                    <label for="cliente-email">Email</label>
+                    <input type="email" id="cliente-email" placeholder="cliente@email.com">
                 </div>
             </div>
+            <div class="form-row">
+                <div>
+                    <label for="cliente-telefono">Teléfono</label>
+                    <input type="tel" id="cliente-telefono" placeholder="+54 9 11 1234-5678">
+                </div>
+                <div>
+                    <label for="cliente-documento">DNI/Pasaporte</label>
+                    <input type="text" id="cliente-documento" placeholder="12345678">
+                </div>
+            </div>
+            <!-- El select de vendedor se agrega automáticamente por JS -->
         </div>
+
+        <!-- Información de la Venta -->
+        <div class="form-section">
+            <h4>📋 Información del Viaje</h4>
+            <div class="form-row">
+                <div>
+                    <label for="fecha-viaje-inicio">Fecha de Inicio del Viaje *</label>
+                    <input type="date" id="fecha-viaje-inicio" required>
+                </div>
+                <div>
+                    <label for="fecha-viaje-fin">Fecha de Fin del Viaje</label>
+                    <input type="date" id="fecha-viaje-fin">
+                </div>
+            </div>
+            <div>
+                <label for="observaciones-venta">Observaciones del Viaje</label>
+                <textarea id="observaciones-venta" placeholder="Detalles especiales, notas importantes, comentarios del cliente..."></textarea>
+            </div>
+        </div>
+
+        <!-- Servicios -->
+        <div class="form-section">
+            <h4>🎯 Agregar Servicios al Viaje</h4>
+            <div class="service-tabs">
+                <button type="button" class="service-tab active" onclick="showServiceTab('vuelo')">✈️ Vuelos</button>
+                <button type="button" class="service-tab" onclick="showServiceTab('hotel')">🏨 Hoteles</button>
+                <button type="button" class="service-tab" onclick="showServiceTab('traslado')">🚌 Traslados</button>
+                <button type="button" class="service-tab" onclick="showServiceTab('excursion')">🗺️ Excursiones</button>
+            </div>
+
+            <!-- Formulario Vuelos MEJORADO -->
+            <div id="service-vuelo" class="service-form active">
+                <div class="form-row">
+                    <div>
+                        <label for="vuelo-descripcion">Descripción del Vuelo *</label>
+                        <input type="text" id="vuelo-descripcion" placeholder="Ej: Buenos Aires - Miami ida y vuelta">
+                    </div>
+                    <div>
+                        <label for="vuelo-tipo">Tipo de Itinerario</label>
+                        <select id="vuelo-tipo">
+                            <option value="ida">Solo Ida</option>
+                            <option value="ida_vuelta" selected>Ida y Vuelta</option>
+                            <option value="multitramo">Multitramo</option>
+                            <option value="stopover">Stopover</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div>
+                        <label for="vuelo-origen">Origen</label>
+                        <input type="text" id="vuelo-origen" placeholder="Buenos Aires (BUE)">
+                    </div>
+                    <div>
+                        <label for="vuelo-destino">Destino</label>
+                        <input type="text" id="vuelo-destino" placeholder="Miami (MIA)">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div>
+                        <label for="vuelo-fecha-salida">Fecha de Salida</label>
+                        <input type="date" id="vuelo-fecha-salida">
+                    </div>
+                    <div>
+                        <label for="vuelo-aerolinea">Aerolínea</label>
+                        <input type="text" id="vuelo-aerolinea" placeholder="American Airlines">
+                    </div>
+                </div>
+                <!-- Fila de proveedor y costos se agrega automáticamente por JS -->
+                <div class="form-row">
+                    <div>
+                        <label for="vuelo-precio">Precio de Venta *</label>
+                        <input type="number" id="vuelo-precio" placeholder="1500" step="0.01" min="0">
+                    </div>
+                    <div>
+                        <label for="vuelo-pasajeros">Cantidad de Pasajeros</label>
+                        <input type="number" id="vuelo-pasajeros" placeholder="2" min="1" value="2">
+                    </div>
+                </div>
+                <button type="button" class="btn-add-service" data-service="vuelo">➕ Agregar Vuelo</button>
+            </div>
+
+            <!-- Formulario Hoteles MEJORADO -->
+            <div id="service-hotel" class="service-form">
+                <div class="form-row">
+                    <div>
+                        <label for="hotel-nombre">Nombre del Hotel *</label>
+                        <input type="text" id="hotel-nombre" placeholder="Hotel Fontainebleau">
+                    </div>
+                    <div>
+                        <label for="hotel-ciudad">Ciudad</label>
+                        <input type="text" id="hotel-ciudad" placeholder="Miami Beach">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div>
+                        <label for="hotel-checkin">Check-in *</label>
+                        <input type="date" id="hotel-checkin">
+                    </div>
+                    <div>
+                        <label for="hotel-checkout">Check-out *</label>
+                        <input type="date" id="hotel-checkout">
+                    </div>
+                </div>
+                <!-- Fila de proveedor y costos se agrega automáticamente por JS -->
+                <div class="form-row">
+                    <div>
+                        <label for="hotel-precio">Precio Total de Estadía *</label>
+                        <input type="number" id="hotel-precio" placeholder="800" step="0.01" min="0">
+                    </div>
+                    <div>
+                        <label for="hotel-huespedes">Cantidad de Huéspedes</label>
+                        <input type="number" id="hotel-huespedes" placeholder="2" min="1" value="2">
+                    </div>
+                </div>
+                <button type="button" class="btn-add-service" data-service="hotel">➕ Agregar Hotel</button>
+            </div>
+
+            <!-- Formulario Traslados MEJORADO -->
+            <div id="service-traslado" class="service-form">
+                <div class="form-row">
+                    <div>
+                        <label for="traslado-origen">Origen *</label>
+                        <input type="text" id="traslado-origen" placeholder="Aeropuerto Internacional">
+                    </div>
+                    <div>
+                        <label for="traslado-destino">Destino *</label>
+                        <input type="text" id="traslado-destino" placeholder="Hotel Fontainebleau">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div>
+                        <label for="traslado-fecha">Fecha del Traslado</label>
+                        <input type="date" id="traslado-fecha">
+                    </div>
+                    <div>
+                        <label for="traslado-hora">Hora Estimada</label>
+                        <input type="time" id="traslado-hora">
+                    </div>
+                </div>
+                <!-- Fila de proveedor y costos se agrega automáticamente por JS -->
+                <div class="form-row">
+                    <div>
+                        <label for="traslado-precio">Precio del Traslado *</label>
+                        <input type="number" id="traslado-precio" placeholder="80" step="0.01" min="0">
+                    </div>
+                    <div>
+                        <label for="traslado-pasajeros">Cantidad de Pasajeros</label>
+                        <input type="number" id="traslado-pasajeros" placeholder="2" min="1" value="2">
+                    </div>
+                </div>
+                <button type="button" class="btn-add-service" data-service="traslado">➕ Agregar Traslado</button>
+            </div>
+
+            <!-- Formulario Excursiones MEJORADO -->
+            <div id="service-excursion" class="service-form">
+                <div class="form-row">
+                    <div>
+                        <label for="excursion-nombre">Nombre de la Excursión *</label>
+                        <input type="text" id="excursion-nombre" placeholder="Tour a Chichen Itzá">
+                    </div>
+                    <div>
+                        <label for="excursion-fecha">Fecha de la Excursión</label>
+                        <input type="date" id="excursion-fecha">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div>
+                        <label for="excursion-destino">Lugar de Destino</label>
+                        <input type="text" id="excursion-destino" placeholder="Chichen Itzá, Yucatán">
+                    </div>
+                    <div>
+                        <label for="excursion-duracion">Duración (horas)</label>
+                        <input type="number" id="excursion-duracion" placeholder="8" min="1">
+                    </div>
+                </div>
+                <!-- Fila de proveedor y costos se agrega automáticamente por JS -->
+                <div class="form-row">
+                    <div>
+                        <label for="excursion-precio">Precio de la Excursión *</label>
+                        <input type="number" id="excursion-precio" placeholder="470" step="0.01" min="0">
+                    </div>
+                    <div>
+                        <label for="excursion-participantes">Cantidad de Participantes</label>
+                        <input type="number" id="excursion-participantes" placeholder="2" min="1" value="2">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" id="excursion-almuerzo"> Incluye Almuerzo
+                        </label>
+                    </div>
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" id="excursion-transporte"> Incluye Transporte
+                        </label>
+                    </div>
+                </div>
+                <button type="button" class="btn-add-service" data-service="excursion">➕ Agregar Excursión</button>
+            </div>
+        </div>
+
+        <!-- Servicios Agregados -->
+        <div class="form-section">
+            <h4>📝 Servicios Agregados al Viaje</h4>
+            <div id="servicios-lista" class="services-list">
+                <p class="no-services">No hay servicios agregados</p>
+            </div>
+            <div class="total-section">
+                <p class="total-amount">Total: $<span id="total-venta">0</span></p>
+            </div>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="form-actions">
+            <button type="button" onclick="limpiarFormulario()" class="btn-secondary">🗑️ Limpiar Todo</button>
+            <button type="button" onclick="crearVenta()" class="btn-primary">💾 Crear Venta</button>
+        </div>
+    </div>
+</div>
 
         <!-- Lista de Ventas -->
         <div id="ventas" class="tab-content">
