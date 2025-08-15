@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NTS - Sistema de Gestión</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" type="image/x-icon" href="images/favicon.ico">
+</head>
+<body>
+    <div class="container">
+        <!-- Header con tu logo -->
+        <div class="header">
+            <div class="logo-section">
+                <img src="images/nts-logo.png" alt="NTS Logo" class="logo">
+                <div class="company-info">
+                    <h1>NTS</h1>
+                    <p>NIEVA TRAVEL SERVICES</p>
+                    <span class="subtitle">Sistema de Gestión de Ventas</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navegación por pestañas -->
+        <div class="tabs">
+            <button class="tab-button active" onclick="showTab('dashboard')">
+                📊 Dashboard
+            </button>
+            <button class="tab-button" onclick="showTab('nueva-venta')">
+                ➕ Nueva Venta
+            </button>
+            <button class="tab-button" onclick="showTab('ventas')">
+                📋 Ventas
+            </button>
+            <button class="tab-button" onclick="showTab('clientes')">
+                👥 Clientes
+            </button>
+            <button class="tab-button" onclick="showTab('reportes')">
+                📈 Reportes
+            </button>
+        </div>
+
+        <!-- Dashboard -->
+        <div id="dashboard" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-info">
+                        <h3>Ventas del Mes</h3>
+                        <p class="stat-value" id="ventas-mes">$0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-info">
+                        <h3>Ventas Totales</h3>
+                        <p class="stat-value" id="ventas-total">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⏳</div>
+                    <div class="stat-info">
+                        <h3>Pendientes de Pago</h3>
+                        <p class="stat-value" id="pendientes">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-info">
+                        <h3>Clientes</h3>
+                        <p class="stat-value" id="total-clientes">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="recent-sales">
+                <h3>🕒 Ventas Recientes</h3>
+                <div id="ventas-recientes" class="sales-list">
+                    <!-- Las ventas se cargan dinámicamente -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Nueva Venta -->
+        <div id="nueva-venta" class="tab-content">
+            <div class="form-container">
+                <h3>✈️ Crear Nueva Venta</h3>
+                
+                <!-- Información del Cliente -->
+                <div class="form-section">
+                    <h4>👤 Información del Cliente</h4>
+                    <div class="form-row">
+                        <input type="text" id="cliente-nombre" placeholder="Nombre completo" required>
+                        <input type="email" id="cliente-email" placeholder="Email">
+                    </div>
+                    <div class="form-row">
+                        <input type="tel" id="cliente-telefono" placeholder="Teléfono">
+                        <input type="text" id="cliente-documento" placeholder="DNI/Pasaporte">
+                    </div>
+                </div>
+
+                <!-- Información de la Venta -->
+                <div class="form-section">
+                    <h4>📋 Información de la Venta</h4>
+                    <div class="form-row">
+                        <input type="date" id="fecha-viaje-inicio" required>
+                        <input type="date" id="fecha-viaje-fin">
+                    </div>
+                    <textarea id="observaciones-venta" placeholder="Observaciones generales de la venta"></textarea>
+                </div>
+
+                <!-- Servicios -->
+                <div class="form-section">
+                    <h4>🎯 Agregar Servicios</h4>
+                    <div class="service-tabs">
+                        <button type="button" class="service-tab active" onclick="showServiceTab('vuelo')">✈️ Vuelos</button>
+                        <button type="button" class="service-tab" onclick="showServiceTab('hotel')">🏨 Hoteles</button>
+                        <button type="button" class="service-tab" onclick="showServiceTab('traslado')">🚌 Traslados</button>
+                        <button type="button" class="service-tab" onclick="showServiceTab('excursion')">🗺️ Excursiones</button>
+                    </div>
+
+                    <!-- Formulario Vuelos -->
+                    <div id="service-vuelo" class="service-form active">
+                        <div class="form-row">
+                            <input type="text" id="vuelo-descripcion" placeholder="Ej: BUE-MIA ida y vuelta">
+                            <select id="vuelo-tipo">
+                                <option value="ida">Solo Ida</option>
+                                <option value="ida_vuelta">Ida y Vuelta</option>
+                                <option value="multitramo">Multitramo</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <input type="number" id="vuelo-precio" placeholder="Precio" step="0.01">
+                            <input type="number" id="vuelo-pasajeros" placeholder="Pasajeros" min="1" value="1">
+                        </div>
+                        <button type="button" onclick="agregarServicio('vuelo')" class="btn-add-service">➕ Agregar Vuelo</button>
+                    </div>
+
+                    <!-- Formulario Hoteles -->
+                    <div id="service-hotel" class="service-form">
+                        <div class="form-row">
+                            <input type="text" id="hotel-nombre" placeholder="Nombre del hotel">
+                            <input type="text" id="hotel-ciudad" placeholder="Ciudad">
+                        </div>
+                        <div class="form-row">
+                            <input type="date" id="hotel-checkin" placeholder="Check-in">
+                            <input type="date" id="hotel-checkout" placeholder="Check-out">
+                        </div>
+                        <div class="form-row">
+                            <input type="number" id="hotel-precio" placeholder="Precio total" step="0.01">
+                            <input type="number" id="hotel-huespedes" placeholder="Huéspedes" min="1" value="1">
+                        </div>
+                        <button type="button" onclick="agregarServicio('hotel')" class="btn-add-service">➕ Agregar Hotel</button>
+                    </div>
+
+                    <!-- Formulario Traslados -->
+                    <div id="service-traslado" class="service-form">
+                        <div class="form-row">
+                            <input type="text" id="traslado-origen" placeholder="Origen">
+                            <input type="text" id="traslado-destino" placeholder="Destino">
+                        </div>
+                        <div class="form-row">
+                            <input type="date" id="traslado-fecha" placeholder="Fecha">
+                            <input type="number" id="traslado-precio" placeholder="Precio" step="0.01">
+                        </div>
+                        <button type="button" onclick="agregarServicio('traslado')" class="btn-add-service">➕ Agregar Traslado</button>
+                    </div>
+
+                    <!-- Formulario Excursiones -->
+                    <div id="service-excursion" class="service-form">
+                        <div class="form-row">
+                            <input type="text" id="excursion-nombre" placeholder="Nombre de la excursión">
+                            <input type="date" id="excursion-fecha" placeholder="Fecha">
+                        </div>
+                        <div class="form-row">
+                            <input type="number" id="excursion-precio" placeholder="Precio" step="0.01">
+                            <input type="number" id="excursion-participantes" placeholder="Participantes" min="1" value="1">
+                        </div>
+                        <button type="button" onclick="agregarServicio('excursion')" class="btn-add-service">➕ Agregar Excursión</button>
+                    </div>
+                </div>
+
+                <!-- Servicios Agregados -->
+                <div class="form-section">
+                    <h4>📝 Servicios Agregados</h4>
+                    <div id="servicios-lista" class="services-list">
+                        <p class="no-services">No hay servicios agregados</p>
+                    </div>
+                    <div class="total-section">
+                        <p class="total-amount">Total: $<span id="total-venta">0</span></p>
+                    </div>
+                </div>
+
+                <!-- Botones de Acción -->
+                <div class="form-actions">
+                    <button type="button" onclick="limpiarFormulario()" class="btn-secondary">🗑️ Limpiar</button>
+                    <button type="button" onclick="crearVenta()" class="btn-primary">💾 Crear Venta</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de Ventas -->
+        <div id="ventas" class="tab-content">
+            <div class="section-header">
+                <h3>📋 Gestión de Ventas</h3>
+                <div class="filters">
+                    <input type="text" id="buscar-venta" placeholder="🔍 Buscar por cliente o número..." onkeyup="filtrarVentas()">
+                    <select id="filtro-estado" onchange="filtrarVentas()">
+                        <option value="">Todos los estados</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="confirmada">Confirmada</option>
+                        <option value="pagada">Pagada</option>
+                        <option value="cancelada">Cancelada</option>
+                    </select>
+                </div>
+            </div>
+            <div id="lista-ventas" class="ventas-grid">
+                <!-- Las ventas se cargan dinámicamente -->
+            </div>
+        </div>
+
+        <!-- Clientes -->
+        <div id="clientes" class="tab-content">
+            <div class="section-header">
+                <h3>👥 Gestión de Clientes</h3>
+                <button onclick="mostrarFormularioCliente()" class="btn-primary">➕ Nuevo Cliente</button>
+            </div>
+            <div id="lista-clientes" class="clientes-grid">
+                <!-- Los clientes se cargan dinámicamente -->
+            </div>
+        </div>
+
+        <!-- Reportes -->
+        <div id="reportes" class="tab-content">
+            <div class="section-header">
+                <h3>📈 Reportes y Estadísticas</h3>
+            </div>
+            <div class="reportes-grid">
+                <div class="reporte-card">
+                    <h4>💰 Ventas por Mes</h4>
+                    <canvas id="chart-ventas-mes"></canvas>
+                </div>
+                <div class="reporte-card">
+                    <h4>🎯 Servicios Más Vendidos</h4>
+                    <canvas id="chart-servicios"></canvas>
+                </div>
+                <div class="reporte-card">
+                    <h4>📊 Estado de Pagos</h4>
+                    <div id="estado-pagos" class="payment-stats">
+                        <!-- Estadísticas de pagos -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para detalles de venta -->
+    <div id="modal-detalle" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarModal()">&times;</span>
+            <div id="detalle-venta-content">
+                <!-- Contenido del detalle se carga dinámicamente -->
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/charts.js"></script>
+</body>
+</html>
