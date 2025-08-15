@@ -1,4 +1,4 @@
-// 🚀 APP.JS - APLICACIÓN PRINCIPAL NTS
+// 🚀 APP.JS - APLICACIÓN PRINCIPAL NTS (ACTUALIZADO)
 // Archivo: js/app.js
 
 console.log('🚀 Iniciando aplicación NTS...');
@@ -6,13 +6,6 @@ console.log('🚀 Iniciando aplicación NTS...');
 // ===== VARIABLES GLOBALES =====
 let currentTab = 'dashboard';
 let isLoading = false;
-let appData = {
-    vendedores: [],
-    proveedores: [],
-    clientes: [],
-    ventas: [],
-    serviciosActuales: [] // Para nueva venta
-};
 
 // ===== INICIALIZACIÓN DE LA APLICACIÓN =====
 document.addEventListener('DOMContentLoaded', async function() {
@@ -55,6 +48,11 @@ async function checkDependencies() {
     // Verificar que config.js esté cargado
     if (typeof window.NTS_CONFIG === 'undefined') {
         throw new Error('Config.js no está cargado');
+    }
+    
+    // Verificar que utils.js esté cargado
+    if (typeof window.NTS_UTILS === 'undefined') {
+        throw new Error('Utils.js no está cargado');
     }
     
     // Verificar conexión a Supabase
@@ -273,7 +271,7 @@ function loadDashboardMock() {
 }
 
 function updateDashboardMetrics(metrics) {
-    const { APP_CONFIG } = window.NTS_CONFIG;
+    const { formatCurrency } = window.NTS_UTILS;
     
     const updates = {
         'ventas-mes': formatCurrency(metrics.ventasDelMes),
@@ -292,7 +290,7 @@ function updateDashboardMetrics(metrics) {
 
 async function loadVentasRecientes() {
     try {
-        const { supabase } = window.NTS_CONFIG;
+        const { supabase, createEnumBadge } = window.NTS_CONFIG;
         
         const { data: ventas, error } = await supabase
             .from('ventas')
@@ -309,7 +307,7 @@ async function loadVentasRecientes() {
         if (error) throw error;
         
         const ventasHTML = ventas.map(venta => {
-            const { createEnumBadge } = window.NTS_CONFIG;
+            const { formatCurrency } = window.NTS_UTILS;
             
             return `
                 <div class="sale-item">
@@ -336,25 +334,37 @@ async function loadVentasRecientes() {
 async function setupNuevaVenta() {
     console.log('➕ Configurando nueva venta...');
     
-    // Inicializar servicios vacíos
-    appData.serviciosActuales = [];
-    
-    // Configurar pestañas de servicios
-    setupServiceTabs();
-    
-    // Cargar vendedores y proveedores para los selects
-    await loadSelectData();
-    
-    // Actualizar totales
-    updateVentaTotals();
-    
-    // Configurar eventos de formularios
-    setupNuevaVentaEvents();
+    // Verificar si el módulo de ventas está disponible
+    if (typeof window.VentasModule !== 'undefined') {
+        // Usar el módulo de ventas mejorado
+        await window.VentasModule.init();
+        console.log('✅ Módulo de ventas avanzado inicializado');
+    } else {
+        // Fallback al sistema básico
+        console.log('⚠️ Módulo de ventas no encontrado, usando sistema básico');
+        setupBasicVentas();
+    }
 }
 
-function setupServiceTabs() {
-    // Mostrar primera pestaña de servicio por defecto
+function setupBasicVentas() {
+    // Sistema básico de ventas como fallback
+    console.log('🔧 Configurando sistema básico de ventas...');
+    
+    // Configurar pestañas de servicios
     showServiceTab('vuelo');
+    
+    // Configurar eventos básicos
+    setupBasicVentasEvents();
+}
+
+function setupBasicVentasEvents() {
+    // Event listeners básicos
+    document.addEventListener('click', function(e) {
+        if (e.target.matches('.btn-add-service')) {
+            e.preventDefault();
+            showNotification('📋 Sistema de ventas básico - funcionalidad limitada', 'info');
+        }
+    });
 }
 
 function showServiceTab(serviceType) {
@@ -381,37 +391,15 @@ function showServiceTab(serviceType) {
     }
 }
 
-async function loadSelectData() {
-    // Aquí cargaremos datos para los selects cuando implementemos los módulos
-    console.log('📋 Cargando datos para selects...');
-}
-
-function setupNuevaVentaEvents() {
-    // Event listeners para agregar servicios
-    const addButtons = [
-        { id: 'agregar-vuelo', type: 'vuelo' },
-        { id: 'agregar-hotel', type: 'hotel' },
-        { id: 'agregar-traslado', type: 'traslado' },
-        { id: 'agregar-excursion', type: 'excursion' }
-    ];
-    
-    addButtons.forEach(({ id, type }) => {
-        const button = document.querySelector(`button[onclick*="${type}"]`);
-        if (button) {
-            button.addEventListener('click', () => agregarServicio(type));
-        }
-    });
-}
-
 // ===== OTRAS PESTAÑAS (PLACEHOLDER) =====
 async function loadVentasTab() {
     console.log('📋 Cargando pestaña de ventas...');
-    showNotification('🚧 Módulo de ventas en desarrollo', 'info');
+    showNotification('🚧 Módulo de gestión de ventas en desarrollo', 'info');
 }
 
 async function loadClientesTab() {
     console.log('👥 Cargando pestaña de clientes...');
-    showNotification('🚧 Módulo de clientes en desarrollo', 'info');
+    showNotification('🚧 Módulo de gestión de clientes en desarrollo', 'info');
 }
 
 async function loadReportesTab() {
@@ -419,270 +407,9 @@ async function loadReportesTab() {
     showNotification('🚧 Módulo de reportes en desarrollo', 'info');
 }
 
-// ===== GESTIÓN DE SERVICIOS =====
-function agregarServicio(tipo) {
-    console.log(`➕ Agregando servicio: ${tipo}`);
-    
-    const servicio = getServiceFormData(tipo);
-    
-    if (!validateServiceData(servicio)) {
-        return;
-    }
-    
-    // Agregar ID único
-    servicio.id = Date.now();
-    servicio.tipo = tipo;
-    
-    // Agregar a la lista
-    appData.serviciosActuales.push(servicio);
-    
-    // Actualizar vista
-    renderServiciosAgregados();
-    updateVentaTotals();
-    
-    // Limpiar formulario
-    clearServiceForm(tipo);
-    
-    showNotification(`✅ ${tipo} agregado correctamente`, 'success');
-}
-
-function getServiceFormData(tipo) {
-    switch(tipo) {
-        case 'vuelo':
-            return {
-                descripcion: getValue('vuelo-descripcion'),
-                tipo_itinerario: getValue('vuelo-tipo'),
-                precio_venta: parseFloat(getValue('vuelo-precio')) || 0,
-                pasajeros: parseInt(getValue('vuelo-pasajeros')) || 1
-            };
-        case 'hotel':
-            return {
-                hotel_nombre: getValue('hotel-nombre'),
-                hotel_ciudad: getValue('hotel-ciudad'),
-                fecha_checkin: getValue('hotel-checkin'),
-                fecha_checkout: getValue('hotel-checkout'),
-                precio_venta: parseFloat(getValue('hotel-precio')) || 0,
-                huespedes: parseInt(getValue('hotel-huespedes')) || 1
-            };
-        case 'traslado':
-            return {
-                origen: getValue('traslado-origen'),
-                destino: getValue('traslado-destino'),
-                fecha_traslado: getValue('traslado-fecha'),
-                precio_venta: parseFloat(getValue('traslado-precio')) || 0
-            };
-        case 'excursion':
-            return {
-                nombre_excursion: getValue('excursion-nombre'),
-                fecha_excursion: getValue('excursion-fecha'),
-                precio_venta: parseFloat(getValue('excursion-precio')) || 0,
-                participantes: parseInt(getValue('excursion-participantes')) || 1
-            };
-        default:
-            return {};
-    }
-}
-
-function validateServiceData(servicio) {
-    if (!servicio.precio_venta || servicio.precio_venta <= 0) {
-        showNotification('⚠️ Ingrese un precio válido', 'warning');
-        return false;
-    }
-    return true;
-}
-
-function renderServiciosAgregados() {
-    const container = document.getElementById('servicios-lista');
-    if (!container) return;
-    
-    if (appData.serviciosActuales.length === 0) {
-        container.innerHTML = '<p class="no-services">No hay servicios agregados</p>';
-        return;
-    }
-    
-    const serviciosHTML = appData.serviciosActuales.map(servicio => {
-        const descripcion = getServiceDescription(servicio);
-        
-        return `
-            <div class="service-item" data-id="${servicio.id}">
-                <div class="service-info">
-                    <span class="service-description">${descripcion}</span>
-                    <span class="service-price">${formatCurrency(servicio.precio_venta)}</span>
-                </div>
-                <button type="button" onclick="eliminarServicio(${servicio.id})" class="btn-remove">🗑️</button>
-            </div>
-        `;
-    }).join('');
-    
-    container.innerHTML = serviciosHTML;
-}
-
-function getServiceDescription(servicio) {
-    switch(servicio.tipo) {
-        case 'vuelo':
-            return `✈️ ${servicio.descripcion} (${servicio.pasajeros} pax)`;
-        case 'hotel':
-            return `🏨 ${servicio.hotel_nombre} - ${servicio.hotel_ciudad} (${servicio.huespedes} huéspedes)`;
-        case 'traslado':
-            return `🚌 ${servicio.origen} → ${servicio.destino}`;
-        case 'excursion':
-            return `🗺️ ${servicio.nombre_excursion} (${servicio.participantes} pax)`;
-        default:
-            return 'Servicio';
-    }
-}
-
-function eliminarServicio(id) {
-    appData.serviciosActuales = appData.serviciosActuales.filter(s => s.id !== id);
-    renderServiciosAgregados();
-    updateVentaTotals();
-    showNotification('🗑️ Servicio eliminado', 'info');
-}
-
-function updateVentaTotals() {
-    const total = appData.serviciosActuales.reduce((sum, s) => sum + s.precio_venta, 0);
-    
-    const totalElement = document.getElementById('total-venta');
-    if (totalElement) {
-        totalElement.textContent = total.toLocaleString();
-    }
-}
-
-function clearServiceForm(tipo) {
-    const fields = {
-        vuelo: ['vuelo-descripcion', 'vuelo-precio'],
-        hotel: ['hotel-nombre', 'hotel-ciudad', 'hotel-precio'],
-        traslado: ['traslado-origen', 'traslado-destino', 'traslado-precio'],
-        excursion: ['excursion-nombre', 'excursion-precio']
-    };
-    
-    const fieldsToClean = fields[tipo] || [];
-    fieldsToClean.forEach(fieldId => {
-        const element = document.getElementById(fieldId);
-        if (element) element.value = '';
-    });
-}
-
-// ===== CREAR VENTA =====
-async function crearVenta() {
-    console.log('💾 Creando nueva venta...');
-    
-    try {
-        // Validar datos del cliente
-        const clienteData = getClienteFormData();
-        if (!validateClienteData(clienteData)) {
-            return;
-        }
-        
-        // Validar servicios
-        if (appData.serviciosActuales.length === 0) {
-            showNotification('⚠️ Agregue al menos un servicio', 'warning');
-            return;
-        }
-        
-        const total = appData.serviciosActuales.reduce((sum, s) => sum + s.precio_venta, 0);
-        
-        const ventaData = {
-            ...clienteData,
-            fecha_viaje_inicio: getValue('fecha-viaje-inicio'),
-            fecha_viaje_fin: getValue('fecha-viaje-fin'),
-            observaciones: getValue('observaciones-venta'),
-            servicios: [...appData.serviciosActuales],
-            total_final: total
-        };
-        
-        showLoader('Creando venta...');
-        
-        const { isSupabaseConnected } = window.NTS_CONFIG;
-        
-        if (isSupabaseConnected) {
-            await crearVentaDB(ventaData);
-        } else {
-            await crearVentaLocal(ventaData);
-        }
-        
-        showNotification('✅ Venta creada exitosamente', 'success');
-        limpiarFormularioVenta();
-        
-    } catch (error) {
-        console.error('Error creando venta:', error);
-        showNotification('❌ Error al crear la venta', 'error');
-    } finally {
-        hideLoader();
-    }
-}
-
-function getClienteFormData() {
-    return {
-        nombre: getValue('cliente-nombre'),
-        email: getValue('cliente-email'),
-        telefono: getValue('cliente-telefono'),
-        documento: getValue('cliente-documento')
-    };
-}
-
-function validateClienteData(clienteData) {
-    if (!clienteData.nombre.trim()) {
-        showNotification('⚠️ Ingrese el nombre del cliente', 'warning');
-        return false;
-    }
-    
-    if (clienteData.email && !isValidEmail(clienteData.email)) {
-        showNotification('⚠️ Email inválido', 'warning');
-        return false;
-    }
-    
-    return true;
-}
-
-async function crearVentaDB(ventaData) {
-    // Implementaremos cuando tengamos el módulo de ventas
-    console.log('📤 Enviando a Supabase:', ventaData);
-}
-
-async function crearVentaLocal(ventaData) {
-    console.log('💾 Guardando localmente:', ventaData);
-    // Simular guardado local
-    await new Promise(resolve => setTimeout(resolve, 1000));
-}
-
-function limpiarFormularioVenta() {
-    // Limpiar formulario de cliente
-    ['cliente-nombre', 'cliente-email', 'cliente-telefono', 'cliente-documento'].forEach(id => {
-        setValue(id, '');
-    });
-    
-    // Limpiar observaciones
-    setValue('observaciones-venta', '');
-    
-    // Limpiar servicios
-    appData.serviciosActuales = [];
-    renderServiciosAgregados();
-    updateVentaTotals();
-}
-
 // ===== CONFIGURACIÓN DE EVENTOS GLOBALES =====
 function setupGlobalEvents() {
     console.log('🎯 Configurando eventos globales...');
-    
-    // Event listener para botones de agregar servicio
-    document.addEventListener('click', function(e) {
-        if (e.target.matches('.btn-add-service')) {
-            e.preventDefault();
-            const serviceType = e.target.getAttribute('onclick')?.match(/agregarServicio\('(.+)'\)/)?.[1];
-            if (serviceType) {
-                agregarServicio(serviceType);
-            }
-        }
-        
-        if (e.target.matches('.btn-remove')) {
-            e.preventDefault();
-            const serviceId = parseInt(e.target.getAttribute('onclick')?.match(/eliminarServicio\((.+)\)/)?.[1]);
-            if (serviceId) {
-                eliminarServicio(serviceId);
-            }
-        }
-    });
     
     // Event listeners para pestañas de servicios
     document.addEventListener('click', function(e) {
@@ -694,38 +421,33 @@ function setupGlobalEvents() {
         }
     });
     
-    // Event listener para crear venta
-    const crearVentaBtn = document.querySelector('button[onclick="crearVenta()"]');
-    if (crearVentaBtn) {
-        crearVentaBtn.addEventListener('click', crearVenta);
-    }
+    // Event listener global para botones con data-action
+    document.addEventListener('click', function(e) {
+        const action = e.target.getAttribute('data-action');
+        if (action) {
+            e.preventDefault();
+            handleGlobalAction(action, e.target);
+        }
+    });
+}
+
+function handleGlobalAction(action, element) {
+    console.log(`🎯 Ejecutando acción global: ${action}`);
     
-    // Event listener para limpiar formulario
-    const limpiarBtn = document.querySelector('button[onclick="limpiarFormulario()"]');
-    if (limpiarBtn) {
-        limpiarBtn.addEventListener('click', limpiarFormularioVenta);
+    switch(action) {
+        case 'refresh-data':
+            loadTabData(currentTab);
+            showNotification('🔄 Datos actualizados', 'success');
+            break;
+        case 'export-data':
+            exportCurrentTabData();
+            break;
+        case 'print-report':
+            printCurrentTab();
+            break;
+        default:
+            console.log(`⚠️ Acción no reconocida: ${action}`);
     }
-}
-
-// ===== FUNCIONES DE UTILIDAD =====
-function getValue(id) {
-    const element = document.getElementById(id);
-    return element ? element.value.trim() : '';
-}
-
-function setValue(id, value) {
-    const element = document.getElementById(id);
-    if (element) element.value = value;
-}
-
-function formatCurrency(amount) {
-    const { APP_CONFIG } = window.NTS_CONFIG;
-    return `${APP_CONFIG.locale.currencySymbol}${amount.toLocaleString()}`;
-}
-
-function isValidEmail(email) {
-    const { APP_CONFIG } = window.NTS_CONFIG;
-    return APP_CONFIG.validation.emailRegex.test(email);
 }
 
 // ===== CARGA DE DATOS INICIALES =====
@@ -735,36 +457,33 @@ async function loadInitialData() {
     const { isSupabaseConnected } = window.NTS_CONFIG;
     
     if (isSupabaseConnected) {
-        // Cargar datos desde Supabase
-        await loadDataFromDB();
+        // Verificar conexión y cargar datos básicos
+        await loadCoreData();
     } else {
-        // Cargar datos mock
-        loadMockData();
+        console.log('📝 Modo local - sin datos iniciales');
     }
 }
 
-async function loadDataFromDB() {
-    // Implementaremos cuando tengamos los módulos específicos
-    console.log('📥 Cargando desde base de datos...');
-}
-
-function loadMockData() {
-    console.log('📝 Cargando datos mock...');
-    
-    appData.vendedores = [
-        { id: 1, nombre: 'Ana García', codigo_vendedor: 'V001', rol: 'vendedor' },
-        { id: 2, nombre: 'Carlos López', codigo_vendedor: 'V002', rol: 'supervisor' }
-    ];
-    
-    appData.proveedores = [
-        { id: 1, nombre: 'Consolidadora Aérea SA', tipo: 'vuelos' },
-        { id: 2, nombre: 'Hoteles Directos', tipo: 'hoteles' }
-    ];
-    
-    appData.clientes = [
-        { id: 1, nombre: 'Juan Pérez', email: 'juan@email.com' },
-        { id: 2, nombre: 'María González', email: 'maria@email.com' }
-    ];
+async function loadCoreData() {
+    try {
+        const { supabase } = window.NTS_CONFIG;
+        
+        // Cargar counts básicos para verificación
+        const [vendedores, proveedores, clientes] = await Promise.all([
+            supabase.from('vendedores').select('id', { count: 'exact', head: true }),
+            supabase.from('proveedores').select('id', { count: 'exact', head: true }),
+            supabase.from('clientes').select('id', { count: 'exact', head: true })
+        ]);
+        
+        console.log('📊 Datos disponibles:', {
+            vendedores: vendedores.count || 0,
+            proveedores: proveedores.count || 0,
+            clientes: clientes.count || 0
+        });
+        
+    } catch (error) {
+        console.error('Error cargando datos iniciales:', error);
+    }
 }
 
 // ===== TEST DE CONEXIÓN SUPABASE =====
@@ -790,48 +509,117 @@ async function testSupabaseConnection() {
 // ===== FUNCIONES PLACEHOLDER PARA COMPONENTES =====
 function setupForms() {
     console.log('📝 Configurando formularios...');
+    // Implementado en el módulo de ventas
 }
 
 function setupModals() {
     console.log('🎭 Configurando modales...');
+    // Por implementar
 }
 
 function setupNotifications() {
     console.log('🔔 Configurando notificaciones...');
+    // Implementado en utils.js
 }
 
+// ===== FUNCIONES DE UTILIDAD =====
 function showLoader(message = 'Cargando...') {
-    console.log(`⏳ Loader: ${message}`);
-    // Implementaremos en utils.js
+    if (window.NTS_UTILS && window.NTS_UTILS.showLoader) {
+        window.NTS_UTILS.showLoader(message);
+    }
 }
 
 function hideLoader() {
-    console.log('✅ Ocultando loader');
-    // Implementaremos en utils.js
+    if (window.NTS_UTILS && window.NTS_UTILS.hideLoader) {
+        window.NTS_UTILS.hideLoader();
+    }
 }
 
 function showNotification(message, type = 'info') {
-    console.log(`🔔 ${type.toUpperCase()}: ${message}`);
-    // Implementaremos en components/notifications.js
+    if (window.NTS_UTILS && window.NTS_UTILS.showNotification) {
+        window.NTS_UTILS.showNotification(message, type);
+    } else {
+        console.log(`${type.toUpperCase()}: ${message}`);
+    }
 }
+
+function exportCurrentTabData() {
+    showNotification('📤 Función de exportación en desarrollo', 'info');
+}
+
+function printCurrentTab() {
+    window.print();
+}
+
+// ===== FUNCIONES GLOBALES PARA COMPATIBILIDAD =====
+// Estas funciones mantienen compatibilidad con el HTML existente
+
+window.showTab = showTab;
+window.showServiceTab = showServiceTab;
+
+// Funciones placeholder para botones existentes
+window.agregarServicio = function(tipo) {
+    if (window.VentasModule && window.VentasModule.agregarServicio) {
+        window.VentasModule.agregarServicio(tipo);
+    } else {
+        showNotification(`🚧 Función ${tipo} en desarrollo`, 'info');
+    }
+};
+
+window.crearVenta = function() {
+    if (window.VentasModule && window.VentasModule.crearVenta) {
+        window.VentasModule.crearVenta();
+    } else {
+        showNotification('🚧 Función crear venta en desarrollo', 'info');
+    }
+};
+
+window.limpiarFormulario = function() {
+    if (window.VentasModule && window.VentasModule.limpiarFormulario) {
+        window.VentasModule.limpiarFormulario();
+    } else {
+        showNotification('🚧 Función limpiar formulario en desarrollo', 'info');
+    }
+};
+
+window.eliminarServicio = function(id) {
+    if (window.VentasModule && window.VentasModule.eliminarServicio) {
+        window.VentasModule.eliminarServicio(id);
+    } else {
+        showNotification('🚧 Función eliminar servicio en desarrollo', 'info');
+    }
+};
+
+// Funciones placeholder para otras pestañas
+window.filtrarVentas = function() {
+    showNotification('🔍 Función de filtrado en desarrollo', 'info');
+};
+
+window.mostrarFormularioCliente = function() {
+    showNotification('👤 Formulario de cliente en desarrollo', 'info');
+};
+
+window.cerrarModal = function() {
+    const modal = document.getElementById('modal-detalle');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+};
 
 // ===== EXPORT PARA USO GLOBAL =====
 window.NTS_APP = {
     // Estado
     currentTab,
-    appData,
     
     // Funciones principales
     showTab,
     loadTabData,
-    agregarServicio,
-    eliminarServicio,
-    crearVenta,
+    loadDashboard,
     
     // Utilidades
-    getValue,
-    setValue,
-    formatCurrency
+    showLoader,
+    hideLoader,
+    showNotification
 };
 
 console.log('✅ Aplicación NTS cargada correctamente');
