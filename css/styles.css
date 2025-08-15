@@ -824,3 +824,589 @@ textarea:focus {
 
 .hidden { display: none !important; }
 .visible { display: block !important; }
+
+/* 🎨 CSS ADICIONAL PARA FORMULARIO MEJORADO */
+/* Agregar al final de tu styles.css */
+
+/* ===== LABELS Y CAMPOS MEJORADOS ===== */
+.form-section label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 14px;
+}
+
+.form-section small {
+    display: block;
+    color: #6c757d;
+    font-size: 12px;
+    margin-top: 5px;
+    font-style: italic;
+}
+
+/* ===== VALIDACIÓN DE CAMPOS ===== */
+.field-error {
+    border-color: #e74c3c !important;
+    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1) !important;
+    background-color: #fdf2f2;
+}
+
+.field-error-msg {
+    color: #e74c3c;
+    font-size: 12px;
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.field-error-msg::before {
+    content: "⚠️";
+}
+
+/* ===== AUTOCOMPLETADO Y DATALIST ===== */
+input[list] {
+    position: relative;
+}
+
+input[list]:focus {
+    border-color: #3498db;
+}
+
+/* ===== SERVICIOS MEJORADOS ===== */
+.service-item-mejorado {
+    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+    border-left: 4px solid #3498db;
+    transition: all 0.3s ease;
+}
+
+.service-item-mejorado:hover {
+    transform: translateX(8px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    border-left-color: #2980b9;
+}
+
+.service-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.service-description {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 1.1em;
+}
+
+.service-price {
+    color: #27ae60;
+    font-weight: 700;
+    font-size: 1.2em;
+}
+
+.service-details {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    font-size: 0.9em;
+}
+
+.service-provider {
+    color: #7f8c8d;
+    font-weight: 500;
+}
+
+.service-margin {
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background: rgba(39, 174, 96, 0.1);
+}
+
+/* ===== DISPLAY DE MARGEN ===== */
+.margen-display {
+    margin-top: 15px;
+    padding: 12px;
+    background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%);
+    border-radius: 8px;
+    border-left: 4px solid #27ae60;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.margen-display strong {
+    color: #155724;
+}
+
+/* ===== TOTALES MEJORADOS ===== */
+.total-breakdown {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(44, 62, 80, 0.3);
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.total-row:last-child {
+    border-bottom: none;
+}
+
+.total-margin {
+    font-size: 1.1em;
+    font-weight: 700;
+    background: rgba(255,255,255,0.1);
+    margin: 8px -10px;
+    padding: 12px 10px;
+    border-radius: 6px;
+}
+
+.total-amount,
+.cost-amount,
+.margin-amount {
+    font-weight: 700;
+    font-size: 1.1em;
+}
+
+.cost-amount {
+    color: #f39c12;
+}
+
+/* ===== CHECKBOXES MEJORADOS ===== */
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.checkbox-group:hover {
+    background: #e9ecef;
+    border-color: #3498db;
+}
+
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    cursor: pointer;
+    font-weight: 500;
+    color: #495057;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #3498db;
+    cursor: pointer;
+}
+
+/* ===== BOTONES DE SERVICIO MEJORADOS ===== */
+.btn-add-service[data-service] {
+    background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+    border: none;
+    color: white;
+    padding: 14px 28px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+    box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+}
+
+.btn-add-service[data-service]:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(39, 174, 96, 0.4);
+    background: linear-gradient(135deg, #229954 0%, #1e8449 100%);
+}
+
+.btn-add-service[data-service]:active {
+    transform: translateY(-1px);
+}
+
+/* ===== SELECTS DE PROVEEDOR ===== */
+.proveedor-select {
+    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 12px 15px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.proveedor-select:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    background: white;
+}
+
+.precio-costo {
+    background: linear-gradient(135deg, #fff5f5 0%, #fdf2f2 100%);
+    border: 2px solid #f5c6cb;
+    border-radius: 8px;
+    padding: 12px 15px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.precio-costo:focus {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+    background: white;
+}
+
+/* ===== RESPONSIVE PARA FORMULARIO MEJORADO ===== */
+@media (max-width: 768px) {
+    .service-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .service-details {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .total-breakdown {
+        padding: 15px;
+    }
+    
+    .total-row {
+        font-size: 0.9em;
+    }
+    
+    .checkbox-group {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+/* ===== ANIMACIONES ADICIONALES ===== */
+@keyframes slideInFromLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes bounceIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.3);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+    70% {
+        transform: scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+.service-item-mejorado {
+    animation: slideInFromLeft 0.5s ease;
+}
+
+.field-error {
+    animation: shake 0.5s ease;
+}
+
+.btn-add-service[data-service]:hover {
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: translateY(-3px) scale(1); }
+    50% { transform: translateY(-3px) scale(1.02); }
+    100% { transform: translateY(-3px) scale(1); }
+}
+
+/* ===== TOOLTIPS PARA CAMPOS ===== */
+.form-row > div {
+    position: relative;
+}
+
+.form-row input:focus + .tooltip,
+.form-row select:focus + .tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(-5px);
+}
+
+.tooltip {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: #2c3e50;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    white-space: nowrap;
+}
+
+.tooltip::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: 10px;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 5px solid #2c3e50;
+}
+
+/* ===== INDICADORES DE PROGRESO ===== */
+.form-progress {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border-left: 4px solid #3498db;
+}
+
+.form-progress h5 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+    font-size: 1em;
+}
+
+.progress-steps {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.progress-step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #6c757d;
+}
+
+.progress-step.completed {
+    color: #27ae60;
+}
+
+.progress-step.current {
+    color: #3498db;
+    font-weight: 600;
+}
+
+/* ===== MEJORAS PARA DATALIST ===== */
+input[list]::-webkit-calendar-picker-indicator {
+    display: none;
+}
+
+input[list] {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 12px center;
+    background-repeat: no-repeat;
+    background-size: 16px;
+}
+
+/* ===== ESTILOS PARA NOTIFICACIONES INTEGRADAS ===== */
+.form-notification {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+    padding: 12px 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: slideInFromLeft 0.3s ease;
+}
+
+.form-notification.warning {
+    background: #fff3cd;
+    border-color: #ffeaa7;
+    color: #856404;
+}
+
+.form-notification.error {
+    background: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
+.form-notification .close-btn {
+    margin-left: auto;
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: inherit;
+    opacity: 0.7;
+}
+
+.form-notification .close-btn:hover {
+    opacity: 1;
+}
+
+/* ===== LOADING STATES ===== */
+.btn-loading {
+    position: relative;
+    color: transparent !important;
+}
+
+.btn-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin-top: -10px;
+    margin-left: -10px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ===== MEJORAS PARA ACCESIBILIDAD ===== */
+.visually-hidden {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+/* Focus visible para mejor accesibilidad */
+*:focus-visible {
+    outline: 2px solid #3498db;
+    outline-offset: 2px;
+}
+
+/* ===== MEJORAS PARA IMPRESIÓN ===== */
+@media print {
+    .form-actions,
+    .btn-add-service,
+    .btn-remove {
+        display: none;
+    }
+    
+    .form-section {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+    
+    .service-item-mejorado {
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+}
+
+/* ===== ESTADOS HOVER MEJORADOS ===== */
+.form-section:hover {
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    transform: translateY(-2px);
+}
+
+.service-tab:not(.active):hover {
+    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+}
+
+.service-tab.active {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+}
+
+/* ===== INDICADORES VISUALES ===== */
+.required-field::after {
+    content: " *";
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+.optional-field::after {
+    content: " (opcional)";
+    color: #6c757d;
+    font-size: 0.9em;
+    font-style: italic;
+}
+
+/* ===== COMPATIBILIDAD CON MODO OSCURO ===== */
+@media (prefers-color-scheme: dark) {
+    .form-section {
+        background: #2c3e50;
+        color: #ecf0f1;
+        border-color: #34495e;
+    }
+    
+    .form-section h4 {
+        color: #ecf0f1;
+        border-bottom-color: #34495e;
+    }
+    
+    input, select, textarea {
+        background: #34495e;
+        color: #ecf0f1;
+        border-color: #4a5f7a;
+    }
+    
+    input:focus, select:focus, textarea:focus {
+        border-color: #3498db;
+        background: #2c3e50;
+    }
+    
+    .service-item-mejorado {
+        background: #34495e;
+        color: #ecf0f1;
+    }
+    
+    .total-breakdown {
+        background: linear-gradient(135deg, #1a252f 0%, #2c3e50 100%);
+    }
+}
