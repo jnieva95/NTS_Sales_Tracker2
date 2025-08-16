@@ -143,55 +143,101 @@
                 <button type="button" class="service-tab" onclick="showServiceTab('traslado')">🚌 Traslados</button>
                 <button type="button" class="service-tab" onclick="showServiceTab('excursion')">🗺️ Excursiones</button>
             </div>
+<!-- 📍 BUSCA ESTA SECCIÓN EN TU INDEX.HTML Y REEMPLÁZALA COMPLETA -->
+
 <!-- Formulario Vuelos MEJORADO -->
 <div id="service-vuelo" class="service-form active">
     <div class="form-row">
         <div>
-            <label for="vuelo-origen">Origen *</label>
+            <label for="vuelo-origen"><strong>🛫 Origen *</strong></label>
             <input type="text" id="vuelo-origen" placeholder="Buenos Aires (BUE)" required>
+            <small>Ciudad o aeropuerto de origen</small>
         </div>
         <div>
-            <label for="vuelo-destino">Destino *</label>
+            <label for="vuelo-destino"><strong>🛬 Destino *</strong></label>
             <input type="text" id="vuelo-destino" placeholder="Miami (MIA)" required>
+            <small>Ciudad o aeropuerto de destino</small>
         </div>
     </div>
+    
     <div class="form-row">
         <div>
-            <label for="vuelo-tipo">Tipo de Itinerario</label>
+            <label for="vuelo-tipo"><strong>📋 Tipo de Itinerario</strong></label>
             <select id="vuelo-tipo">
                 <option value="ida">Solo Ida</option>
                 <option value="ida_vuelta" selected>Ida y Vuelta</option>
                 <option value="multitramo">Multitramo</option>
                 <option value="stopover">Stopover</option>
             </select>
+            <small>Seleccione el tipo de viaje</small>
         </div>
         <div>
-            <label for="vuelo-descripcion">Descripción (se genera automáticamente)</label>
+            <label for="vuelo-descripcion"><strong>📝 Descripción</strong></label>
             <input type="text" id="vuelo-descripcion" placeholder="Se completa automáticamente...">
             <small>💡 Se genera automáticamente cuando completes origen y destino</small>
         </div>
     </div>
+    
+    <!-- NUEVOS CAMPOS DE FECHA/HORA -->
     <div class="form-row">
         <div>
-            <label for="vuelo-fecha-salida">Fecha de Salida</label>
-            <input type="date" id="vuelo-fecha-salida">
+            <label for="vuelo-fecha-salida"><strong>📅 Fecha y Hora de Salida *</strong></label>
+            <input type="datetime-local" id="vuelo-fecha-salida" required>
+            <small>Fecha y hora exacta del vuelo de salida</small>
         </div>
         <div>
-            <label for="vuelo-aerolinea">Aerolínea</label>
-            <input type="text" id="vuelo-aerolinea" placeholder="American Airlines">
+            <label for="vuelo-fecha-llegada"><strong>📅 Fecha y Hora de Llegada</strong></label>
+            <input type="datetime-local" id="vuelo-fecha-llegada">
+            <small>Fecha y hora estimada de llegada (opcional)</small>
         </div>
     </div>
+    
+    <!-- CAMPOS DE REGRESO (se muestran solo para ida/vuelta) -->
+    <div class="form-row" id="vuelo-regreso-row" style="display: block;">
+        <div>
+            <label for="vuelo-fecha-regreso"><strong>🔄 Fecha y Hora de Regreso</strong></label>
+            <input type="datetime-local" id="vuelo-fecha-regreso">
+            <small>Solo para vuelos ida y vuelta</small>
+        </div>
+        <div>
+            <label for="vuelo-llegada-regreso"><strong>🔄 Llegada del Regreso</strong></label>
+            <input type="datetime-local" id="vuelo-llegada-regreso">
+            <small>Hora de llegada del vuelo de regreso</small>
+        </div>
+    </div>
+    
+    <div class="form-row">
+        <div>
+            <label for="vuelo-aerolinea"><strong>✈️ Aerolínea</strong></label>
+            <input type="text" id="vuelo-aerolinea" placeholder="American Airlines">
+            <small>Nombre de la aerolínea</small>
+        </div>
+        <div>
+            <label for="vuelo-clase"><strong>💺 Clase de Vuelo</strong></label>
+            <select id="vuelo-clase">
+                <option value="economica">Económica</option>
+                <option value="premium_economy">Premium Economy</option>
+                <option value="business">Business</option>
+                <option value="primera_clase">Primera Clase</option>
+            </select>
+            <small>Clase del boleto</small>
+        </div>
+    </div>
+    
     <!-- Fila de proveedor y costos se agrega automáticamente por JS -->
     <div class="form-row">
         <div>
-            <label for="vuelo-precio">Precio de Venta *</label>
+            <label for="vuelo-precio"><strong>💰 Precio de Venta *</strong></label>
             <input type="number" id="vuelo-precio" placeholder="1500" step="0.01" min="0" required>
+            <small>Precio final al cliente</small>
         </div>
         <div>
-            <label for="vuelo-pasajeros">Cantidad de Pasajeros</label>
+            <label for="vuelo-pasajeros"><strong>👥 Cantidad de Pasajeros</strong></label>
             <input type="number" id="vuelo-pasajeros" placeholder="2" min="1" value="2">
+            <small>Número total de pasajeros</small>
         </div>
     </div>
+    
     <button type="button" class="btn-add-service" data-service="vuelo">➕ Agregar Vuelo</button>
 </div>
 
