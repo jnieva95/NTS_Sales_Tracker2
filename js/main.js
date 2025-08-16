@@ -84,7 +84,15 @@ class NTSApp {
       if (typeof window.supabase !== 'undefined') {
         AppState.supabase = window.supabase.createClient(
           APP_CONFIG.supabase.url,
-          APP_CONFIG.supabase.key
+          APP_CONFIG.supabase.key,
+          {
+            global: {
+              headers: {
+                apikey: APP_CONFIG.supabase.key,
+                Authorization: `Bearer ${APP_CONFIG.supabase.key}`
+              }
+            }
+          }
         );
         
         // Test connection
