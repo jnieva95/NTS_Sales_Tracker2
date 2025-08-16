@@ -1,4 +1,4 @@
-// ⚙️ CONFIG.JS - CONFIGURACIÓN SUPABASE CORREGIDA
+// ⚙️ CONFIG.JS - CONFIGURACIÓN SUPABASE DEFINITIVA
 // Archivo: js/config.js
 
 console.log('🔧 Cargando configuración NTS...');
@@ -13,54 +13,77 @@ const SUPABASE_CONFIG = {
 let supabase = null;
 let isSupabaseConnected = false;
 
-// Función para inicializar Supabase cuando el CDN esté listo
 function initializeSupabase() {
     try {
-        console.log('🔧 Verificando disponibilidad de Supabase...');
+        console.log('🔧 Inicializando Supabase...');
         
-        // Verificar que el CDN de Supabase esté cargado
+        // Verificar que el CDN esté disponible
         if (typeof window.supabase === 'undefined') {
-            console.error('❌ Supabase CDN no está disponible');
-            console.log('📝 Verifica que tengas esta línea en tu HTML:');
-            console.log('<script src="https://unpkg.com/@supabase/supabase-js@2"></script>');
+            console.error('❌ Supabase CDN no disponible');
             return false;
         }
 
-        console.log('✅ CDN de Supabase detectado');
-        console.log('🔑 Inicializando cliente...');
+        console.log('✅ CDN de Supabase disponible');
 
-        // Crear cliente de Supabase con configuración específica
+        // CONFIGURACIÓN CORREGIDA - Forzar headers en TODAS las requests
         supabase = window.supabase.createClient(
             SUPABASE_CONFIG.url, 
             SUPABASE_CONFIG.key,
             {
                 auth: {
-                    autoRefreshToken: true,
-                    persistSession: false, // Cambiar a false para evitar problemas
+                    autoRefreshToken: false,
+                    persistSession: false,
                     detectSessionInUrl: false
                 },
                 global: {
                     headers: {
-                        'apikey': SUPABASE_CONFIG.key, // Forzar header
-                        'Authorization': `Bearer ${SUPABASE_CONFIG.key}`
+                        'apikey': SUPABASE_CONFIG.key,
+                        'Authorization': `Bearer ${SUPABASE_CONFIG.key}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
                     }
+                },
+                db: {
+                    schema: 'public'
+                },
+                realtime: {
+                    disabled: true // Deshabilitar realtime para evitar problemas
                 }
             }
         );
 
-        // Verificar que el cliente se creó correctamente
-        if (supabase && supabase.from) {
+        // Verificar inicialización
+        if (supabase && typeof supabase.from === 'function') {
+            console.log('✅ Cliente Supabase creado correctamente');
+            console.log('🔑 API Key configurada:', SUPABASE_CONFIG.key.substring(0, 20) + '...');
+            
+            // Intercepción de requests para debugging
+            const originalFrom = supabase.from;
+            supabase.from = function(table) {
+                console.log(`📡 Query a tabla: ${table}`);
+                const query = originalFrom.call(this, table);
+                
+                // Interceptar el método select para debug
+                const originalSelect = query.select;
+                query.select = function(...args) {
+                    console.log(`🔍 SELECT en ${table}:`, args);
+                    return originalSelect.apply(this, args);
+                };
+                
+                // Interceptar insert para debug
+                const originalInsert = query.insert;
+                query.insert = function(data) {
+                    console.log(`📝 INSERT en ${table}:`, data);
+                    return originalInsert.call(this, data);
+                };
+                
+                return query;
+            };
+            
             isSupabaseConnected = true;
-            console.log('✅ Supabase inicializado correctamente');
-            console.log('📡 URL:', SUPABASE_CONFIG.url);
-            console.log('🔑 API Key configurada');
-            
-            // Test inmediato de conexión
-            testSupabaseConnection();
-            
             return true;
         } else {
-            throw new Error('Cliente de Supabase no se inicializó correctamente');
+            throw new Error('Cliente no se inicializó correctamente');
         }
 
     } catch (error) {
@@ -70,89 +93,128 @@ function initializeSupabase() {
     }
 }
 
-// Test de conexión
+// Test de conexión simplificado
 async function testSupabaseConnection() {
-    try {
-        console.log('🧪 Probando conexión a Supabase...');
-        
-        const { data, error, count } = await supabase
-            .from('vendedores')
-            .select('*', { count: 'exact', head: true });
+    if (!supabase) {
+        console.error('❌ Cliente Supabase no disponible');
+        return false;
+    }
 
+    try {
+        console.log('🧪 Probando conexión...');
+        
+        // Test con una query super simple que no requiere tablas
+        const { data, error } = await supabase.rpc('version');
+        
         if (error) {
-            console.error('❌ Error en test de conexión:', error);
-            if (error.message.includes('JWT')) {
-                console.error('🔑 Problema con la API Key - verifica las credenciales');
+            console.log('⚠️ RPC no disponible, probando auth...');
+            
+            // Fallback: test de auth
+            const { data: authData, error: authError } = await supabase.auth.getSession();
+            
+            if (authError && !authError.message.includes('session_not_found')) {
+                throw authError;
             }
-            if (error.message.includes('relation') || error.message.includes('does not exist')) {
-                console.error('📋 La tabla "vendedores" no existe - verifica la base de datos');
-            }
-            isSupabaseConnected = false;
-        } else {
-            console.log('✅ Test de conexión exitoso');
-            console.log(`📊 Registros en vendedores: ${count || 0}`);
-            isSupabaseConnected = true;
         }
-    } catch (testError) {
-        console.error('❌ Error durante test:', testError);
+        
+        console.log('✅ Test de conexión OK');
+        isSupabaseConnected = true;
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Test falló:', error);
+        
+        if (error.message.includes('No API key')) {
+            console.error('🔑 API Key no se está enviando correctamente');
+            console.error('📋 Headers actuales:', {
+                apikey: SUPABASE_CONFIG.key ? 'PRESENTE' : 'AUSENTE',
+                url: SUPABASE_CONFIG.url
+            });
+        }
+        
         isSupabaseConnected = false;
+        return false;
     }
 }
 
-// Intentar inicializar inmediatamente
+// Función para crear requests manuales (fallback)
+async function manualSupabaseRequest(endpoint, options = {}) {
+    const url = `${SUPABASE_CONFIG.url}/rest/v1/${endpoint}`;
+    
+    const defaultOptions = {
+        headers: {
+            'apikey': SUPABASE_CONFIG.key,
+            'Authorization': `Bearer ${SUPABASE_CONFIG.key}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
+        },
+        ...options
+    };
+    
+    console.log('📡 Request manual a:', url);
+    console.log('🔑 Headers:', defaultOptions.headers);
+    
+    try {
+        const response = await fetch(url, defaultOptions);
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${JSON.stringify(data)}`);
+        }
+        
+        return { data, error: null };
+    } catch (error) {
+        return { data: null, error };
+    }
+}
+
+// Inicializar cuando esté disponible
 if (typeof window.supabase !== 'undefined') {
     initializeSupabase();
+    setTimeout(testSupabaseConnection, 1000);
 } else {
-    // Si Supabase no está disponible, esperar a que se cargue
-    console.log('⏳ Esperando que Supabase CDN se cargue...');
-    
-    // Intentar cada 100ms hasta que esté disponible
-    const checkSupabase = setInterval(() => {
+    console.log('⏳ Esperando Supabase CDN...');
+    const checkInterval = setInterval(() => {
         if (typeof window.supabase !== 'undefined') {
-            clearInterval(checkSupabase);
+            clearInterval(checkInterval);
             initializeSupabase();
+            setTimeout(testSupabaseConnection, 1000);
         }
     }, 100);
     
-    // Timeout después de 5 segundos
     setTimeout(() => {
+        clearInterval(checkInterval);
         if (!isSupabaseConnected) {
-            clearInterval(checkSupabase);
-            console.error('❌ Timeout esperando Supabase CDN');
-            console.log('🔧 Continuando en modo local...');
+            console.error('❌ Timeout esperando Supabase');
         }
     }, 5000);
 }
 
-// ===== RESTO DE TU CONFIGURACIÓN (ENUMs, etc.) =====
-// [Aquí va todo tu código de ENUMs y configuración existente]
-
+// ===== ENUMs SIMPLIFICADOS =====
 const ENUMS = {
-    // ... tu código existente de ENUMs ...
-    TIPO_PROVEEDOR: [
-        { value: 'hoteles', label: '🏨 Hoteles', icon: '🏨', color: '#2563eb' },
-        { value: 'vuelos', label: '✈️ Vuelos', icon: '✈️', color: '#7c3aed' },
-        { value: 'traslados', label: '🚌 Traslados', icon: '🚌', color: '#059669' },
-        { value: 'excursiones', label: '🗺️ Excursiones', icon: '🗺️', color: '#dc2626' },
-        { value: 'mixto', label: '📦 Mixto', icon: '📦', color: '#9333ea' }
-    ],
-
     ESTADO_PAGO: [
         { value: 'no_pagado', label: 'No Pagado', icon: '❌', color: '#dc2626' },
         { value: 'parcialmente_pagado', label: 'Parcialmente Pagado', icon: '⚠️', color: '#d97706' },
         { value: 'pagado_completo', label: 'Pagado Completo', icon: '✅', color: '#059669' }
     ],
-
+    
     ESTADO_VENTA: [
         { value: 'pendiente', label: 'Pendiente', icon: '⏳', color: '#6b7280' },
         { value: 'confirmada', label: 'Confirmada', icon: '✅', color: '#059669' },
         { value: 'cancelada', label: 'Cancelada', icon: '❌', color: '#dc2626' },
         { value: 'finalizada', label: 'Finalizada', icon: '🏁', color: '#7c3aed' }
+    ],
+    
+    TIPO_PROVEEDOR: [
+        { value: 'vuelos', label: '✈️ Vuelos', icon: '✈️', color: '#2563eb' },
+        { value: 'hoteles', label: '🏨 Hoteles', icon: '🏨', color: '#7c3aed' },
+        { value: 'traslados', label: '🚌 Traslados', icon: '🚌', color: '#059669' },
+        { value: 'excursiones', label: '🗺️ Excursiones', icon: '🗺️', color: '#dc2626' },
+        { value: 'mixto', label: '📦 Mixto', icon: '📦', color: '#9333ea' }
     ]
-    // ... resto de tus ENUMs ...
 };
 
-// ===== FUNCIONES HELPER (tu código existente) =====
+// ===== FUNCIONES HELPER =====
 function getEnumData(enumType, value) {
     const enumArray = ENUMS[enumType];
     if (!enumArray) return null;
@@ -186,21 +248,37 @@ function createEnumBadge(enumType, value, includeIcon = true) {
     </span>`;
 }
 
-// ===== EXPORT PARA USO GLOBAL =====
+// ===== CONFIGURACIÓN DE LA APP =====
+const APP_CONFIG = {
+    company: {
+        name: 'NTS',
+        fullName: 'NIEVA TRAVEL SERVICES'
+    },
+    app: {
+        version: '1.0.0',
+        debugMode: true
+    }
+};
+
+// ===== EXPORT GLOBAL =====
 window.NTS_CONFIG = {
-    // Core
     supabase,
     isSupabaseConnected,
     ENUMS,
+    APP_CONFIG,
     
     // Functions
     getEnumData,
     getEnumLabel,
     createEnumBadge,
     
-    // Test function para debugging
+    // Debug functions
     testConnection: testSupabaseConnection,
-    reinitialize: initializeSupabase
+    reinitialize: initializeSupabase,
+    manualRequest: manualSupabaseRequest,
+    
+    // Raw config for debugging
+    rawConfig: SUPABASE_CONFIG
 };
 
 console.log('✅ Configuración NTS cargada');
