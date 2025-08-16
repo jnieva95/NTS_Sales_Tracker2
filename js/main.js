@@ -677,6 +677,39 @@ class NTSApp {
     }
   }
 
+  initClientesPage() {
+    const form = document.getElementById('cliente-form');
+    if (!form) return;
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const cliente = {
+        nombre: document.getElementById('nuevo-cliente-nombre')?.value.trim(),
+        email: document.getElementById('nuevo-cliente-email')?.value.trim() || null,
+        telefono: document.getElementById('nuevo-cliente-telefono')?.value.trim() || null,
+        dni: document.getElementById('nuevo-cliente-dni')?.value.trim() || null,
+        pasaporte: document.getElementById('nuevo-cliente-pasaporte')?.value.trim() || null,
+        direccion: document.getElementById('nuevo-cliente-direccion')?.value.trim() || null,
+        ciudad: document.getElementById('nuevo-cliente-ciudad')?.value.trim() || null,
+        pais: document.getElementById('nuevo-cliente-pais')?.value.trim() || null,
+        vendedor_id: AppState.user?.id || 1,
+        fecha_ultima_venta: null,
+        total_compras: 0
+      };
+      try {
+        if (AppState.supabase) {
+          const { error } = await AppState.supabase.from('clientes').insert(cliente);
+          if (error) throw error;
+          this.showNotification('Cliente creado correctamente', 'success');
+          form.reset();
+          await this.loadClientes();
+        }
+      } catch (err) {
+        console.error('Error creando cliente:', err);
+        this.showNotification('Error al crear cliente', 'error');
+      }
+    });
+  }
+
   loadMockActivity() {
     const container = document.getElementById('recent-activity');
     if (!container) return;
@@ -794,6 +827,9 @@ class NTSApp {
         break;
       case 'nueva-venta':
         this.initNewSaleForm();
+        break;
+      case 'clientes':
+        this.initClientesPage();
         break;
       default:
         console.log(`Pestaña ${tabName} no implementada aún`);
@@ -1267,10 +1303,7 @@ class NTSApp {
         const descripcionManual = document.getElementById('vuelo-descripcion')?.value?.trim() || '';
         const pasajeros = parseInt(document.getElementById('vuelo-pasajeros')?.value) || 1;
         const tipoItinerario = getValidTipoItinerario(document.getElementById('vuelo-tipo')?.value);
-        let aerolinea = document.getElementById('vuelo-aerolinea')?.value?.trim() || '';
-        if (!aerolinea && segmentos.length > 0) {
-          aerolinea = segmentos[0].aerolinea || '';
-        }
+        const aerolinea = segmentos[0]?.aerolinea || '';
         const tempData = { origen, destino, aerolinea, tipo_itinerario: tipoItinerario, pasajeros, descripcion: descripcionManual };
         const descripcionFinal = generateVueloDescripcion(tempData);
 
@@ -1281,7 +1314,6 @@ class NTSApp {
           destino,
           pasajeros,
           tipo_itinerario: tipoItinerario,
-          aerolinea,
           descripcion: descripcionFinal,
           segmentos
         };
@@ -1613,8 +1645,6 @@ class NTSApp {
         };
 
         if (servicio.pasajeros) vueloData.pasajeros = servicio.pasajeros;
-        if (servicio.aerolinea) vueloData.aerolinea = servicio.aerolinea;
-        if (servicio.clase_vuelo) vueloData.clase_vuelo = servicio.clase_vuelo;
         if (servicio.precio_venta !== undefined) vueloData.precio_venta = servicio.precio_venta;
         if (servicio.precio !== undefined && vueloData.precio_venta === undefined) vueloData.precio_venta = servicio.precio;
         if (servicio.precio_costo) vueloData.precio_costo = servicio.precio_costo;

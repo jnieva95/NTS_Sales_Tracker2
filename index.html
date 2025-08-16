@@ -504,10 +504,52 @@
                         <p>Administrar base de clientes</p>
                     </div>
                 </div>
-                <div class="coming-soon">
-                    <i data-lucide="construction"></i>
-                    <h3>Próximamente</h3>
-                    <p>Esta sección está en desarrollo</p>
+                <div class="form-card">
+                    <div class="card-header">
+                        <h3><i data-lucide="user-plus"></i> Nuevo Cliente</h3>
+                    </div>
+                    <div class="card-content">
+                        <form id="cliente-form" class="form-grid">
+                            <div class="form-group">
+                                <label for="nuevo-cliente-nombre">Nombre *</label>
+                                <input type="text" id="nuevo-cliente-nombre" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="nuevo-cliente-email">Email</label>
+                                <input type="email" id="nuevo-cliente-email" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="nuevo-cliente-telefono">Teléfono</label>
+                                <input type="tel" id="nuevo-cliente-telefono" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="nuevo-cliente-dni">DNI</label>
+                                <input type="text" id="nuevo-cliente-dni" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="nuevo-cliente-pasaporte">Pasaporte</label>
+                                <input type="text" id="nuevo-cliente-pasaporte" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="nuevo-cliente-direccion">Dirección</label>
+                                <input type="text" id="nuevo-cliente-direccion" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="nuevo-cliente-ciudad">Ciudad</label>
+                                <input type="text" id="nuevo-cliente-ciudad" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="nuevo-cliente-pais">País</label>
+                                <input type="text" id="nuevo-cliente-pais" class="form-control">
+                            </div>
+                            <div class="form-actions full-width">
+                                <button type="submit" class="btn btn-primary">
+                                    <i data-lucide="save"></i>
+                                    Guardar Cliente
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </section>
 
