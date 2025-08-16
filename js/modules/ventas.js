@@ -377,18 +377,31 @@ function getServiceFormData(tipo) {
     
     switch(tipo) {
         case 'vuelo':
+            const origen = document.getElementById('vuelo-origen')?.value?.trim() || '';
+            const destino = document.getElementById('vuelo-destino')?.value?.trim() || '';
+            const descripcionManual = document.getElementById('vuelo-descripcion')?.value?.trim();
+            
+            // Generar descripción automática si no hay una manual
+            let descripcion = descripcionManual;
+            if (!descripcion && origen && destino) {
+                descripcion = `Vuelo ${origen} → ${destino}`;
+            }
+            
             return {
                 ...baseData,
-                descripcion: document.getElementById('vuelo-descripcion')?.value || `Vuelo ${document.getElementById('vuelo-origen')?.value || ''} → ${document.getElementById('vuelo-destino')?.value || ''}`,
-                origen: document.getElementById('vuelo-origen')?.value || '',
-                destino: document.getElementById('vuelo-destino')?.value || '',
+                descripcion: descripcion || `Vuelo ${origen} → ${destino}`,
+                origen: origen,
+                destino: destino,
+                tipo_itinerario: document.getElementById('vuelo-tipo')?.value || 'ida_vuelta',
+                fecha_salida: document.getElementById('vuelo-fecha-salida')?.value || '',
+                aerolinea: document.getElementById('vuelo-aerolinea')?.value?.trim() || '',
                 pasajeros: parseInt(document.getElementById('vuelo-pasajeros')?.value) || 1
             };
         case 'hotel':
             return {
                 ...baseData,
-                hotel_nombre: document.getElementById('hotel-nombre')?.value || '',
-                hotel_ciudad: document.getElementById('hotel-ciudad')?.value || '',
+                hotel_nombre: document.getElementById('hotel-nombre')?.value?.trim() || '',
+                hotel_ciudad: document.getElementById('hotel-ciudad')?.value?.trim() || '',
                 fecha_checkin: document.getElementById('hotel-checkin')?.value || '',
                 fecha_checkout: document.getElementById('hotel-checkout')?.value || '',
                 huespedes: parseInt(document.getElementById('hotel-huespedes')?.value) || 1
@@ -396,17 +409,22 @@ function getServiceFormData(tipo) {
         case 'traslado':
             return {
                 ...baseData,
-                origen: document.getElementById('traslado-origen')?.value || '',
-                destino: document.getElementById('traslado-destino')?.value || '',
+                origen: document.getElementById('traslado-origen')?.value?.trim() || '',
+                destino: document.getElementById('traslado-destino')?.value?.trim() || '',
                 fecha_traslado: document.getElementById('traslado-fecha')?.value || '',
+                hora: document.getElementById('traslado-hora')?.value || '',
                 pasajeros: parseInt(document.getElementById('traslado-pasajeros')?.value) || 1
             };
         case 'excursion':
             return {
                 ...baseData,
-                nombre_excursion: document.getElementById('excursion-nombre')?.value || '',
+                nombre_excursion: document.getElementById('excursion-nombre')?.value?.trim() || '',
                 fecha_excursion: document.getElementById('excursion-fecha')?.value || '',
-                participantes: parseInt(document.getElementById('excursion-participantes')?.value) || 1
+                destino: document.getElementById('excursion-destino')?.value?.trim() || '',
+                duracion: parseInt(document.getElementById('excursion-duracion')?.value) || 0,
+                participantes: parseInt(document.getElementById('excursion-participantes')?.value) || 1,
+                incluye_almuerzo: document.getElementById('excursion-almuerzo')?.checked || false,
+                incluye_transporte: document.getElementById('excursion-transporte')?.checked || false
             };
         default:
             return baseData;
@@ -422,13 +440,17 @@ function validateServiceData(serviceData, tipo) {
     // Validaciones específicas por tipo
     switch(tipo) {
         case 'vuelo':
-            if (!serviceData.descripcion || serviceData.descripcion.includes('→')) {
+            if (!serviceData.origen || !serviceData.destino) {
                 showNotification('⚠️ Complete origen y destino del vuelo', 'warning');
+                return false;
+            }
+            if (serviceData.origen.trim() === '' || serviceData.destino.trim() === '') {
+                showNotification('⚠️ Origen y destino no pueden estar vacíos', 'warning');
                 return false;
             }
             break;
         case 'hotel':
-            if (!serviceData.hotel_nombre) {
+            if (!serviceData.hotel_nombre || serviceData.hotel_nombre.trim() === '') {
                 showNotification('⚠️ Ingrese el nombre del hotel', 'warning');
                 return false;
             }
@@ -438,9 +460,13 @@ function validateServiceData(serviceData, tipo) {
                 showNotification('⚠️ Complete origen y destino del traslado', 'warning');
                 return false;
             }
+            if (serviceData.origen.trim() === '' || serviceData.destino.trim() === '') {
+                showNotification('⚠️ Origen y destino no pueden estar vacíos', 'warning');
+                return false;
+            }
             break;
         case 'excursion':
-            if (!serviceData.nombre_excursion) {
+            if (!serviceData.nombre_excursion || serviceData.nombre_excursion.trim() === '') {
                 showNotification('⚠️ Ingrese el nombre de la excursión', 'warning');
                 return false;
             }
