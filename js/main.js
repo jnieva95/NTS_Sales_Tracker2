@@ -1295,7 +1295,7 @@ class NTSApp {
       .from('ventas')
       .insert({
         numero_venta: saleData.numero_venta,
-        cliente_id: saleData.cliente.id || null,
+        cliente_id: saleData.cliente.id ? parseInt(saleData.cliente.id, 10) : null,
         fecha_viaje_inicio: saleData.viaje.fechaInicio || null,
         fecha_viaje_fin: saleData.viaje.fechaFin || null,
         observaciones: saleData.viaje.observaciones || null,
@@ -1307,7 +1307,7 @@ class NTSApp {
       .single();
 
     if (ventaError) {
-      console.error('Error creando venta:', ventaError);
+      console.error('Error creando venta:', ventaError.message, ventaError.details);
       throw ventaError;
     }
 
