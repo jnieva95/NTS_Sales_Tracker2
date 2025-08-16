@@ -265,10 +265,11 @@ class NTSApp {
 
   async loadInitialData() {
     console.log('📊 Cargando datos iniciales...');
-    
+
     try {
       if (AppState.isConnected) {
         await this.loadDashboardData();
+        await this.loadClientes();
         this.setupClientAutocomplete();
       } else {
         this.loadMockData();
@@ -388,6 +389,10 @@ class NTSApp {
       if (error) throw error;
       AppState.clientes = data || [];
       this.updateClientDatalist();
+      if (!search) {
+        const totalEl = document.getElementById('total-clientes');
+        if (totalEl) totalEl.textContent = AppState.clientes.length.toString();
+      }
     } catch (error) {
       console.error('Error cargando clientes:', error);
     }
@@ -414,13 +419,12 @@ class NTSApp {
     const input = document.getElementById('cliente-nombre');
     if (!input) return;
 
-    // Cargar clientes inicialmente
-    this.loadClientes();
-
     input.addEventListener('input', async () => {
       const value = input.value.trim();
       if (value.length >= 2) {
         await this.loadClientes(value);
+      } else {
+        await this.loadClientes();
       }
       const datalist = document.getElementById('clientes-datalist');
       const option = [...datalist.options].find(o => o.value.toLowerCase() === value.toLowerCase());
