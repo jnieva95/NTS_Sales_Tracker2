@@ -1,0 +1,1299 @@
+// ===== MAIN.JS - APLICACIÓN PRINCIPAL NTS V2.0 =====
+
+console.log('🚀 Iniciando NTS Sistema v2.0...');
+
+// ===== CONFIGURACIÓN GLOBAL =====
+const APP_CONFIG = {
+  name: 'NTS Sistema',
+  version: '2.0.0',
+  debug: true,
+  supabase: {
+    url: 'https://fmvozdsvpxitoyhtdmcv.supabase.co',
+    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtdm96ZHN2cHhpdG95aHRkbWN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyMjc1MzEsImV4cCI6MjA3MDgwMzUzMX0.EqK3pND6Zz48OpnVDCF_0KJUcV3TzkRUz9qTMWL3NNE'
+  }
+};
+
+// ===== ESTADO GLOBAL =====
+const AppState = {
+  currentTab: 'dashboard',
+  currentStep: 1,
+  isLoading: false,
+  supabase: null,
+  isConnected: false,
+  user: null,
+  notifications: [],
+  
+  // Datos de la venta actual
+  currentSale: {
+    client: {},
+    trip: {},
+    services: [],
+    totals: {
+      subtotal: 0,
+      discounts: 0,
+      total: 0
+    }
+  }
+};
+
+// ===== INICIALIZACIÓN =====
+class NTSApp {
+  constructor() {
+    this.init();
+  }
+
+  async init() {
+    try {
+      console.log('🔧 Inicializando aplicación...');
+      
+      // Mostrar loader
+      this.showLoader();
+      
+      // Inicializar Supabase
+      await this.initSupabase();
+      
+      // Configurar UI
+      this.setupUI();
+      
+      // Configurar eventos
+      this.setupEventListeners();
+      
+      // Inicializar iconos
+      this.initIcons();
+      
+      // Cargar datos iniciales
+      await this.loadInitialData();
+      
+      // Ocultar loader y mostrar app
+      this.hideLoader();
+      
+      console.log('✅ Aplicación inicializada correctamente');
+      this.showNotification('Sistema NTS iniciado correctamente', 'success');
+      
+    } catch (error) {
+      console.error('❌ Error inicializando aplicación:', error);
+      this.showNotification('Error al inicializar el sistema', 'error');
+      this.hideLoader();
+    }
+  }
+
+  async initSupabase() {
+    try {
+      if (typeof window.supabase !== 'undefined') {
+        AppState.supabase = window.supabase.createClient(
+          APP_CONFIG.supabase.url,
+          APP_CONFIG.supabase.key
+        );
+        
+        // Test connection
+        const { data, error } = await AppState.supabase.auth.getSession();
+        
+        if (!error || error.message.includes('session_not_found')) {
+          AppState.isConnected = true;
+          console.log('✅ Supabase conectado');
+          this.updateConnectionStatus(true);
+        }
+      } else {
+        console.log('⚠️ Supabase no disponible');
+        this.updateConnectionStatus(false);
+      }
+    } catch (error) {
+      console.error('❌ Error conectando Supabase:', error);
+      this.updateConnectionStatus(false);
+    }
+  }
+
+  setupUI() {
+    console.log('🎨 Configurando interfaz...');
+    
+    // Configurar navegación
+    this.setupNavigation();
+    
+    // Configurar formulario de pasos
+    this.setupStepForm();
+    
+    // Configurar servicios
+    this.setupServices();
+    
+    // Configurar header actions
+    this.setupHeaderActions();
+  }
+
+  setupNavigation() {
+    const navLinks = document.querySelectorAll('.nav-link[data-tab]');
+    
+    navLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const tab = link.getAttribute('data-tab');
+        this.showTab(tab);
+      });
+    });
+  }
+
+  setupStepForm() {
+    const nextBtn = document.getElementById('next-step');
+    const prevBtn = document.getElementById('prev-step');
+    
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => this.nextStep());
+    }
+    
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => this.prevStep());
+    }
+  }
+
+  setupServices() {
+    const serviceTabs = document.querySelectorAll('.service-tab[data-service]');
+    
+    serviceTabs.forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        e.preventDefault();
+        const service = tab.getAttribute('data-service');
+        this.showServiceTab(service);
+      });
+    });
+  }
+
+  setupHeaderActions() {
+    // Botón de pantalla completa
+    const fullscreenBtn = document.getElementById('fullscreen-btn');
+    if (fullscreenBtn) {
+      fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
+    }
+    
+    // Botón de notificaciones
+    const notificationsBtn = document.getElementById('notifications-btn');
+    if (notificationsBtn) {
+      notificationsBtn.addEventListener('click', () => this.showNotificationsPanel());
+    }
+    
+    // Botón de configuración
+    const settingsBtn = document.getElementById('settings-btn');
+    if (settingsBtn) {
+      settingsBtn.addEventListener('click', () => this.showSettingsPanel());
+    }
+  }
+
+  setupEventListeners() {
+    console.log('🎯 Configurando eventos...');
+    
+    // Refresh dashboard
+    const refreshBtn = document.getElementById('refresh-dashboard');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', () => this.refreshDashboard());
+    }
+    
+    // Create sale button
+    const createSaleBtn = document.getElementById('create-sale');
+    if (createSaleBtn) {
+      createSaleBtn.addEventListener('click', () => this.createSale());
+    }
+    
+    // Save draft button
+    const saveDraftBtn = document.getElementById('save-draft');
+    if (saveDraftBtn) {
+      saveDraftBtn.addEventListener('click', () => this.saveDraft());
+    }
+    
+    // Responsive sidebar toggle
+    this.setupResponsiveNavigation();
+  }
+
+  setupResponsiveNavigation() {
+    // Agregar botón de menú móvil si no existe
+    if (window.innerWidth <= 1024) {
+      this.addMobileMenuButton();
+    }
+    
+    // Listener para cambios de tamaño
+    window.addEventListener('resize', () => {
+      if (window.innerWidth <= 1024) {
+        this.addMobileMenuButton();
+      } else {
+        this.removeMobileMenuButton();
+      }
+    });
+  }
+
+  addMobileMenuButton() {
+    if (document.getElementById('mobile-menu-btn')) return;
+    
+    const headerContent = document.querySelector('.header-content');
+    const mobileMenuBtn = document.createElement('button');
+    mobileMenuBtn.id = 'mobile-menu-btn';
+    mobileMenuBtn.className = 'btn-icon';
+    mobileMenuBtn.innerHTML = '<i data-lucide="menu"></i>';
+    mobileMenuBtn.addEventListener('click', () => this.toggleMobileSidebar());
+    
+    headerContent.insertBefore(mobileMenuBtn, headerContent.firstChild);
+    
+    // Re-inicializar iconos
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
+  }
+
+  removeMobileMenuButton() {
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    if (mobileMenuBtn) {
+      mobileMenuBtn.remove();
+    }
+  }
+
+  toggleMobileSidebar() {
+    const sidebar = document.getElementById('app-sidebar');
+    sidebar.classList.toggle('open');
+  }
+
+  initIcons() {
+    if (window.lucide) {
+      window.lucide.createIcons();
+      console.log('✅ Iconos inicializados');
+    } else {
+      console.log('⚠️ Lucide icons no disponible');
+    }
+  }
+
+  async loadInitialData() {
+    console.log('📊 Cargando datos iniciales...');
+    
+    try {
+      if (AppState.isConnected) {
+        await this.loadDashboardData();
+      } else {
+        this.loadMockData();
+      }
+    } catch (error) {
+      console.error('Error cargando datos:', error);
+      this.loadMockData();
+    }
+  }
+
+  async loadDashboardData() {
+    try {
+      // Cargar estadísticas reales desde Supabase
+      const { data: ventas, error } = await AppState.supabase
+        .from('ventas')
+        .select('total_final, estado_pago, created_at');
+      
+      if (error) throw error;
+      
+      // Calcular métricas
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      
+      const ventasDelMes = ventas.filter(v => {
+        const fecha = new Date(v.created_at);
+        return fecha.getMonth() === currentMonth && fecha.getFullYear() === currentYear;
+      });
+      
+      const totalVentasMes = ventasDelMes.reduce((sum, v) => sum + (v.total_final || 0), 0);
+      const totalVentas = ventas.length;
+      const pendientes = ventas.filter(v => v.estado_pago !== 'pagado_completo').length;
+      
+      // Actualizar UI
+      this.updateDashboardStats({
+        ventasDelMes: totalVentasMes,
+        totalVentas: totalVentas,
+        pendientes: pendientes,
+        totalClientes: 0 // Se cargará por separado
+      });
+      
+      // Cargar actividad reciente
+      this.loadRecentActivity(ventas.slice(0, 5));
+      
+    } catch (error) {
+      console.error('Error cargando datos del dashboard:', error);
+      this.loadMockData();
+    }
+  }
+
+  loadMockData() {
+    console.log('📊 Cargando datos de demostración...');
+    
+    this.updateDashboardStats({
+      ventasDelMes: 125000,
+      totalVentas: 25,
+      pendientes: 8,
+      totalClientes: 15
+    });
+    
+    this.loadMockActivity();
+    this.initSalesChart();
+  }
+
+  updateDashboardStats(stats) {
+    const elements = {
+      'ventas-mes': this.formatCurrency(stats.ventasDelMes),
+      'ventas-total': stats.totalVentas.toString(),
+      'pendientes': stats.pendientes.toString(),
+      'total-clientes': stats.totalClientes.toString()
+    };
+    
+    Object.entries(elements).forEach(([id, value]) => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.textContent = value;
+      }
+    });
+  }
+
+  loadRecentActivity(ventas) {
+    const container = document.getElementById('recent-activity');
+    if (!container) return;
+    
+    const activityHTML = ventas.map(venta => `
+      <div class="activity-item">
+        <div class="activity-icon" style="background: var(--primary-100); color: var(--primary-600);">
+          <i data-lucide="shopping-cart"></i>
+        </div>
+        <div class="activity-content">
+          <div class="activity-title">Nueva venta creada</div>
+          <div class="activity-description">${this.formatCurrency(venta.total_final)}</div>
+        </div>
+        <div class="activity-time">${this.formatRelativeTime(venta.created_at)}</div>
+      </div>
+    `).join('');
+    
+    container.innerHTML = activityHTML;
+    
+    // Re-inicializar iconos
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
+  }
+
+  loadMockActivity() {
+    const container = document.getElementById('recent-activity');
+    if (!container) return;
+    
+    const mockActivity = [
+      { type: 'sale', title: 'Nueva venta creada', description: '$45,000 - Juan Pérez', time: 'hace 2 horas' },
+      { type: 'client', title: 'Cliente agregado', description: 'María González', time: 'hace 4 horas' },
+      { type: 'payment', title: 'Pago recibido', description: '$28,500', time: 'hace 6 horas' },
+      { type: 'sale', title: 'Venta confirmada', description: 'Carlos López', time: 'hace 1 día' }
+    ];
+    
+    const activityHTML = mockActivity.map(activity => {
+      const iconMap = {
+        sale: 'shopping-cart',
+        client: 'user-plus',
+        payment: 'credit-card'
+      };
+      
+      return `
+        <div class="activity-item">
+          <div class="activity-icon" style="background: var(--primary-100); color: var(--primary-600);">
+            <i data-lucide="${iconMap[activity.type] || 'circle'}"></i>
+          </div>
+          <div class="activity-content">
+            <div class="activity-title">${activity.title}</div>
+            <div class="activity-description">${activity.description}</div>
+          </div>
+          <div class="activity-time">${activity.time}</div>
+        </div>
+      `;
+    }).join('');
+    
+    container.innerHTML = activityHTML;
+    
+    // Re-inicializar iconos
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
+  }
+
+  initSalesChart() {
+    const canvas = document.getElementById('sales-chart');
+    if (!canvas || !window.Chart) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+        datasets: [{
+          label: 'Ventas',
+          data: [65000, 78000, 85000, 92000, 105000, 125000],
+          borderColor: 'rgb(59, 130, 246)',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          tension: 0.4,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(value) {
+                return '$' + value.toLocaleString();
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // ===== NAVEGACIÓN =====
+  showTab(tabName) {
+    console.log(`📂 Mostrando pestaña: ${tabName}`);
+    
+    AppState.currentTab = tabName;
+    
+    // Actualizar navegación
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.classList.remove('active');
+    });
+    
+    document.querySelector(`[data-tab="${tabName}"]`)?.classList.add('active');
+    
+    // Mostrar contenido
+    document.querySelectorAll('.tab-content').forEach(content => {
+      content.classList.remove('active');
+    });
+    
+    document.getElementById(tabName)?.classList.add('active');
+    
+    // Cerrar sidebar móvil
+    if (window.innerWidth <= 1024) {
+      document.getElementById('app-sidebar')?.classList.remove('open');
+    }
+    
+    // Cargar datos específicos de la pestaña
+    this.loadTabData(tabName);
+  }
+
+  loadTabData(tabName) {
+    switch (tabName) {
+      case 'dashboard':
+        this.refreshDashboard();
+        break;
+      case 'nueva-venta':
+        this.initNewSaleForm();
+        break;
+      default:
+        console.log(`Pestaña ${tabName} no implementada aún`);
+    }
+  }
+
+  // ===== FORMULARIO DE PASOS =====
+  nextStep() {
+    if (AppState.currentStep < 4) {
+      if (this.validateCurrentStep()) {
+        AppState.currentStep++;
+        this.updateStepForm();
+      }
+    } else {
+      this.createSale();
+    }
+  }
+
+  prevStep() {
+    if (AppState.currentStep > 1) {
+      AppState.currentStep--;
+      this.updateStepForm();
+    }
+  }
+
+  updateStepForm() {
+    // Actualizar indicadores de paso
+    document.querySelectorAll('.step').forEach((step, index) => {
+      step.classList.toggle('active', index + 1 === AppState.currentStep);
+    });
+    
+    // Mostrar/ocultar pasos
+    document.querySelectorAll('.form-step').forEach((step, index) => {
+      step.classList.toggle('active', index + 1 === AppState.currentStep);
+    });
+    
+    // Actualizar botones de navegación
+    const prevBtn = document.getElementById('prev-step');
+    const nextBtn = document.getElementById('next-step');
+    
+    if (prevBtn) {
+      prevBtn.style.display = AppState.currentStep === 1 ? 'none' : 'flex';
+    }
+    
+    if (nextBtn) {
+      nextBtn.innerHTML = AppState.currentStep === 4 
+        ? '<i data-lucide="check"></i> Crear Venta'
+        : 'Siguiente <i data-lucide="chevron-right"></i>';
+    }
+    
+    // Re-inicializar iconos
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
+  }
+
+  validateCurrentStep() {
+    switch (AppState.currentStep) {
+      case 1:
+        return this.validateClientStep();
+      case 2:
+        return this.validateTripStep();
+      case 3:
+        return this.validateServicesStep();
+      default:
+        return true;
+    }
+  }
+
+  validateClientStep() {
+    const nombre = document.getElementById('cliente-nombre')?.value?.trim();
+    
+    if (!nombre) {
+      this.showNotification('Por favor ingrese el nombre del cliente', 'warning');
+      document.getElementById('cliente-nombre')?.focus();
+      return false;
+    }
+    
+    // Guardar datos del cliente
+    AppState.currentSale.client = {
+      nombre: nombre,
+      email: document.getElementById('cliente-email')?.value?.trim(),
+      telefono: document.getElementById('cliente-telefono')?.value?.trim(),
+      documento: document.getElementById('cliente-documento')?.value?.trim()
+    };
+    
+    return true;
+  }
+
+  validateTripStep() {
+    const fechaInicio = document.getElementById('fecha-viaje-inicio')?.value;
+    
+    if (!fechaInicio) {
+      this.showNotification('Por favor seleccione la fecha de inicio del viaje', 'warning');
+      document.getElementById('fecha-viaje-inicio')?.focus();
+      return false;
+    }
+    
+    // Guardar datos del viaje
+    AppState.currentSale.trip = {
+      fechaInicio: fechaInicio,
+      fechaFin: document.getElementById('fecha-viaje-fin')?.value,
+      observaciones: document.getElementById('observaciones-venta')?.value?.trim()
+    };
+    
+    return true;
+  }
+
+  validateServicesStep() {
+    if (AppState.currentSale.services.length === 0) {
+      this.showNotification('Por favor agregue al menos un servicio', 'warning');
+      return false;
+    }
+    
+    return true;
+  }
+
+  // ===== SERVICIOS =====
+  showServiceTab(serviceType) {
+    // Actualizar tabs
+    document.querySelectorAll('.service-tab').forEach(tab => {
+      tab.classList.remove('active');
+    });
+    
+    document.querySelector(`[data-service="${serviceType}"]`)?.classList.add('active');
+    
+    // Cargar formulario del servicio
+    this.loadServiceForm(serviceType);
+  }
+
+  loadServiceForm(serviceType) {
+    const container = document.getElementById('service-forms');
+    if (!container) return;
+    
+    const forms = {
+      vuelo: this.getFlightForm(),
+      hotel: this.getHotelForm(),
+      traslado: this.getTransferForm(),
+      excursion: this.getExcursionForm()
+    };
+    
+    container.innerHTML = forms[serviceType] || '<p>Formulario no disponible</p>';
+    
+    // Configurar eventos del formulario
+    this.setupServiceFormEvents(serviceType);
+    
+    // Re-inicializar iconos
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
+  }
+
+  getFlightForm() {
+    return `
+      <div class="form-card">
+        <div class="card-header">
+          <h3><i data-lucide="plane"></i> Información del Vuelo</h3>
+        </div>
+        <div class="card-content">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="vuelo-origen">Origen *</label>
+              <input type="text" id="vuelo-origen" class="form-control" placeholder="Buenos Aires (BUE)" required>
+            </div>
+            <div class="form-group">
+              <label for="vuelo-destino">Destino *</label>
+              <input type="text" id="vuelo-destino" class="form-control" placeholder="Miami (MIA)" required>
+            </div>
+            <div class="form-group">
+              <label for="vuelo-fecha">Fecha de Salida *</label>
+              <input type="date" id="vuelo-fecha" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label for="vuelo-precio">Precio *</label>
+              <input type="number" id="vuelo-precio" class="form-control" placeholder="1500" step="0.01" min="0" required>
+            </div>
+            <div class="form-group">
+              <label for="vuelo-pasajeros">Pasajeros</label>
+              <input type="number" id="vuelo-pasajeros" class="form-control" value="1" min="1">
+            </div>
+            <div class="form-group">
+              <label for="vuelo-aerolinea">Aerolínea</label>
+              <input type="text" id="vuelo-aerolinea" class="form-control" placeholder="American Airlines">
+            </div>
+          </div>
+          <div class="form-actions" style="margin-top: var(--spacing-lg);">
+            <button type="button" class="btn btn-primary" onclick="app.addService('vuelo')">
+              <i data-lucide="plus"></i>
+              Agregar Vuelo
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  getHotelForm() {
+    return `
+      <div class="form-card">
+        <div class="card-header">
+          <h3><i data-lucide="building"></i> Información del Hotel</h3>
+        </div>
+        <div class="card-content">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="hotel-nombre">Nombre del Hotel *</label>
+              <input type="text" id="hotel-nombre" class="form-control" placeholder="Hotel Fontainebleau" required>
+            </div>
+            <div class="form-group">
+              <label for="hotel-ciudad">Ciudad</label>
+              <input type="text" id="hotel-ciudad" class="form-control" placeholder="Miami Beach">
+            </div>
+            <div class="form-group">
+              <label for="hotel-checkin">Check-in *</label>
+              <input type="date" id="hotel-checkin" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label for="hotel-checkout">Check-out *</label>
+              <input type="date" id="hotel-checkout" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label for="hotel-precio">Precio Total *</label>
+              <input type="number" id="hotel-precio" class="form-control" placeholder="800" step="0.01" min="0" required>
+            </div>
+            <div class="form-group">
+              <label for="hotel-huespedes">Huéspedes</label>
+              <input type="number" id="hotel-huespedes" class="form-control" value="2" min="1">
+            </div>
+          </div>
+          <div class="form-actions" style="margin-top: var(--spacing-lg);">
+            <button type="button" class="btn btn-primary" onclick="app.addService('hotel')">
+              <i data-lucide="plus"></i>
+              Agregar Hotel
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  getTransferForm() {
+    return `
+      <div class="form-card">
+        <div class="card-header">
+          <h3><i data-lucide="car"></i> Información del Traslado</h3>
+        </div>
+        <div class="card-content">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="traslado-origen">Origen *</label>
+              <input type="text" id="traslado-origen" class="form-control" placeholder="Aeropuerto Internacional" required>
+            </div>
+            <div class="form-group">
+              <label for="traslado-destino">Destino *</label>
+              <input type="text" id="traslado-destino" class="form-control" placeholder="Hotel Fontainebleau" required>
+            </div>
+            <div class="form-group">
+              <label for="traslado-fecha">Fecha</label>
+              <input type="date" id="traslado-fecha" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="traslado-hora">Hora</label>
+              <input type="time" id="traslado-hora" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="traslado-precio">Precio *</label>
+              <input type="number" id="traslado-precio" class="form-control" placeholder="80" step="0.01" min="0" required>
+            </div>
+            <div class="form-group">
+              <label for="traslado-pasajeros">Pasajeros</label>
+              <input type="number" id="traslado-pasajeros" class="form-control" value="2" min="1">
+            </div>
+          </div>
+          <div class="form-actions" style="margin-top: var(--spacing-lg);">
+            <button type="button" class="btn btn-primary" onclick="app.addService('traslado')">
+              <i data-lucide="plus"></i>
+              Agregar Traslado
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  getExcursionForm() {
+    return `
+      <div class="form-card">
+        <div class="card-header">
+          <h3><i data-lucide="map"></i> Información de la Excursión</h3>
+        </div>
+        <div class="card-content">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="excursion-nombre">Nombre de la Excursión *</label>
+              <input type="text" id="excursion-nombre" class="form-control" placeholder="Tour a Chichen Itzá" required>
+            </div>
+            <div class="form-group">
+              <label for="excursion-destino">Destino</label>
+              <input type="text" id="excursion-destino" class="form-control" placeholder="Chichen Itzá, Yucatán">
+            </div>
+            <div class="form-group">
+              <label for="excursion-fecha">Fecha</label>
+              <input type="date" id="excursion-fecha" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="excursion-duracion">Duración (horas)</label>
+              <input type="number" id="excursion-duracion" class="form-control" placeholder="8" min="1">
+            </div>
+            <div class="form-group">
+              <label for="excursion-precio">Precio *</label>
+              <input type="number" id="excursion-precio" class="form-control" placeholder="470" step="0.01" min="0" required>
+            </div>
+            <div class="form-group">
+              <label for="excursion-participantes">Participantes</label>
+              <input type="number" id="excursion-participantes" class="form-control" value="2" min="1">
+            </div>
+          </div>
+          <div class="form-actions" style="margin-top: var(--spacing-lg);">
+            <button type="button" class="btn btn-primary" onclick="app.addService('excursion')">
+              <i data-lucide="plus"></i>
+              Agregar Excursión
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  setupServiceFormEvents(serviceType) {
+    // Aquí se pueden agregar eventos específicos para cada tipo de servicio
+    console.log(`Configurando eventos para servicio: ${serviceType}`);
+  }
+
+  addService(serviceType) {
+    const serviceData = this.getServiceData(serviceType);
+    
+    if (!this.validateServiceData(serviceData, serviceType)) {
+      return;
+    }
+    
+    // Agregar servicio al estado
+    serviceData.id = Date.now();
+    serviceData.type = serviceType;
+    AppState.currentSale.services.push(serviceData);
+    
+    // Actualizar UI
+    this.updateServicesList();
+    this.updateTotals();
+    this.clearServiceForm(serviceType);
+    
+    this.showNotification(`${serviceType} agregado correctamente`, 'success');
+  }
+
+  getServiceData(serviceType) {
+    const baseData = {
+      precio: parseFloat(document.getElementById(`${serviceType}-precio`)?.value) || 0
+    };
+    
+    switch (serviceType) {
+      case 'vuelo':
+        return {
+          ...baseData,
+          origen: document.getElementById('vuelo-origen')?.value?.trim(),
+          destino: document.getElementById('vuelo-destino')?.value?.trim(),
+          fecha: document.getElementById('vuelo-fecha')?.value,
+          pasajeros: parseInt(document.getElementById('vuelo-pasajeros')?.value) || 1,
+          aerolinea: document.getElementById('vuelo-aerolinea')?.value?.trim()
+        };
+      case 'hotel':
+        return {
+          ...baseData,
+          nombre: document.getElementById('hotel-nombre')?.value?.trim(),
+          ciudad: document.getElementById('hotel-ciudad')?.value?.trim(),
+          checkin: document.getElementById('hotel-checkin')?.value,
+          checkout: document.getElementById('hotel-checkout')?.value,
+          huespedes: parseInt(document.getElementById('hotel-huespedes')?.value) || 2
+        };
+      case 'traslado':
+        return {
+          ...baseData,
+          origen: document.getElementById('traslado-origen')?.value?.trim(),
+          destino: document.getElementById('traslado-destino')?.value?.trim(),
+          fecha: document.getElementById('traslado-fecha')?.value,
+          hora: document.getElementById('traslado-hora')?.value,
+          pasajeros: parseInt(document.getElementById('traslado-pasajeros')?.value) || 2
+        };
+      case 'excursion':
+        return {
+          ...baseData,
+          nombre: document.getElementById('excursion-nombre')?.value?.trim(),
+          destino: document.getElementById('excursion-destino')?.value?.trim(),
+          fecha: document.getElementById('excursion-fecha')?.value,
+          duracion: parseInt(document.getElementById('excursion-duracion')?.value) || 0,
+          participantes: parseInt(document.getElementById('excursion-participantes')?.value) || 2
+        };
+      default:
+        return baseData;
+    }
+  }
+
+  validateServiceData(serviceData, serviceType) {
+    if (!serviceData.precio || serviceData.precio <= 0) {
+      this.showNotification('Por favor ingrese un precio válido', 'warning');
+      return false;
+    }
+    
+    // Validaciones específicas por tipo
+    switch (serviceType) {
+      case 'vuelo':
+        if (!serviceData.origen || !serviceData.destino) {
+          this.showNotification('Por favor complete origen y destino del vuelo', 'warning');
+          return false;
+        }
+        break;
+      case 'hotel':
+        if (!serviceData.nombre) {
+          this.showNotification('Por favor ingrese el nombre del hotel', 'warning');
+          return false;
+        }
+        break;
+      case 'traslado':
+        if (!serviceData.origen || !serviceData.destino) {
+          this.showNotification('Por favor complete origen y destino del traslado', 'warning');
+          return false;
+        }
+        break;
+      case 'excursion':
+        if (!serviceData.nombre) {
+          this.showNotification('Por favor ingrese el nombre de la excursión', 'warning');
+          return false;
+        }
+        break;
+    }
+    
+    return true;
+  }
+
+  updateServicesList() {
+    const container = document.getElementById('services-list');
+    if (!container) return;
+    
+    if (AppState.currentSale.services.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <i data-lucide="package"></i>
+          <p>No hay servicios agregados</p>
+          <small>Agregue servicios usando las pestañas de arriba</small>
+        </div>
+      `;
+    } else {
+      const servicesHTML = AppState.currentSale.services.map(service => {
+        const description = this.getServiceDescription(service);
+        
+        return `
+          <div class="service-item" data-id="${service.id}">
+            <div class="service-content">
+              <div class="service-title">${description}</div>
+              <div class="service-price">${this.formatCurrency(service.precio)}</div>
+            </div>
+            <button type="button" class="btn-icon" onclick="app.removeService(${service.id})" title="Eliminar servicio">
+              <i data-lucide="trash-2"></i>
+            </button>
+          </div>
+        `;
+      }).join('');
+      
+      container.innerHTML = servicesHTML;
+    }
+    
+    // Re-inicializar iconos
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
+  }
+
+  getServiceDescription(service) {
+    const icons = {
+      vuelo: '✈️',
+      hotel: '🏨',
+      traslado: '🚗',
+      excursion: '🗺️'
+    };
+    
+    const icon = icons[service.type] || '📦';
+    
+    switch (service.type) {
+      case 'vuelo':
+        return `${icon} Vuelo ${service.origen} → ${service.destino} (${service.pasajeros} pax)`;
+      case 'hotel':
+        return `${icon} ${service.nombre} - ${service.ciudad} (${service.huespedes} huéspedes)`;
+      case 'traslado':
+        return `${icon} ${service.origen} → ${service.destino} (${service.pasajeros} pax)`;
+      case 'excursion':
+        return `${icon} ${service.nombre} (${service.participantes} pax)`;
+      default:
+        return `${icon} Servicio`;
+    }
+  }
+
+  removeService(serviceId) {
+    AppState.currentSale.services = AppState.currentSale.services.filter(s => s.id !== serviceId);
+    this.updateServicesList();
+    this.updateTotals();
+    this.showNotification('Servicio eliminado', 'info');
+  }
+
+  updateTotals() {
+    const subtotal = AppState.currentSale.services.reduce((sum, s) => sum + s.precio, 0);
+    const descuentos = 0; // Por ahora sin descuentos
+    const total = subtotal - descuentos;
+    
+    AppState.currentSale.totals = {
+      subtotal,
+      descuentos,
+      total
+    };
+    
+    // Actualizar UI
+    const elements = {
+      'subtotal': this.formatCurrency(subtotal),
+      'descuentos': this.formatCurrency(descuentos),
+      'total-final': this.formatCurrency(total)
+    };
+    
+    Object.entries(elements).forEach(([id, value]) => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.textContent = value;
+      }
+    });
+  }
+
+  clearServiceForm(serviceType) {
+    const form = document.querySelector('#service-forms .form-card');
+    if (!form) return;
+    
+    form.querySelectorAll('input').forEach(input => {
+      if (input.type === 'number' && input.hasAttribute('value')) {
+        input.value = input.getAttribute('value');
+      } else {
+        input.value = '';
+      }
+    });
+  }
+
+  // ===== ACCIONES PRINCIPALES =====
+  async createSale() {
+    try {
+      this.showLoader('Creando venta...');
+      
+      // Validar datos completos
+      if (!this.validateSaleData()) {
+        this.hideLoader();
+        return;
+      }
+      
+      // Crear venta
+      const saleData = this.buildSaleData();
+      
+      if (AppState.isConnected) {
+        await this.createSaleInDB(saleData);
+      } else {
+        this.createSaleLocally(saleData);
+      }
+      
+      this.showNotification('Venta creada exitosamente', 'success');
+      this.resetSaleForm();
+      this.showTab('dashboard');
+      
+    } catch (error) {
+      console.error('Error creando venta:', error);
+      this.showNotification('Error al crear la venta', 'error');
+    } finally {
+      this.hideLoader();
+    }
+  }
+
+  validateSaleData() {
+    if (!AppState.currentSale.client.nombre) {
+      this.showNotification('Faltan datos del cliente', 'warning');
+      AppState.currentStep = 1;
+      this.updateStepForm();
+      return false;
+    }
+    
+    if (!AppState.currentSale.trip.fechaInicio) {
+      this.showNotification('Faltan datos del viaje', 'warning');
+      AppState.currentStep = 2;
+      this.updateStepForm();
+      return false;
+    }
+    
+    if (AppState.currentSale.services.length === 0) {
+      this.showNotification('Debe agregar al menos un servicio', 'warning');
+      AppState.currentStep = 3;
+      this.updateStepForm();
+      return false;
+    }
+    
+    return true;
+  }
+
+  buildSaleData() {
+    return {
+      numero_venta: this.generateSaleNumber(),
+      cliente: AppState.currentSale.client,
+      viaje: AppState.currentSale.trip,
+      servicios: AppState.currentSale.services,
+      totales: AppState.currentSale.totals,
+      fecha_creacion: new Date().toISOString(),
+      estado: 'pendiente',
+      estado_pago: 'no_pagado'
+    };
+  }
+
+  async createSaleInDB(saleData) {
+    // Implementar creación en Supabase
+    console.log('Creando venta en DB:', saleData);
+    // Por ahora solo log, implementar según estructura de DB
+  }
+
+  createSaleLocally(saleData) {
+    const sales = JSON.parse(localStorage.getItem('nts_sales') || '[]');
+    sales.push({ ...saleData, id: Date.now() });
+    localStorage.setItem('nts_sales', JSON.stringify(sales));
+    console.log('Venta guardada localmente:', saleData);
+  }
+
+  resetSaleForm() {
+    AppState.currentSale = {
+      client: {},
+      trip: {},
+      services: [],
+      totals: { subtotal: 0, descuentos: 0, total: 0 }
+    };
+    
+    AppState.currentStep = 1;
+    this.updateStepForm();
+    this.updateServicesList();
+    this.updateTotals();
+    
+    // Limpiar formularios
+    document.querySelectorAll('.form-control').forEach(input => {
+      input.value = '';
+    });
+  }
+
+  saveDraft() {
+    const draftData = {
+      ...this.buildSaleData(),
+      isDraft: true,
+      lastModified: new Date().toISOString()
+    };
+    
+    localStorage.setItem('nts_draft', JSON.stringify(draftData));
+    this.showNotification('Borrador guardado', 'success');
+  }
+
+  // ===== OTRAS FUNCIONES =====
+  initNewSaleForm() {
+    // Inicializar formulario de nueva venta
+    this.showServiceTab('vuelo');
+    this.updateServicesList();
+    this.updateTotals();
+  }
+
+  refreshDashboard() {
+    this.showLoader('Actualizando dashboard...');
+    
+    setTimeout(() => {
+      this.loadInitialData();
+      this.hideLoader();
+      this.showNotification('Dashboard actualizado', 'success');
+    }, 1000);
+  }
+
+  toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  }
+
+  showNotificationsPanel() {
+    this.showNotification('Panel de notificaciones en desarrollo', 'info');
+  }
+
+  showSettingsPanel() {
+    this.showNotification('Panel de configuración en desarrollo', 'info');
+  }
+
+  updateConnectionStatus(isConnected) {
+    const statusElement = document.getElementById('connection-status');
+    if (!statusElement) return;
+    
+    const indicator = statusElement.querySelector('.status-indicator');
+    const text = statusElement.querySelector('.status-text');
+    
+    if (isConnected) {
+      indicator.className = 'status-indicator online';
+      text.textContent = 'Conectado';
+    } else {
+      indicator.className = 'status-indicator offline';
+      text.textContent = 'Sin conexión';
+    }
+  }
+
+  // ===== UTILIDADES =====
+  showLoader(message = 'Cargando...') {
+    const loader = document.getElementById('app-loader');
+    if (loader) {
+      const text = loader.querySelector('.loader-text');
+      if (text) text.textContent = message;
+      loader.style.display = 'flex';
+    }
+  }
+
+  hideLoader() {
+    const loader = document.getElementById('app-loader');
+    const app = document.getElementById('app');
+    
+    if (loader && app) {
+      loader.style.display = 'none';
+      app.style.display = 'grid';
+    }
+  }
+
+  showNotification(message, type = 'info', duration = 5000) {
+    const container = document.getElementById('notifications-container');
+    if (!container) return;
+    
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+      <div style="display: flex; align-items: center; gap: var(--spacing-sm);">
+        <i data-lucide="${this.getNotificationIcon(type)}"></i>
+        <span>${message}</span>
+      </div>
+      <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; cursor: pointer; padding: 0; margin-left: var(--spacing-md);">
+        <i data-lucide="x"></i>
+      </button>
+    `;
+    
+    container.appendChild(notification);
+    
+    // Animar entrada
+    setTimeout(() => notification.classList.add('show'), 10);
+    
+    // Auto-remover
+    if (duration > 0) {
+      setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+      }, duration);
+    }
+    
+    // Re-inicializar iconos
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
+  }
+
+  getNotificationIcon(type) {
+    const icons = {
+      success: 'check-circle',
+      error: 'x-circle',
+      warning: 'alert-triangle',
+      info: 'info'
+    };
+    return icons[type] || 'info';
+  }
+
+  formatCurrency(amount) {
+    return new Intl.NumberFormat('es-AR', {
+      style: 'currency',
+      currency: 'ARS',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
+  }
+
+  formatRelativeTime(date) {
+    const now = new Date();
+    const past = new Date(date);
+    const diffInHours = Math.floor((now - past) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return 'hace menos de 1 hora';
+    if (diffInHours < 24) return `hace ${diffInHours} horas`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays === 1) return 'hace 1 día';
+    if (diffInDays < 7) return `hace ${diffInDays} días`;
+    
+    return past.toLocaleDateString('es-AR');
+  }
+
+  generateSaleNumber() {
+    const year = new Date().getFullYear();
+    const timestamp = Date.now().toString().slice(-6);
+    return `NTS-${year}-${timestamp}`;
+  }
+}
+
+// ===== INICIALIZACIÓN =====
+let app;
+
+document.addEventListener('DOMContentLoaded', () => {
+  app = new NTSApp();
+});
+
+// ===== EXPORT GLOBAL =====
+window.app = app;
+
+console.log('✅ NTS Sistema v2.0 cargado correctamente');

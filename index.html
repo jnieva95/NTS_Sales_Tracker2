@@ -3,449 +3,552 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NTS - Sistema de Gestión</title>
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="icon" type="image/x-icon" href="images/favicon.ico">
-
-<!-- Flatpickr CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-
-<!-- Flatpickr Theme (opcional - tema más bonito) -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
-
-<!-- Flatpickr JS -->
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+    <title>NTS - Sistema de Gestión Avanzado</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/css/styles.css" as="style">
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" as="style">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
+    
+    <!-- Meta tags for SEO and PWA -->
+    <meta name="description" content="Sistema de gestión de ventas profesional para agencias de viajes">
+    <meta name="theme-color" content="#1a365d">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="NTS Sistema">
 </head>
 <body>
-    <div class="container">
-        <!-- Header con tu logo -->
-        <div class="header">
-            <div class="logo-section">
-                <img src="images/nts-logo.png" alt="NTS Logo" class="logo">
-                <div class="company-info">
-                    <h1>NTS</h1>
-                    <p>NIEVA TRAVEL SERVICES</p>
-                    <span class="subtitle">Sistema de Gestión de Ventas</span>
-                </div>
+    <!-- Loading Screen -->
+    <div id="app-loader" class="app-loader">
+        <div class="loader-content">
+            <div class="loader-logo">
+                <img src="/images/nts-logo.png" alt="NTS" class="loader-logo-img">
             </div>
-        </div>
-
-        <!-- Navegación por pestañas -->
-        <div class="tabs">
-            <button class="tab-button active" onclick="showTab('dashboard')">
-                📊 Dashboard
-            </button>
-            <button class="tab-button" onclick="showTab('nueva-venta')">
-                ➕ Nueva Venta
-            </button>
-            <button class="tab-button" onclick="showTab('ventas')">
-                📋 Ventas
-            </button>
-            <button class="tab-button" onclick="showTab('clientes')">
-                👥 Clientes
-            </button>
-            <button class="tab-button" onclick="showTab('reportes')">
-                📈 Reportes
-            </button>
-        </div>
-
-        <!-- Dashboard -->
-        <div id="dashboard" class="tab-content active">
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon">💰</div>
-                    <div class="stat-info">
-                        <h3>Ventas del Mes</h3>
-                        <p class="stat-value" id="ventas-mes">$0</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">📊</div>
-                    <div class="stat-info">
-                        <h3>Ventas Totales</h3>
-                        <p class="stat-value" id="ventas-total">0</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">⏳</div>
-                    <div class="stat-info">
-                        <h3>Pendientes de Pago</h3>
-                        <p class="stat-value" id="pendientes">0</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">👥</div>
-                    <div class="stat-info">
-                        <h3>Clientes</h3>
-                        <p class="stat-value" id="total-clientes">0</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="recent-sales">
-                <h3>🕒 Ventas Recientes</h3>
-                <div id="ventas-recientes" class="sales-list">
-                    <!-- Las ventas se cargan dinámicamente -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Reemplaza la sección "Nueva Venta" en tu index.html con esto: -->
-
-<!-- Nueva Venta -->
-<div id="nueva-venta" class="tab-content">
-    <div class="form-container">
-        <h3>✈️ Crear Nueva Venta</h3>
-        
-        <!-- Información del Cliente -->
-        <div class="form-section">
-            <h4>👤 Información del Cliente</h4>
-            <div class="form-row">
-                <div>
-                    <label for="cliente-nombre">Nombre Completo *</label>
-                    <input type="text" id="cliente-nombre" placeholder="Ej: Juan Pérez" required>
-                    <small>💡 Escriba para buscar clientes existentes</small>
-                </div>
-                <div>
-                    <label for="cliente-email">Email</label>
-                    <input type="email" id="cliente-email" placeholder="cliente@email.com">
-                </div>
-            </div>
-            <div class="form-row">
-                <div>
-                    <label for="cliente-telefono">Teléfono</label>
-                    <input type="tel" id="cliente-telefono" placeholder="+54 9 11 1234-5678">
-                </div>
-                <div>
-                    <label for="cliente-documento">DNI/Pasaporte</label>
-                    <input type="text" id="cliente-documento" placeholder="12345678">
-                </div>
-            </div>
-            <!-- El select de vendedor se agrega automáticamente por JS -->
-        </div>
-
-        <!-- Información de la Venta -->
-        <div class="form-section">
-            <h4>📋 Información del Viaje</h4>
-            <div class="form-row">
-                <div>
-                    <label for="fecha-viaje-inicio">Fecha de Inicio del Viaje *</label>
-                    <input type="date" id="fecha-viaje-inicio" required>
-                </div>
-                <div>
-                    <label for="fecha-viaje-fin">Fecha de Fin del Viaje</label>
-                    <input type="date" id="fecha-viaje-fin">
-                </div>
-            </div>
-            <div>
-                <label for="observaciones-venta">Observaciones del Viaje</label>
-                <textarea id="observaciones-venta" placeholder="Detalles especiales, notas importantes, comentarios del cliente..."></textarea>
-            </div>
-        </div>
-
-        <!-- Servicios -->
-        <div class="form-section">
-            <h4>🎯 Agregar Servicios al Viaje</h4>
-            <div class="service-tabs">
-                <button type="button" class="service-tab active" onclick="showServiceTab('vuelo')">✈️ Vuelos</button>
-                <button type="button" class="service-tab" onclick="showServiceTab('hotel')">🏨 Hoteles</button>
-                <button type="button" class="service-tab" onclick="showServiceTab('traslado')">🚌 Traslados</button>
-                <button type="button" class="service-tab" onclick="showServiceTab('excursion')">🗺️ Excursiones</button>
-            </div>
-<!-- ✈️ FORMULARIO VUELOS - VERSIÓN LIMPIA SIN DUPLICADOS -->
-<div id="service-vuelo" class="service-form active">
-    <div class="form-row">
-        <div>
-            <label for="vuelo-origen"><strong>🛫 Origen *</strong></label>
-            <input type="text" id="vuelo-origen" placeholder="Buenos Aires (BUE)" required>
-            <small>Ciudad o aeropuerto de origen</small>
-        </div>
-        <div>
-            <label for="vuelo-destino"><strong>🛬 Destino *</strong></label>
-            <input type="text" id="vuelo-destino" placeholder="Miami (MIA)" required>
-            <small>Ciudad o aeropuerto de destino</small>
+            <div class="loader-spinner"></div>
+            <div class="loader-text">Iniciando NTS Sistema...</div>
         </div>
     </div>
+
+    <!-- Main Application -->
+    <div id="app" class="app-container" style="display: none;">
+        <!-- Header mejorado -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="header-brand">
+                    <img src="/images/nts-logo.png" alt="NTS Logo" class="brand-logo">
+                    <div class="brand-info">
+                        <h1 class="brand-title">NTS</h1>
+                        <p class="brand-subtitle">NIEVA TRAVEL SERVICES</p>
+                    </div>
+                </div>
+                
+                <div class="header-actions">
+                    <div class="user-info">
+                        <div class="user-avatar">
+                            <span class="user-initial">U</span>
+                        </div>
+                        <div class="user-details">
+                            <span class="user-name">Usuario</span>
+                            <span class="user-role">Administrador</span>
+                        </div>
+                    </div>
+                    
+                    <div class="header-controls">
+                        <button class="btn-icon" id="notifications-btn" title="Notificaciones">
+                            <i data-lucide="bell"></i>
+                            <span class="notification-badge">3</span>
+                        </button>
+                        <button class="btn-icon" id="settings-btn" title="Configuración">
+                            <i data-lucide="settings"></i>
+                        </button>
+                        <button class="btn-icon" id="fullscreen-btn" title="Pantalla completa">
+                            <i data-lucide="maximize"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Sidebar Navigation -->
+        <aside class="app-sidebar" id="app-sidebar">
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <h3 class="nav-section-title">Principal</h3>
+                    <ul class="nav-list">
+                        <li class="nav-item">
+                            <button class="nav-link active" data-tab="dashboard">
+                                <i data-lucide="layout-dashboard"></i>
+                                <span>Dashboard</span>
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-tab="nueva-venta">
+                                <i data-lucide="plus-circle"></i>
+                                <span>Nueva Venta</span>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="nav-section">
+                    <h3 class="nav-section-title">Gestión</h3>
+                    <ul class="nav-list">
+                        <li class="nav-item">
+                            <button class="nav-link" data-tab="ventas">
+                                <i data-lucide="shopping-cart"></i>
+                                <span>Ventas</span>
+                                <span class="nav-badge">12</span>
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-tab="clientes">
+                                <i data-lucide="users"></i>
+                                <span>Clientes</span>
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-tab="proveedores">
+                                <i data-lucide="building"></i>
+                                <span>Proveedores</span>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="nav-section">
+                    <h3 class="nav-section-title">Análisis</h3>
+                    <ul class="nav-list">
+                        <li class="nav-item">
+                            <button class="nav-link" data-tab="reportes">
+                                <i data-lucide="bar-chart-3"></i>
+                                <span>Reportes</span>
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-tab="analytics">
+                                <i data-lucide="trending-up"></i>
+                                <span>Analytics</span>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="connection-status" id="connection-status">
+                    <div class="status-indicator online"></div>
+                    <span class="status-text">Conectado</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <!-- Dashboard -->
+            <section id="dashboard" class="tab-content active">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h2>Dashboard</h2>
+                        <p>Resumen general del sistema</p>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" id="refresh-dashboard">
+                            <i data-lucide="refresh-cw"></i>
+                            Actualizar
+                        </button>
+                        <button class="btn btn-primary" data-tab="nueva-venta">
+                            <i data-lucide="plus"></i>
+                            Nueva Venta
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card primary">
+                        <div class="stat-icon">
+                            <i data-lucide="dollar-sign"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="ventas-mes">$0</div>
+                            <div class="stat-label">Ventas del Mes</div>
+                            <div class="stat-change positive">
+                                <i data-lucide="trending-up"></i>
+                                +12.5%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card success">
+                        <div class="stat-icon">
+                            <i data-lucide="shopping-bag"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="ventas-total">0</div>
+                            <div class="stat-label">Total Ventas</div>
+                            <div class="stat-change positive">
+                                <i data-lucide="trending-up"></i>
+                                +8.2%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card warning">
+                        <div class="stat-icon">
+                            <i data-lucide="clock"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="pendientes">0</div>
+                            <div class="stat-label">Pendientes</div>
+                            <div class="stat-change negative">
+                                <i data-lucide="trending-down"></i>
+                                -3.1%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card info">
+                        <div class="stat-icon">
+                            <i data-lucide="users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="total-clientes">0</div>
+                            <div class="stat-label">Clientes</div>
+                            <div class="stat-change positive">
+                                <i data-lucide="trending-up"></i>
+                                +5.7%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts and Recent Activity -->
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3>Ventas por Mes</h3>
+                            <div class="card-actions">
+                                <button class="btn-icon" title="Más opciones">
+                                    <i data-lucide="more-horizontal"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <canvas id="sales-chart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3>Actividad Reciente</h3>
+                            <div class="card-actions">
+                                <button class="btn-text" data-tab="ventas">Ver todas</button>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div id="recent-activity" class="activity-list">
+                                <!-- Actividad reciente se carga dinámicamente -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Nueva Venta -->
+            <section id="nueva-venta" class="tab-content">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h2>Nueva Venta</h2>
+                        <p>Crear una nueva venta de viaje</p>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" id="save-draft">
+                            <i data-lucide="save"></i>
+                            Guardar Borrador
+                        </button>
+                        <button class="btn btn-primary" id="create-sale">
+                            <i data-lucide="check"></i>
+                            Crear Venta
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-container">
+                    <!-- Progress Steps -->
+                    <div class="progress-steps">
+                        <div class="step active" data-step="1">
+                            <div class="step-number">1</div>
+                            <div class="step-label">Cliente</div>
+                        </div>
+                        <div class="step" data-step="2">
+                            <div class="step-number">2</div>
+                            <div class="step-label">Viaje</div>
+                        </div>
+                        <div class="step" data-step="3">
+                            <div class="step-number">3</div>
+                            <div class="step-label">Servicios</div>
+                        </div>
+                        <div class="step" data-step="4">
+                            <div class="step-number">4</div>
+                            <div class="step-label">Resumen</div>
+                        </div>
+                    </div>
+
+                    <!-- Step 1: Cliente -->
+                    <div class="form-step active" data-step="1">
+                        <div class="form-card">
+                            <div class="card-header">
+                                <h3>
+                                    <i data-lucide="user"></i>
+                                    Información del Cliente
+                                </h3>
+                            </div>
+                            <div class="card-content">
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="cliente-nombre">Nombre Completo *</label>
+                                        <input type="text" id="cliente-nombre" class="form-control" placeholder="Ingrese el nombre completo" required>
+                                        <div class="form-help">Escriba para buscar clientes existentes</div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="cliente-email">Email</label>
+                                        <input type="email" id="cliente-email" class="form-control" placeholder="cliente@email.com">
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="cliente-telefono">Teléfono</label>
+                                        <input type="tel" id="cliente-telefono" class="form-control" placeholder="+54 9 11 1234-5678">
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="cliente-documento">DNI/Pasaporte</label>
+                                        <input type="text" id="cliente-documento" class="form-control" placeholder="12345678">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Viaje -->
+                    <div class="form-step" data-step="2">
+                        <div class="form-card">
+                            <div class="card-header">
+                                <h3>
+                                    <i data-lucide="map-pin"></i>
+                                    Información del Viaje
+                                </h3>
+                            </div>
+                            <div class="card-content">
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="fecha-viaje-inicio">Fecha de Inicio *</label>
+                                        <input type="date" id="fecha-viaje-inicio" class="form-control" required>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="fecha-viaje-fin">Fecha de Fin</label>
+                                        <input type="date" id="fecha-viaje-fin" class="form-control">
+                                    </div>
+                                    
+                                    <div class="form-group full-width">
+                                        <label for="observaciones-venta">Observaciones del Viaje</label>
+                                        <textarea id="observaciones-venta" class="form-control" rows="4" placeholder="Detalles especiales, notas importantes, comentarios del cliente..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Servicios -->
+                    <div class="form-step" data-step="3">
+                        <div class="services-container">
+                            <div class="services-tabs">
+                                <button class="service-tab active" data-service="vuelo">
+                                    <i data-lucide="plane"></i>
+                                    Vuelos
+                                </button>
+                                <button class="service-tab" data-service="hotel">
+                                    <i data-lucide="building"></i>
+                                    Hoteles
+                                </button>
+                                <button class="service-tab" data-service="traslado">
+                                    <i data-lucide="car"></i>
+                                    Traslados
+                                </button>
+                                <button class="service-tab" data-service="excursion">
+                                    <i data-lucide="map"></i>
+                                    Excursiones
+                                </button>
+                            </div>
+
+                            <!-- Service Forms -->
+                            <div id="service-forms">
+                                <!-- Los formularios de servicios se cargan dinámicamente -->
+                            </div>
+
+                            <!-- Added Services -->
+                            <div class="added-services">
+                                <div class="card-header">
+                                    <h3>
+                                        <i data-lucide="list"></i>
+                                        Servicios Agregados
+                                    </h3>
+                                </div>
+                                <div id="services-list" class="services-list">
+                                    <div class="empty-state">
+                                        <i data-lucide="package"></i>
+                                        <p>No hay servicios agregados</p>
+                                        <small>Agregue servicios usando las pestañas de arriba</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 4: Resumen -->
+                    <div class="form-step" data-step="4">
+                        <div class="summary-container">
+                            <div class="summary-card">
+                                <div class="card-header">
+                                    <h3>
+                                        <i data-lucide="file-text"></i>
+                                        Resumen de la Venta
+                                    </h3>
+                                </div>
+                                <div class="card-content">
+                                    <div id="sale-summary">
+                                        <!-- Resumen se genera dinámicamente -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="total-card">
+                                <div class="total-breakdown">
+                                    <div class="total-row">
+                                        <span>Subtotal:</span>
+                                        <span id="subtotal">$0</span>
+                                    </div>
+                                    <div class="total-row">
+                                        <span>Descuentos:</span>
+                                        <span id="descuentos">$0</span>
+                                    </div>
+                                    <div class="total-row total-final">
+                                        <span>Total Final:</span>
+                                        <span id="total-final">$0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Buttons -->
+                    <div class="form-navigation">
+                        <button class="btn btn-secondary" id="prev-step" style="display: none;">
+                            <i data-lucide="chevron-left"></i>
+                            Anterior
+                        </button>
+                        <button class="btn btn-primary" id="next-step">
+                            Siguiente
+                            <i data-lucide="chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Otras secciones (placeholder) -->
+            <section id="ventas" class="tab-content">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h2>Gestión de Ventas</h2>
+                        <p>Administrar todas las ventas</p>
+                    </div>
+                </div>
+                <div class="coming-soon">
+                    <i data-lucide="construction"></i>
+                    <h3>Próximamente</h3>
+                    <p>Esta sección está en desarrollo</p>
+                </div>
+            </section>
+
+            <section id="clientes" class="tab-content">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h2>Gestión de Clientes</h2>
+                        <p>Administrar base de clientes</p>
+                    </div>
+                </div>
+                <div class="coming-soon">
+                    <i data-lucide="construction"></i>
+                    <h3>Próximamente</h3>
+                    <p>Esta sección está en desarrollo</p>
+                </div>
+            </section>
+
+            <section id="proveedores" class="tab-content">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h2>Gestión de Proveedores</h2>
+                        <p>Administrar proveedores de servicios</p>
+                    </div>
+                </div>
+                <div class="coming-soon">
+                    <i data-lucide="construction"></i>
+                    <h3>Próximamente</h3>
+                    <p>Esta sección está en desarrollo</p>
+                </div>
+            </section>
+
+            <section id="reportes" class="tab-content">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h2>Reportes</h2>
+                        <p>Análisis y reportes del sistema</p>
+                    </div>
+                </div>
+                <div class="coming-soon">
+                    <i data-lucide="construction"></i>
+                    <h3>Próximamente</h3>
+                    <p>Esta sección está en desarrollo</p>
+                </div>
+            </section>
+
+            <section id="analytics" class="tab-content">
+                <div class="page-header">
+                    <div class="page-title">
+                        <h2>Analytics</h2>
+                        <p>Análisis avanzado de datos</p>
+                    </div>
+                </div>
+                <div class="coming-soon">
+                    <i data-lucide="construction"></i>
+                    <h3>Próximamente</h3>
+                    <p>Esta sección está en desarrollo</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notifications-container" class="notifications-container"></div>
+
+    <!-- Modal Container -->
+    <div id="modal-container" class="modal-container"></div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     
-    <div class="form-row">
-        <div>
-            <label for="vuelo-tipo"><strong>📋 Tipo de Itinerario</strong></label>
-            <select id="vuelo-tipo">
-                <option value="ida">Solo Ida</option>
-                <option value="ida_vuelta" selected>Ida y Vuelta</option>
-                <option value="multitramo">Multitramo</option>
-                <option value="stopover">Stopover</option>
-            </select>
-            <small>Seleccione el tipo de viaje</small>
-        </div>
-        <div>
-            <label for="vuelo-descripcion"><strong>📝 Descripción</strong></label>
-            <input type="text" id="vuelo-descripcion" placeholder="Se completa automáticamente...">
-            <small>💡 Se genera automáticamente cuando completes origen y destino</small>
-        </div>
-    </div>
-    
-    <!-- 📍 AQUÍ JS VA A INSERTAR LOS CAMPOS DE FECHA DINÁMICAMENTE -->
-    <div id="campos-fecha-container"></div>
-    <!-- NO AGREGAR NADA DE FECHAS AQUÍ -->
-    
-    <div class="form-row">
-        <div>
-            <label for="vuelo-aerolinea"><strong>✈️ Aerolínea</strong></label>
-            <input type="text" id="vuelo-aerolinea" placeholder="American Airlines">
-            <small>Nombre de la aerolínea</small>
-        </div>
-        <div>
-            <label for="vuelo-clase"><strong>💺 Clase de Vuelo</strong></label>
-            <select id="vuelo-clase">
-                <option value="economica">Económica</option>
-                <option value="premium_economy">Premium Economy</option>
-                <option value="business">Business</option>
-                <option value="primera_clase">Primera Clase</option>
-            </select>
-            <small>Clase del boleto</small>
-        </div>
-    </div>
-    
-    <div class="form-row">
-        <div>
-            <label for="vuelo-precio"><strong>💰 Precio de Venta *</strong></label>
-            <input type="number" id="vuelo-precio" placeholder="1500" step="0.01" min="0" required>
-            <small>Precio final al cliente</small>
-        </div>
-        <div>
-            <label for="vuelo-pasajeros"><strong>👥 Cantidad de Pasajeros</strong></label>
-            <input type="number" id="vuelo-pasajeros" placeholder="2" min="1" value="2">
-            <small>Número total de pasajeros</small>
-        </div>
-    </div>
-    
-    <button type="button" class="btn-add-service" data-service="vuelo">➕ Agregar Vuelo</button>
-</div>
-            <!-- Formulario Hoteles MEJORADO -->
-            <div id="service-hotel" class="service-form">
-                <div class="form-row">
-                    <div>
-                        <label for="hotel-nombre">Nombre del Hotel *</label>
-                        <input type="text" id="hotel-nombre" placeholder="Hotel Fontainebleau">
-                    </div>
-                    <div>
-                        <label for="hotel-ciudad">Ciudad</label>
-                        <input type="text" id="hotel-ciudad" placeholder="Miami Beach">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div>
-                        <label for="hotel-checkin">Check-in *</label>
-                        <input type="date" id="hotel-checkin">
-                    </div>
-                    <div>
-                        <label for="hotel-checkout">Check-out *</label>
-                        <input type="date" id="hotel-checkout">
-                    </div>
-                </div>
-                <!-- Fila de proveedor y costos se agrega automáticamente por JS -->
-                <div class="form-row">
-                    <div>
-                        <label for="hotel-precio">Precio Total de Estadía *</label>
-                        <input type="number" id="hotel-precio" placeholder="800" step="0.01" min="0">
-                    </div>
-                    <div>
-                        <label for="hotel-huespedes">Cantidad de Huéspedes</label>
-                        <input type="number" id="hotel-huespedes" placeholder="2" min="1" value="2">
-                    </div>
-                </div>
-                <button type="button" class="btn-add-service" data-service="hotel">➕ Agregar Hotel</button>
-            </div>
-
-            <!-- Formulario Traslados MEJORADO -->
-            <div id="service-traslado" class="service-form">
-                <div class="form-row">
-                    <div>
-                        <label for="traslado-origen">Origen *</label>
-                        <input type="text" id="traslado-origen" placeholder="Aeropuerto Internacional">
-                    </div>
-                    <div>
-                        <label for="traslado-destino">Destino *</label>
-                        <input type="text" id="traslado-destino" placeholder="Hotel Fontainebleau">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div>
-                        <label for="traslado-fecha">Fecha del Traslado</label>
-                        <input type="date" id="traslado-fecha">
-                    </div>
-                    <div>
-                        <label for="traslado-hora">Hora Estimada</label>
-                        <input type="time" id="traslado-hora">
-                    </div>
-                </div>
-                <!-- Fila de proveedor y costos se agrega automáticamente por JS -->
-                <div class="form-row">
-                    <div>
-                        <label for="traslado-precio">Precio del Traslado *</label>
-                        <input type="number" id="traslado-precio" placeholder="80" step="0.01" min="0">
-                    </div>
-                    <div>
-                        <label for="traslado-pasajeros">Cantidad de Pasajeros</label>
-                        <input type="number" id="traslado-pasajeros" placeholder="2" min="1" value="2">
-                    </div>
-                </div>
-                <button type="button" class="btn-add-service" data-service="traslado">➕ Agregar Traslado</button>
-            </div>
-
-            <!-- Formulario Excursiones MEJORADO -->
-            <div id="service-excursion" class="service-form">
-                <div class="form-row">
-                    <div>
-                        <label for="excursion-nombre">Nombre de la Excursión *</label>
-                        <input type="text" id="excursion-nombre" placeholder="Tour a Chichen Itzá">
-                    </div>
-                    <div>
-                        <label for="excursion-fecha">Fecha de la Excursión</label>
-                        <input type="date" id="excursion-fecha">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div>
-                        <label for="excursion-destino">Lugar de Destino</label>
-                        <input type="text" id="excursion-destino" placeholder="Chichen Itzá, Yucatán">
-                    </div>
-                    <div>
-                        <label for="excursion-duracion">Duración (horas)</label>
-                        <input type="number" id="excursion-duracion" placeholder="8" min="1">
-                    </div>
-                </div>
-                <!-- Fila de proveedor y costos se agrega automáticamente por JS -->
-                <div class="form-row">
-                    <div>
-                        <label for="excursion-precio">Precio de la Excursión *</label>
-                        <input type="number" id="excursion-precio" placeholder="470" step="0.01" min="0">
-                    </div>
-                    <div>
-                        <label for="excursion-participantes">Cantidad de Participantes</label>
-                        <input type="number" id="excursion-participantes" placeholder="2" min="1" value="2">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="checkbox-group">
-                        <label>
-                            <input type="checkbox" id="excursion-almuerzo"> Incluye Almuerzo
-                        </label>
-                    </div>
-                    <div class="checkbox-group">
-                        <label>
-                            <input type="checkbox" id="excursion-transporte"> Incluye Transporte
-                        </label>
-                    </div>
-                </div>
-                <button type="button" class="btn-add-service" data-service="excursion">➕ Agregar Excursión</button>
-            </div>
-        </div>
-
-        <!-- Servicios Agregados -->
-        <div class="form-section">
-            <h4>📝 Servicios Agregados al Viaje</h4>
-            <div id="servicios-lista" class="services-list">
-                <p class="no-services">No hay servicios agregados</p>
-            </div>
-            <div class="total-section">
-                <p class="total-amount">Total: $<span id="total-venta">0</span></p>
-            </div>
-        </div>
-
-        <!-- Botones de Acción -->
-        <div class="form-actions">
-            <button type="button" onclick="limpiarFormulario()" class="btn-secondary">🗑️ Limpiar Todo</button>
-            <button type="button" onclick="crearVenta()" class="btn-primary">💾 Crear Venta</button>
-        </div>
-    </div>
-</div>
-
-        <!-- Lista de Ventas -->
-        <div id="ventas" class="tab-content">
-            <div class="section-header">
-                <h3>📋 Gestión de Ventas</h3>
-                <div class="filters">
-                    <input type="text" id="buscar-venta" placeholder="🔍 Buscar por cliente o número..." onkeyup="filtrarVentas()">
-                    <select id="filtro-estado" onchange="filtrarVentas()">
-                        <option value="">Todos los estados</option>
-                        <option value="pendiente">Pendiente</option>
-                        <option value="confirmada">Confirmada</option>
-                        <option value="pagada">Pagada</option>
-                        <option value="cancelada">Cancelada</option>
-                    </select>
-                </div>
-            </div>
-            <div id="lista-ventas" class="ventas-grid">
-                <!-- Las ventas se cargan dinámicamente -->
-            </div>
-        </div>
-
-        <!-- Clientes -->
-        <div id="clientes" class="tab-content">
-            <div class="section-header">
-                <h3>👥 Gestión de Clientes</h3>
-                <button onclick="mostrarFormularioCliente()" class="btn-primary">➕ Nuevo Cliente</button>
-            </div>
-            <div id="lista-clientes" class="clientes-grid">
-                <!-- Los clientes se cargan dinámicamente -->
-            </div>
-        </div>
-
-        <!-- Reportes -->
-        <div id="reportes" class="tab-content">
-            <div class="section-header">
-                <h3>📈 Reportes y Estadísticas</h3>
-            </div>
-            <div class="reportes-grid">
-                <div class="reporte-card">
-                    <h4>💰 Ventas por Mes</h4>
-                    <canvas id="chart-ventas-mes"></canvas>
-                </div>
-                <div class="reporte-card">
-                    <h4>🎯 Servicios Más Vendidos</h4>
-                    <canvas id="chart-servicios"></canvas>
-                </div>
-                <div class="reporte-card">
-                    <h4>📊 Estado de Pagos</h4>
-                    <div id="estado-pagos" class="payment-stats">
-                        <!-- Estadísticas de pagos -->
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal para detalles de venta -->
-    <div id="modal-detalle" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="cerrarModal()">&times;</span>
-            <div id="detalle-venta-content">
-                <!-- Contenido del detalle se carga dinámicamente -->
-            </div>
-        </div>
-    </div>
-
-   <!-- SCRIPTS EN ORDEN CORRECTO -->
-<!-- 1. Supabase CDN (PRIMERO) -->
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-
-<!-- 2. Configuración (SEGUNDO) -->
-<script src="js/config.js"></script>
-
-<!-- 3. Utilidades (TERCERO) - ¡IMPORTANTE! -->
-<script src="js/utils.js"></script>
-
-<!-- 4. Módulo de Ventas (CUARTO) -->
-<script src="js/modules/ventas.js"></script>
-
-<!-- 5. Aplicación principal (ÚLTIMO) -->
-<script src="js/app.js"></script>
-
-</body>
-</html>
-
+    <!-- App Scripts -->
+    <script type="module" src="/js/main.js"></script>
 </body>
 </html>
