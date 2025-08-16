@@ -924,7 +924,7 @@ class NTSApp {
       <input type="text" class="form-control segment-aeropuerto-escala" placeholder="Aerop. Escala">
       <input type="text" class="form-control segment-duracion-escala" placeholder="Duración Escala">
       <input type="text" class="form-control segment-tiempo-siguiente" placeholder="Tiempo Siguiente">
-      <input type="text" class="form-control segment-descripcion" placeholder="Descripción">
+      <input type="text" class="form-control segment-observaciones" placeholder="Observaciones">
       <button type="button" class="btn btn-danger remove-segment">&times;</button>
     `;
     return row;
@@ -973,7 +973,7 @@ class NTSApp {
           aeropuerto_escala: row.querySelector('.segment-aeropuerto-escala')?.value?.trim() || null,
           duracion_escala: row.querySelector('.segment-duracion-escala')?.value?.trim() || null,
           tiempo_hasta_siguiente_vuelo: row.querySelector('.segment-tiempo-siguiente')?.value?.trim() || null,
-          descripcion: row.querySelector('.segment-descripcion')?.value?.trim() || null
+          observaciones: row.querySelector('.segment-observaciones')?.value?.trim() || null
         }));
         return {
           ...baseData,
@@ -1313,7 +1313,7 @@ class NTSApp {
             aerolinea: seg.aerolinea,
             numero_vuelo: seg.numero_vuelo,
             clase: seg.clase,
-            descripcion: seg.descripcion
+            observaciones: seg.observaciones
           }));
           const { error: segError } = await AppState.supabase
             .from('venta_vuelo_segmentos')
