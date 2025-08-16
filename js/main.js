@@ -82,10 +82,78 @@ function updateVueloTypeSelect() {
   select.value = 'ida_vuelta';
 }
 
+// Generar descripción automática para vuelos garantizando un valor válido
+function generateVueloDescripcion(servicioData) {
+  const origen = servicioData.origen || '';
+  const destino = servicioData.destino || '';
+  const aerolinea = servicioData.aerolinea || '';
+  const tipoItinerario = servicioData.tipo_itinerario || 'ida_vuelta';
+
+  if (servicioData.descripcion && servicioData.descripcion.trim()) {
+    return servicioData.descripcion.trim();
+  }
+
+  let descripcion = '';
+  if (origen && destino) {
+    switch (tipoItinerario) {
+      case 'ida':
+        descripcion = `Vuelo ${origen} → ${destino}`;
+        break;
+      case 'ida_vuelta':
+        descripcion = `Vuelo ${origen} ⇄ ${destino}`;
+        break;
+      case 'multitramo':
+        descripcion = `Vuelo multitramo desde ${origen}`;
+        break;
+      case 'stopover':
+        descripcion = `Vuelo ${origen} → ${destino} (con escala)`;
+        break;
+      default:
+        descripcion = `Vuelo ${origen} → ${destino}`;
+    }
+    if (aerolinea) {
+      descripcion += ` - ${aerolinea}`;
+    }
+    if (servicioData.pasajeros && servicioData.pasajeros > 1) {
+      descripcion += ` (${servicioData.pasajeros} pax)`;
+    }
+  } else {
+    descripcion = `Vuelo${aerolinea ? ' - ' + aerolinea : ''}`;
+  }
+  return descripcion;
+}
+
+// Validar datos obligatorios del vuelo y probar generación de descripción
+function validateVueloData(servicioData) {
+  const errors = [];
+  if (!servicioData.origen || servicioData.origen.trim() === '') {
+    errors.push('Origen es obligatorio');
+  }
+  if (!servicioData.destino || servicioData.destino.trim() === '') {
+    errors.push('Destino es obligatorio');
+  }
+  if (!servicioData.precio_venta || servicioData.precio_venta <= 0) {
+    errors.push('Precio debe ser mayor a 0');
+  }
+
+  const descripcionTest = generateVueloDescripcion(servicioData);
+  if (!descripcionTest || descripcionTest.trim() === '') {
+    errors.push('No se puede generar descripción válida');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    descripcionGenerada: descripcionTest
+  };
+}
+
 // Exponer helpers para depuración
 window.TIPO_ITINERARIO_MAP = TIPO_ITINERARIO_MAP;
 window.getValidTipoItinerario = getValidTipoItinerario;
 window.updateVueloTypeSelect = updateVueloTypeSelect;
+window.generateVueloDescripcion = generateVueloDescripcion;
+window.validateVueloData = validateVueloData;
 
 // ===== INICIALIZACIÓN =====
 class NTSApp {
@@ -809,6 +877,10 @@ class NTSApp {
               <select id="vuelo-tipo" class="form-control"></select>
             </div>
             <div class="form-group full-width">
+              <label for="vuelo-descripcion">Descripción</label>
+              <input type="text" id="vuelo-descripcion" class="form-control" placeholder="Descripción del vuelo">
+            </div>
+            <div class="form-group full-width">
               <label><strong>Tramos del Vuelo</strong></label>
               <div id="segments-container"></div>
               <button type="button" class="btn btn-secondary" id="add-segment-btn" style="margin-top: var(--spacing-sm);">
@@ -1064,13 +1136,28 @@ class NTSApp {
           tiempo_hasta_siguiente_vuelo: row.querySelector('.segment-tiempo-siguiente')?.value?.trim() || null,
           observaciones: row.querySelector('.segment-observaciones')?.value?.trim() || null
         }));
+
+        const origen = document.getElementById('vuelo-origen')?.value?.trim();
+        const destino = document.getElementById('vuelo-destino')?.value?.trim();
+        const descripcionManual = document.getElementById('vuelo-descripcion')?.value?.trim() || '';
+        const pasajeros = parseInt(document.getElementById('vuelo-pasajeros')?.value) || 1;
+        const tipoItinerario = getValidTipoItinerario(document.getElementById('vuelo-tipo')?.value);
+        let aerolinea = document.getElementById('vuelo-aerolinea')?.value?.trim() || '';
+        if (!aerolinea && segmentos.length > 0) {
+          aerolinea = segmentos[0].aerolinea || '';
+        }
+        const tempData = { origen, destino, aerolinea, tipo_itinerario: tipoItinerario, pasajeros, descripcion: descripcionManual };
+        const descripcionFinal = generateVueloDescripcion(tempData);
+
         return {
           ...baseData,
           precio_costo: parseFloat(document.getElementById('vuelo-precio-costo')?.value) || 0,
-          origen: document.getElementById('vuelo-origen')?.value?.trim(),
-          destino: document.getElementById('vuelo-destino')?.value?.trim(),
-          pasajeros: parseInt(document.getElementById('vuelo-pasajeros')?.value) || 1,
-          tipo_itinerario: getValidTipoItinerario(document.getElementById('vuelo-tipo')?.value),
+          origen,
+          destino,
+          pasajeros,
+          tipo_itinerario: tipoItinerario,
+          aerolinea,
+          descripcion: descripcionFinal,
           segmentos
         };
       case 'hotel':
@@ -1106,28 +1193,33 @@ class NTSApp {
   }
 
   validateServiceData(serviceData, serviceType) {
-    if (!serviceData.precio || serviceData.precio <= 0) {
-      this.showNotification('Por favor ingrese un precio válido', 'warning');
+    console.log(`🔍 Validando datos del servicio ${serviceType}:`, serviceData);
+
+    if (serviceType === 'vuelo') {
+      const validation = validateVueloData(serviceData);
+      if (!validation.isValid) {
+        console.error('Errores de validación:', validation.errors);
+        this.showNotification('Errores: ' + validation.errors.join(', '), 'warning');
+        return false;
+      }
+      if (!serviceData.segmentos || serviceData.segmentos.length === 0) {
+        this.showNotification('Agregue al menos un tramo de vuelo', 'warning');
+        return false;
+      }
+      const invalid = serviceData.segmentos.some(s => !s.aeropuerto_origen || !s.aeropuerto_destino);
+      if (invalid) {
+        this.showNotification('Complete origen y destino en todos los tramos', 'warning');
+        return false;
+      }
+      return true;
+    }
+
+    if (!serviceData.precio_venta || serviceData.precio_venta <= 0) {
+      this.showNotification('Por favor ingrese un precio de venta válido', 'warning');
       return false;
     }
-    
-    // Validaciones específicas por tipo
+
     switch (serviceType) {
-      case 'vuelo':
-        if (!serviceData.origen || !serviceData.destino) {
-          this.showNotification('Por favor complete origen y destino del vuelo', 'warning');
-          return false;
-        }
-        if (!serviceData.segmentos || serviceData.segmentos.length === 0) {
-          this.showNotification('Agregue al menos un tramo de vuelo', 'warning');
-          return false;
-        }
-        const invalid = serviceData.segmentos.some(s => !s.aeropuerto_origen || !s.aeropuerto_destino);
-        if (invalid) {
-          this.showNotification('Complete origen y destino en todos los tramos', 'warning');
-          return false;
-        }
-        break;
       case 'hotel':
         if (!serviceData.nombre) {
           this.showNotification('Por favor ingrese el nombre del hotel', 'warning');
@@ -1147,7 +1239,7 @@ class NTSApp {
         }
         break;
     }
-    
+
     return true;
   }
 
@@ -1201,7 +1293,7 @@ class NTSApp {
     
     switch (service.type) {
       case 'vuelo':
-        return `${icon} Vuelo ${service.origen} → ${service.destino} (${service.pasajeros} pax)`;
+        return `${icon} ${service.descripcion}`;
       case 'hotel':
         return `${icon} ${service.nombre} - ${service.ciudad} (${service.huespedes} huéspedes)`;
       case 'traslado':
@@ -1383,19 +1475,25 @@ class NTSApp {
       console.log(`Creando servicio ${servicio.type} para venta ${ventaId}:`, servicio);
 
       if (servicio.type === 'vuelo') {
+        const descripcionFinal = servicio.descripcion && servicio.descripcion.trim()
+          ? servicio.descripcion.trim()
+          : generateVueloDescripcion(servicio);
+
         const vueloData = {
           venta_id: ventaId,
-          origen: servicio.origen || '',
-          destino: servicio.destino || ''
+          descripcion: descripcionFinal,
+          origen: servicio.origen || 'No especificado',
+          destino: servicio.destino || 'No especificado',
+          tipo_itinerario: getValidTipoItinerario(servicio.tipo_itinerario)
         };
 
         if (servicio.pasajeros) vueloData.pasajeros = servicio.pasajeros;
-        if (servicio.tipo_itinerario) vueloData.tipo_itinerario = servicio.tipo_itinerario;
+        if (servicio.aerolinea) vueloData.aerolinea = servicio.aerolinea;
+        if (servicio.clase_vuelo) vueloData.clase_vuelo = servicio.clase_vuelo;
         if (servicio.precio_venta !== undefined) vueloData.precio_venta = servicio.precio_venta;
         if (servicio.precio !== undefined && vueloData.precio_venta === undefined) vueloData.precio_venta = servicio.precio;
         if (servicio.precio_costo) vueloData.precio_costo = servicio.precio_costo;
         if (servicio.proveedor_id) vueloData.proveedor_id = servicio.proveedor_id;
-        if (servicio.descripcion) vueloData.descripcion = servicio.descripcion;
         if (servicio.itinerario_observaciones) vueloData.itinerario_observaciones = servicio.itinerario_observaciones;
 
         console.log('Datos del vuelo para DB (sin fecha):', vueloData);
