@@ -508,7 +508,7 @@ class NTSApp {
       if (!AppState.isConnected) return;
       let query = AppState.supabase
         .from('clientes')
-        .select('id, nombre, email, telefono, dni, dni_expiracion, pasaporte, pasaporte_expiracion');
+        .select('id, nombre, email, telefono, "Dni":dni, dni_expiracion, "Pasaporte":pasaporte, pasaporte_expiracion');
       if (search) {
         query = query.ilike('nombre', `%${search}%`);
       } else {
@@ -644,10 +644,11 @@ class NTSApp {
     let client = AppState.clientes.find(c => c[type] === value);
     if (!client && AppState.isConnected) {
       try {
+        const column = type === 'dni' ? 'Dni' : 'Pasaporte';
         const { data } = await AppState.supabase
           .from('clientes')
-          .select('id, nombre, email, telefono, dni, dni_expiracion, pasaporte, pasaporte_expiracion')
-          .eq(type, value)
+          .select('id, nombre, email, telefono, "Dni":dni, dni_expiracion, "Pasaporte":pasaporte, pasaporte_expiracion')
+          .eq(column, value)
           .maybeSingle();
         if (data) {
           client = data;
@@ -698,9 +699,9 @@ class NTSApp {
         nombre: document.getElementById('nuevo-cliente-nombre')?.value.trim(),
         email: document.getElementById('nuevo-cliente-email')?.value.trim() || null,
         telefono: document.getElementById('nuevo-cliente-telefono')?.value.trim() || null,
-        dni: document.getElementById('nuevo-cliente-dni')?.value.trim() || null,
+        Dni: document.getElementById('nuevo-cliente-dni')?.value.trim() || null,
         dni_expiracion: document.getElementById('nuevo-cliente-dni-exp')?.value || null,
-        pasaporte: document.getElementById('nuevo-cliente-pasaporte')?.value.trim() || null,
+        Pasaporte: document.getElementById('nuevo-cliente-pasaporte')?.value.trim() || null,
         pasaporte_expiracion: document.getElementById('nuevo-cliente-pasaporte-exp')?.value || null,
         direccion: document.getElementById('nuevo-cliente-direccion')?.value.trim() || null,
         ciudad: document.getElementById('nuevo-cliente-ciudad')?.value.trim() || null,

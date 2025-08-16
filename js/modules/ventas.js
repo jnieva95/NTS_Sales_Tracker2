@@ -916,15 +916,22 @@ async function crearVentaEnDB(ventaData) {
         if (ventaData.cliente.esExistente && ventaData.cliente.id) {
             clienteId = ventaData.cliente.id;
         } else {
+            const clienteInsert = {
+                nombre: ventaData.cliente.nombre,
+                email: ventaData.cliente.email,
+                telefono: ventaData.cliente.telefono,
+                vendedor_id: ventaData.cliente.vendedor_id
+            };
+            if (ventaData.cliente.documento_tipo === 'dni') {
+                clienteInsert.Dni = ventaData.cliente.documento_numero;
+                clienteInsert.dni_expiracion = ventaData.cliente.documento_expiracion;
+            } else {
+                clienteInsert.Pasaporte = ventaData.cliente.documento_numero;
+                clienteInsert.pasaporte_expiracion = ventaData.cliente.documento_expiracion;
+            }
             const { data: nuevoCliente, error: clienteError } = await supabase
                 .from('clientes')
-                .insert({
-                    nombre: ventaData.cliente.nombre,
-                    email: ventaData.cliente.email,
-                    telefono: ventaData.cliente.telefono,
-                    documento: ventaData.cliente.documento,
-                    vendedor_id: ventaData.cliente.vendedor_id
-                })
+                .insert(clienteInsert)
                 .select()
                 .single();
             
