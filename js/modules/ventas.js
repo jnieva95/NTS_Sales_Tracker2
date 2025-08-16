@@ -1,7 +1,7 @@
-// 💰 MÓDULO DE VENTAS - VERSIÓN FINAL FUNCIONAL
+// 💰 MÓDULO DE VENTAS - VERSIÓN COMPLETA CON FLATPICKR
 // Archivo: js/modules/ventas.js
 
-console.log('💰 Cargando módulo de ventas (versión final)...');
+console.log('💰 Cargando módulo de ventas (versión con Flatpickr)...');
 
 // ===== ESTADO DEL MÓDULO =====
 const VentasModule = {
@@ -129,45 +129,8 @@ function setupVentasUI() {
     // Actualizar descripción de vuelos automáticamente
     setupVueloDescriptionUpdate();
     
-    // Configurar campos de fecha/hora para vuelos
-    setupVueloDateTimeFields();
-}
-
-function setupVueloDateTimeFields() {
-    const tipoItinerario = document.getElementById('vuelo-tipo');
-    const regresoRow = document.getElementById('vuelo-regreso-row');
-    
-    if (tipoItinerario && regresoRow) {
-        // Mostrar/ocultar campos de regreso según el tipo
-        tipoItinerario.addEventListener('change', function() {
-            if (this.value === 'ida_vuelta') {
-                regresoRow.style.display = 'block';
-            } else {
-                regresoRow.style.display = 'none';
-                // Limpiar campos de regreso
-                document.getElementById('vuelo-fecha-regreso').value = '';
-                document.getElementById('vuelo-llegada-regreso').value = '';
-            }
-        });
-        
-        // Configurar fecha mínima (no puede ser en el pasado)
-        const now = new Date();
-        const minDateTime = now.toISOString().slice(0, 16); // Formato YYYY-MM-DDTHH:MM
-        
-        const fechaSalida = document.getElementById('vuelo-fecha-salida');
-        const fechaLlegada = document.getElementById('vuelo-fecha-llegada');
-        const fechaRegreso = document.getElementById('vuelo-fecha-regreso');
-        
-        if (fechaSalida) {
-            fechaSalida.min = minDateTime;
-            
-            // Cuando cambie la fecha de salida, actualizar mínimos
-            fechaSalida.addEventListener('change', function() {
-                if (fechaLlegada) fechaLlegada.min = this.value;
-                if (fechaRegreso) fechaRegreso.min = this.value;
-            });
-        }
-    }
+    // Configurar Flatpickr
+    setupFlatpickrFields();
 }
 
 function createVendedorSelect() {
@@ -265,7 +228,7 @@ function createProveedorSelects() {
         proveedorRow.className = 'form-row';
         proveedorRow.style.marginTop = '15px';
         proveedorRow.style.paddingTop = '15px';
-        proveedorRow.style.borderTop = '1px solid #e9ecef';
+        proveedorRow.style.borderTop = '1px solid #e2e8f0';
         
         proveedorRow.innerHTML = `
             <div>
@@ -329,6 +292,114 @@ function setupVueloDescriptionUpdate() {
     
     origenInput.addEventListener('input', updateDescription);
     destinoInput.addEventListener('input', updateDescription);
+}
+
+// ===== CONFIGURAR FLATPICKR =====
+function setupFlatpickrFields() {
+    console.log('📅 Configurando Flatpickr...');
+    
+    // Verificar que Flatpickr esté disponible
+    if (typeof flatpickr === 'undefined') {
+        console.error('❌ Flatpickr no está cargado');
+        return;
+    }
+    
+    // Configuración base para español
+    const flatpickrConfig = {
+        enableTime: true,
+        dateFormat: "Y-m-d H:i",
+        time_24hr: true,
+        minDate: "today",
+        locale: "es",
+        allowInput: false,
+        clickOpens: true,
+        theme: "material_blue"
+    };
+    
+    // Inicializar campo de salida
+    const salidaField = document.getElementById('vuelo-fecha-salida-flat');
+    if (salidaField) {
+        flatpickr(salidaField, {
+            ...flatpickrConfig,
+            placeholder: "📅 Seleccionar fecha y hora de salida...",
+            onChange: function(selectedDates, dateStr) {
+                // Actualizar fecha mínima de llegada
+                const llegadaField = document.getElementById('vuelo-fecha-llegada-flat');
+                if (llegadaField && llegadaField._flatpickr) {
+                    llegadaField._flatpickr.set('minDate', dateStr);
+                }
+                
+                // Actualizar fecha mínima de regreso
+                const regresoField = document.getElementById('vuelo-fecha-regreso-flat');
+                if (regresoField && regresoField._flatpickr) {
+                    regresoField._flatpickr.set('minDate', dateStr);
+                }
+            }
+        });
+    }
+    
+    // Inicializar campo de llegada
+    const llegadaField = document.getElementById('vuelo-fecha-llegada-flat');
+    if (llegadaField) {
+        flatpickr(llegadaField, {
+            ...flatpickrConfig,
+            placeholder: "📅 Seleccionar fecha y hora de llegada..."
+        });
+    }
+    
+    // Inicializar campo de regreso
+    const regresoField = document.getElementById('vuelo-fecha-regreso-flat');
+    if (regresoField) {
+        flatpickr(regresoField, {
+            ...flatpickrConfig,
+            placeholder: "📅 Seleccionar fecha y hora de regreso...",
+            onChange: function(selectedDates, dateStr) {
+                // Actualizar fecha mínima de llegada del regreso
+                const llegadaRegresoField = document.getElementById('vuelo-fecha-llegada-regreso-flat');
+                if (llegadaRegresoField && llegadaRegresoField._flatpickr) {
+                    llegadaRegresoField._flatpickr.set('minDate', dateStr);
+                }
+            }
+        });
+    }
+    
+    // Inicializar campo de llegada del regreso
+    const llegadaRegresoField = document.getElementById('vuelo-fecha-llegada-regreso-flat');
+    if (llegadaRegresoField) {
+        flatpickr(llegadaRegresoField, {
+            ...flatpickrConfig,
+            placeholder: "📅 Seleccionar fecha y hora de llegada del regreso..."
+        });
+    }
+    
+    // Configurar lógica de mostrar/ocultar regreso
+    const tipoSelect = document.getElementById('vuelo-tipo');
+    const regresoRow = document.getElementById('vuelo-regreso-flat-row');
+    
+    if (tipoSelect && regresoRow) {
+        function toggleRegresoFields() {
+            if (tipoSelect.value === 'ida_vuelta') {
+                regresoRow.style.display = 'flex';
+            } else {
+                regresoRow.style.display = 'none';
+                // Limpiar campos de regreso
+                if (regresoField && regresoField._flatpickr) {
+                    regresoField._flatpickr.clear();
+                }
+                if (llegadaRegresoField && llegadaRegresoField._flatpickr) {
+                    llegadaRegresoField._flatpickr.clear();
+                }
+            }
+        }
+        
+        // Configurar al cambiar tipo
+        tipoSelect.addEventListener('change', toggleRegresoFields);
+        
+        // Ejecutar al cargar
+        toggleRegresoFields();
+    }
+    
+    console.log('✅ Flatpickr configurado correctamente');
 }
 
 // ===== CONFIGURAR EVENTOS =====
@@ -421,7 +492,7 @@ function getServiceFormData(tipo) {
             const destino = document.getElementById('vuelo-destino')?.value?.trim() || '';
             const descripcionManual = document.getElementById('vuelo-descripcion')?.value?.trim();
             
-            // Generar descripción automática si no hay una manual
+            // Generar descripción automática
             let descripcion = descripcionManual;
             if (!descripcion && origen && destino) {
                 descripcion = `Vuelo ${origen} → ${destino}`;
@@ -434,16 +505,14 @@ function getServiceFormData(tipo) {
                 destino: destino,
                 tipo_itinerario: document.getElementById('vuelo-tipo')?.value || 'ida_vuelta',
                 aerolinea: document.getElementById('vuelo-aerolinea')?.value?.trim() || '',
+                clase_vuelo: document.getElementById('vuelo-clase')?.value || 'economica',
                 pasajeros: parseInt(document.getElementById('vuelo-pasajeros')?.value) || 1,
                 
-                // Fechas y horas (convertir datetime-local a ISO)
-                fecha_hora_salida: document.getElementById('vuelo-fecha-salida')?.value || null,
-                fecha_hora_llegada: document.getElementById('vuelo-fecha-llegada')?.value || null,
-                fecha_hora_regreso: document.getElementById('vuelo-fecha-regreso')?.value || null,
-                fecha_hora_llegada_regreso: document.getElementById('vuelo-llegada-regreso')?.value || null,
-                
-                // Campos adicionales
-                clase_vuelo: document.getElementById('vuelo-clase')?.value || 'economica'
+                // Fechas y horas de Flatpickr
+                fecha_hora_salida: document.getElementById('vuelo-fecha-salida-flat')?.value || null,
+                fecha_hora_llegada: document.getElementById('vuelo-fecha-llegada-flat')?.value || null,
+                fecha_hora_regreso: document.getElementById('vuelo-fecha-regreso-flat')?.value || null,
+                fecha_hora_llegada_regreso: document.getElementById('vuelo-fecha-llegada-regreso-flat')?.value || null
             };
         case 'hotel':
             return {
@@ -532,6 +601,11 @@ function clearServiceForm(tipo) {
     serviceForm.querySelectorAll('input').forEach(input => {
         if (input.type === 'number' && input.hasAttribute('value')) {
             input.value = input.getAttribute('value');
+        } else if (input.id && input.id.includes('flat')) {
+            // Limpiar campos de Flatpickr
+            if (input._flatpickr) {
+                input._flatpickr.clear();
+            }
         } else {
             input.value = '';
         }
@@ -574,6 +648,7 @@ function renderServiciosAgregados() {
                         <span class="service-margin" style="color: ${servicio.margen_ganancia >= 0 ? '#27ae60' : '#e74c3c'}">
                             💰 Margen: $${servicio.margen_ganancia.toLocaleString()}
                         </span>
+                        ${servicio.fecha_hora_salida ? `<span class="service-date">📅 ${formatDateForDisplay(servicio.fecha_hora_salida)}</span>` : ''}
                     </div>
                 </div>
                 <button type="button" onclick="eliminarServicio(${servicio.id})" class="btn-remove">🗑️</button>
@@ -599,6 +674,20 @@ function getServiceDescription(servicio) {
     }
 }
 
+function formatDateForDisplay(dateString) {
+    if (!dateString) return '';
+    
+    try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('es-AR') + ' ' + date.toLocaleTimeString('es-AR', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+    } catch (error) {
+        return dateString;
+    }
+}
+
 function updateVentaTotals() {
     const total = VentasModule.currentVenta.servicios.reduce((sum, s) => sum + s.precio_venta, 0);
     const totalCosto = VentasModule.currentVenta.servicios.reduce((sum, s) => sum + (s.precio_costo || 0), 0);
@@ -617,16 +706,16 @@ function updateVentaTotals() {
             <div class="total-breakdown">
                 <div class="total-row">
                     <span>💰 Total de Venta:</span>
-                    <span class="total-amount">$${total.toLocaleString()}</span>
+                    <span class="total-amount">${total.toLocaleString()}</span>
                 </div>
                 <div class="total-row">
                     <span>💸 Total Costos:</span>
-                    <span class="cost-amount">$${totalCosto.toLocaleString()}</span>
+                    <span class="cost-amount">${totalCosto.toLocaleString()}</span>
                 </div>
                 <div class="total-row total-margin">
                     <span>📈 Margen Total:</span>
                     <span class="margin-amount" style="color: ${margenTotal >= 0 ? '#27ae60' : '#e74c3c'}">
-                        $${margenTotal.toLocaleString()}
+                        ${margenTotal.toLocaleString()}
                     </span>
                 </div>
             </div>
@@ -759,6 +848,35 @@ async function crearVentaEnDB(ventaData) {
         
         if (ventaError) throw ventaError;
         
+        // 4. Crear servicios (solo para vuelos, puedes expandir para otros)
+        for (const servicio of ventaData.servicios) {
+            if (servicio.tipo === 'vuelo') {
+                const { error: servicioError } = await supabase
+                    .from('venta_vuelos')
+                    .insert({
+                        venta_id: nuevaVenta.id,
+                        descripcion: servicio.descripcion,
+                        origen: servicio.origen,
+                        destino: servicio.destino,
+                        tipo_itinerario: servicio.tipo_itinerario,
+                        aerolinea: servicio.aerolinea,
+                        clase_vuelo: servicio.clase_vuelo,
+                        pasajeros: servicio.pasajeros,
+                        fecha_hora_salida: servicio.fecha_hora_salida,
+                        fecha_hora_llegada: servicio.fecha_hora_llegada,
+                        fecha_hora_regreso: servicio.fecha_hora_regreso,
+                        fecha_hora_llegada_regreso: servicio.fecha_hora_llegada_regreso,
+                        precio_venta: servicio.precio_venta,
+                        precio_costo: servicio.precio_costo,
+                        proveedor_id: servicio.proveedor_id
+                    });
+                
+                if (servicioError) {
+                    console.error(`Error creando vuelo:`, servicioError);
+                }
+            }
+        }
+        
         console.log('✅ Venta creada en DB:', numeroVenta);
         
     } catch (error) {
@@ -866,4 +984,4 @@ window.crearVenta = crearVentaCompleta;
 window.limpiarFormulario = limpiarFormularioCompleto;
 window.eliminarServicio = eliminarServicio;
 
-console.log('✅ Módulo de ventas cargado correctamente');
+console.log('✅ Módulo de ventas con Flatpickr cargado correctamente');
