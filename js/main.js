@@ -1341,33 +1341,63 @@ class NTSApp {
         }
 
         if (servicio.segmentos && servicio.segmentos.length) {
-          const segmentos = servicio.segmentos.map(seg => ({
-            venta_vuelo_id: vuelo.id,
-            numero_segmento: seg.numero_segmento,
-            aeropuerto_origen: seg.aeropuerto_origen,
-            aeropuerto_destino: seg.aeropuerto_destino,
-            fecha_hora_salida_local: seg.fecha_hora_salida_local,
-            fecha_hora_llegada_local: seg.fecha_hora_llegada_local,
-            fecha_hora_salida_utc: seg.fecha_hora_salida_utc,
-            fecha_hora_llegada_utc: seg.fecha_hora_llegada_utc,
-            tiene_escala: seg.tiene_escala,
-            aeropuerto_escala: seg.aeropuerto_escala,
-            duracion_escala: seg.duracion_escala,
-            tiempo_hasta_siguiente_vuelo: seg.tiempo_hasta_siguiente_vuelo,
-            aerolinea: seg.aerolinea,
-            numero_vuelo: seg.numero_vuelo,
-            clase: seg.clase,
-            observaciones: seg.observaciones
-          }));
-          const { error: segError } = await AppState.supabase
-            .from('venta_vuelo_segmentos')
-            .insert(segmentos);
-          if (segError) {
-            console.error('Error creando segmentos:', segError);
-            throw segError;
-          }
+          await this.createFlightSegments(vuelo.id, servicio.segmentos);
         }
       }
+    }
+  }
+
+  async createFlightSegments(vueloId, segmentos) {
+    if (!AppState.supabase || !segmentos || segmentos.length === 0) return;
+
+    try {
+      console.log('Creando segmentos para vuelo:', vueloId, segmentos);
+
+      const segmentosData = segmentos
+        .filter(seg => seg.aeropuerto_origen && seg.aeropuerto_destino)
+        .map((seg, index) => {
+          const segmentData = {
+            venta_vuelo_id: vueloId,
+            numero_segmento: seg.numero_segmento || index + 1,
+            aeropuerto_origen: seg.aeropuerto_origen || seg.origen || '',
+            aeropuerto_destino: seg.aeropuerto_destino || seg.destino || ''
+          };
+
+          if (seg.fecha_hora_salida_local) segmentData.fecha_hora_salida_local = seg.fecha_hora_salida_local;
+          if (seg.fecha_hora_llegada_local) segmentData.fecha_hora_llegada_local = seg.fecha_hora_llegada_local;
+          if (seg.fecha_hora_salida_utc) segmentData.fecha_hora_salida_utc = seg.fecha_hora_salida_utc;
+          if (seg.fecha_hora_llegada_utc) segmentData.fecha_hora_llegada_utc = seg.fecha_hora_llegada_utc;
+          if (seg.aerolinea) segmentData.aerolinea = seg.aerolinea;
+          if (seg.numero_vuelo) segmentData.numero_vuelo = seg.numero_vuelo;
+          if (seg.clase) segmentData.clase = seg.clase;
+          if (seg.tiene_escala !== undefined) segmentData.tiene_escala = seg.tiene_escala;
+          if (seg.aeropuerto_escala) segmentData.aeropuerto_escala = seg.aeropuerto_escala;
+          if (seg.duracion_escala) segmentData.duracion_escala = seg.duracion_escala;
+          if (seg.tiempo_hasta_siguiente_vuelo) segmentData.tiempo_hasta_siguiente_vuelo = seg.tiempo_hasta_siguiente_vuelo;
+          if (seg.observaciones) segmentData.observaciones = seg.observaciones;
+
+          return segmentData;
+        });
+
+      if (segmentosData.length > 0) {
+        console.log('Datos de segmentos para insertar:', segmentosData);
+
+        const { data, error: segError } = await AppState.supabase
+          .from('vuelo_segmentos')
+          .insert(segmentosData)
+          .select();
+
+        if (segError) {
+          console.error('Error creando segmentos:', segError);
+          throw new Error(`Error creando segmentos: ${segError.message}`);
+        }
+
+        console.log(`${segmentosData.length} segmentos creados exitosamente:`, data);
+      }
+
+    } catch (error) {
+      console.error('Error en createFlightSegments:', error);
+      throw error;
     }
   }
 
