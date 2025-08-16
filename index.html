@@ -155,7 +155,7 @@
             </div>
 <!-- 📍 BUSCA ESTA SECCIÓN EN TU INDEX.HTML Y REEMPLÁZALA COMPLETA -->
 
-<!-- ✈️ FORMULARIO DE VUELOS CON FLATPICKR -->
+<!-- ✈️ FORMULARIO VUELOS - SUPER LIMPIO SIN CAMPOS DE FECHA -->
 <div id="service-vuelo" class="service-form active">
     <div class="form-row">
         <div>
@@ -188,33 +188,8 @@
         </div>
     </div>
     
-    <!-- CAMPOS CON FLATPICKR -->
-    <div class="form-row">
-        <div>
-            <label for="vuelo-fecha-salida-flat"><strong>🛫 Fecha y Hora de Salida *</strong></label>
-            <input type="text" id="vuelo-fecha-salida-flat" placeholder="📅 Click para seleccionar..." required readonly>
-            <small>📅 Fecha y hora exacta del vuelo de salida</small>
-        </div>
-        <div>
-            <label for="vuelo-fecha-llegada-flat"><strong>🛬 Fecha y Hora de Llegada</strong></label>
-            <input type="text" id="vuelo-fecha-llegada-flat" placeholder="📅 Click para seleccionar..." readonly>
-            <small>📅 Fecha y hora estimada de llegada (opcional)</small>
-        </div>
-    </div>
-    
-    <!-- CAMPOS DE REGRESO (solo para ida/vuelta) -->
-    <div class="form-row" id="vuelo-regreso-flat-row">
-        <div>
-            <label for="vuelo-fecha-regreso-flat"><strong>🔄 Fecha y Hora de Regreso</strong></label>
-            <input type="text" id="vuelo-fecha-regreso-flat" placeholder="📅 Click para seleccionar..." readonly>
-            <small>📅 Solo para vuelos ida y vuelta</small>
-        </div>
-        <div>
-            <label for="vuelo-fecha-llegada-regreso-flat"><strong>🔄 Llegada del Regreso</strong></label>
-            <input type="text" id="vuelo-fecha-llegada-regreso-flat" placeholder="📅 Click para seleccionar..." readonly>
-            <small>📅 Hora de llegada del vuelo de regreso</small>
-        </div>
-    </div>
+    <!-- AQUÍ JS VA A INSERTAR LOS CAMPOS DE FECHA DINÁMICAMENTE -->
+    <!-- NO AGREGAR NADA DE FECHAS AQUÍ -->
     
     <div class="form-row">
         <div>
@@ -234,7 +209,6 @@
         </div>
     </div>
     
-    <!-- Fila de proveedor y costos se agrega automáticamente por JS -->
     <div class="form-row">
         <div>
             <label for="vuelo-precio"><strong>💰 Precio de Venta *</strong></label>
