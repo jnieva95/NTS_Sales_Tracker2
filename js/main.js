@@ -1299,12 +1299,17 @@ class NTSApp {
         numero_venta: saleData.numero_venta,
         cliente_id: saleData.cliente.id ? parseInt(saleData.cliente.id, 10) : null,
         vendedor_id: saleData.vendedor_id,
+        fecha_venta: new Date().toISOString().slice(0, 10),
         fecha_viaje_inicio: saleData.viaje.fechaInicio || null,
         fecha_viaje_fin: saleData.viaje.fechaFin || null,
         observaciones: saleData.viaje.observaciones || null,
         total_final: saleData.totales.total,
+        total_pagado: 0,
+        saldo_pendiente: saleData.totales.total,
+        comision_vendedor: 0,
         estado: saleData.estado,
-        estado_pago: saleData.estado_pago
+        estado_pago: saleData.estado_pago,
+        forma_pago_principal: saleData.forma_pago_principal || null
       })
       .select()
       .single();
