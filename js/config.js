@@ -1,9 +1,9 @@
-// ⚙️ CONFIG.JS - VERSIÓN MÍNIMA SIN ERRORES
-// Reemplaza TODO tu config.js con esto:
+// ⚙️ CONFIG.JS - VERSIÓN LIMPIA Y FUNCIONAL
+// Archivo: js/config.js
 
-console.log('🔧 Cargando configuración NTS (versión mínima)...');
+console.log('🔧 Cargando configuración NTS...');
 
-// ===== CONFIGURACIÓN BÁSICA =====
+// ===== CONFIGURACIÓN SUPABASE =====
 const supabaseUrl = 'https://fmvozdsvpxitoyhtdmcv.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtdm96ZHN2cHhpdG95aHRkbWN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyMjc1MzEsImV4cCI6MjA3MDgwMzUzMX0.EqK3pND6Zz48OpnVDCF_0KJUcV3TzkRUz9qTMWL3NNE';
 
@@ -11,23 +11,66 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 let supabase = null;
 let isSupabaseConnected = false;
 
-// ===== INICIALIZACIÓN SIMPLE =====
-try {
-    if (typeof window.supabase !== 'undefined') {
-        console.log('✅ Supabase CDN disponible');
+// ===== INICIALIZACIÓN =====
+function initializeSupabase() {
+    try {
+        if (typeof window.supabase === 'undefined') {
+            console.log('⚠️ Supabase CDN no disponible');
+            return false;
+        }
+
+        console.log('✅ Inicializando Supabase...');
         supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-        isSupabaseConnected = true;
-        console.log('✅ Cliente Supabase creado');
-    } else {
-        console.log('⚠️ Supabase CDN no disponible - modo local');
+
+        if (supabase && supabase.from) {
+            isSupabaseConnected = true;
+            console.log('✅ Supabase conectado correctamente');
+            testConnection();
+            return true;
+        } else {
+            throw new Error('Cliente no se inicializó');
+        }
+
+    } catch (error) {
+        console.error('❌ Error inicializando Supabase:', error);
         isSupabaseConnected = false;
+        return false;
     }
-} catch (error) {
-    console.error('❌ Error inicializando Supabase:', error);
-    isSupabaseConnected = false;
 }
 
-// ===== ENUMs BÁSICOS =====
+async function testConnection() {
+    try {
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error && !error.message.includes('session_not_found')) {
+            throw error;
+        }
+        
+        console.log('✅ Test de conexión exitoso');
+        return true;
+        
+    } catch (error) {
+        console.log('⚠️ Error en test de conexión:', error.message);
+        return false;
+    }
+}
+
+// Inicializar cuando esté disponible
+if (typeof window.supabase !== 'undefined') {
+    initializeSupabase();
+} else {
+    console.log('⏳ Esperando Supabase CDN...');
+    const checkInterval = setInterval(() => {
+        if (typeof window.supabase !== 'undefined') {
+            clearInterval(checkInterval);
+            initializeSupabase();
+        }
+    }, 100);
+    
+    setTimeout(() => clearInterval(checkInterval), 5000);
+}
+
+// ===== ENUMs =====
 const ENUMS = {
     ESTADO_PAGO: [
         { value: 'no_pagado', label: 'No Pagado', icon: '❌', color: '#dc2626' },
@@ -40,10 +83,18 @@ const ENUMS = {
         { value: 'confirmada', label: 'Confirmada', icon: '✅', color: '#059669' },
         { value: 'cancelada', label: 'Cancelada', icon: '❌', color: '#dc2626' },
         { value: 'finalizada', label: 'Finalizada', icon: '🏁', color: '#7c3aed' }
+    ],
+    
+    TIPO_PROVEEDOR: [
+        { value: 'vuelos', label: '✈️ Vuelos', icon: '✈️', color: '#2563eb' },
+        { value: 'hoteles', label: '🏨 Hoteles', icon: '🏨', color: '#7c3aed' },
+        { value: 'traslados', label: '🚌 Traslados', icon: '🚌', color: '#059669' },
+        { value: 'excursiones', label: '🗺️ Excursiones', icon: '🗺️', color: '#dc2626' },
+        { value: 'mixto', label: '📦 Mixto', icon: '📦', color: '#9333ea' }
     ]
 };
 
-// ===== FUNCIONES BÁSICAS =====
+// ===== FUNCIONES HELPER =====
 function getEnumData(enumType, value) {
     const enumArray = ENUMS[enumType];
     if (!enumArray) return null;
@@ -89,7 +140,7 @@ const APP_CONFIG = {
     }
 };
 
-// ===== EXPORT GLOBAL (LO MÁS IMPORTANTE) =====
+// ===== EXPORT GLOBAL =====
 window.NTS_CONFIG = {
     // Core
     supabase,
@@ -100,9 +151,14 @@ window.NTS_CONFIG = {
     // Functions
     getEnumData,
     getEnumLabel,
-    createEnumBadge
+    createEnumBadge,
+    
+    // Config
+    config: {
+        url: supabaseUrl,
+        key: supabaseKey
+    }
 };
 
 console.log('✅ Config.js cargado correctamente');
 console.log('🔗 Supabase:', isSupabaseConnected ? 'Conectado' : 'Desconectado');
-console.log('📦 NTS_CONFIG exportado:', typeof window.NTS_CONFIG);
