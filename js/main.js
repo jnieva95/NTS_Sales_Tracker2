@@ -382,10 +382,8 @@ class NTSApp {
         .select('id, nombre, email, telefono, dni');
       if (search) {
         query = query.ilike('nombre', `%${search}%`);
-      } else {
-        query = query.order('nombre');
       }
-      const { data, error } = await query;
+      const { data, error } = await query.order('nombre');
       if (error) throw error;
       AppState.clientes = data || [];
       this.updateClientDatalist();
@@ -394,7 +392,7 @@ class NTSApp {
         if (totalEl) totalEl.textContent = AppState.clientes.length.toString();
       }
     } catch (error) {
-      console.error('Error cargando clientes:', error);
+      console.error('Error cargando clientes:', error.message);
     }
   }
 
@@ -419,6 +417,9 @@ class NTSApp {
     const input = document.getElementById('cliente-nombre');
     if (!input) return;
 
+    // Ensure datalist exists even if initial load fails
+    this.updateClientDatalist();
+
     input.addEventListener('input', async () => {
       const value = input.value.trim();
       if (value.length >= 2) {
@@ -427,6 +428,7 @@ class NTSApp {
         await this.loadClientes();
       }
       const datalist = document.getElementById('clientes-datalist');
+      if (!datalist) return;
       const option = [...datalist.options].find(o => o.value.toLowerCase() === value.toLowerCase());
       if (option) {
         const emailField = document.getElementById('cliente-email');
