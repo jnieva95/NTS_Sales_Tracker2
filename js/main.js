@@ -992,8 +992,10 @@ class NTSApp {
   }
 
   getServiceData(serviceType) {
+    const price = parseFloat(document.getElementById(`${serviceType}-precio`)?.value) || 0;
     const baseData = {
-      precio: parseFloat(document.getElementById(`${serviceType}-precio`)?.value) || 0
+      precio: price,
+      precio_venta: price
     };
     
     switch (serviceType) {
@@ -1123,7 +1125,7 @@ class NTSApp {
           <div class="service-item" data-id="${service.id}">
             <div class="service-content">
               <div class="service-title">${description}</div>
-              <div class="service-price">${this.formatCurrency(service.precio)}</div>
+              <div class="service-price">${this.formatCurrency(this.getServicePrice(service))}</div>
             </div>
             <button type="button" class="btn-icon" onclick="app.removeService(${service.id})" title="Eliminar servicio">
               <i data-lucide="trash-2"></i>
@@ -1172,8 +1174,12 @@ class NTSApp {
     this.showNotification('Servicio eliminado', 'info');
   }
 
+  getServicePrice(servicio) {
+    return servicio.precio_venta || servicio.precio || 0;
+  }
+
   updateTotals() {
-    const subtotal = AppState.currentSale.services.reduce((sum, s) => sum + s.precio, 0);
+    const subtotal = AppState.currentSale.services.reduce((sum, s) => sum + this.getServicePrice(s), 0);
     const descuentos = 0; // Por ahora sin descuentos
     const total = subtotal - descuentos;
     
@@ -1320,30 +1326,130 @@ class NTSApp {
     }
 
     for (const servicio of saleData.servicios) {
+      await this.createServiceInDB(venta.id, servicio);
+    }
+  }
+
+  async createServiceInDB(ventaId, servicio) {
+    if (!AppState.supabase) return;
+
+    try {
+      console.log(`Creando servicio ${servicio.type} para venta ${ventaId}:`, servicio);
+
       if (servicio.type === 'vuelo') {
+        const vueloData = {
+          venta_id: ventaId,
+          origen: servicio.origen || '',
+          destino: servicio.destino || ''
+        };
+
+        if (servicio.fecha) vueloData.fecha = servicio.fecha;
+        if (servicio.pasajeros) vueloData.pasajeros = servicio.pasajeros;
+        if (servicio.aerolinea) vueloData.aerolinea = servicio.aerolinea;
+        if (servicio.descripcion) vueloData.descripcion = servicio.descripcion;
+        if (servicio.tipo_itinerario) vueloData.tipo_itinerario = servicio.tipo_itinerario;
+        if (servicio.clase_vuelo) vueloData.clase_vuelo = servicio.clase_vuelo;
+        if (servicio.fecha_hora_salida) vueloData.fecha_hora_salida = servicio.fecha_hora_salida;
+        if (servicio.fecha_hora_llegada) vueloData.fecha_hora_llegada = servicio.fecha_hora_llegada;
+        if (servicio.fecha_hora_regreso) vueloData.fecha_hora_regreso = servicio.fecha_hora_regreso;
+        if (servicio.fecha_hora_llegada_regreso) vueloData.fecha_hora_llegada_regreso = servicio.fecha_hora_llegada_regreso;
+        if (servicio.precio_venta) vueloData.precio_venta = servicio.precio_venta;
+        if (servicio.precio_costo) vueloData.precio_costo = servicio.precio_costo;
+        if (servicio.proveedor_id) vueloData.proveedor_id = servicio.proveedor_id;
+        if (servicio.itinerario_observaciones) vueloData.itinerario_observaciones = servicio.itinerario_observaciones;
+
+        console.log('Datos del vuelo para DB (sin precio):', vueloData);
+
         const { data: vuelo, error: vueloError } = await AppState.supabase
           .from('venta_vuelos')
-          .insert({
-            venta_id: venta.id,
-            origen: servicio.origen,
-            destino: servicio.destino,
-            pasajeros: servicio.pasajeros,
-            tipo_itinerario: servicio.tipo_itinerario,
-            precio: servicio.precio,
-            precio_costo: servicio.precio_costo
-          })
+          .insert(vueloData)
           .select()
           .single();
 
         if (vueloError) {
           console.error('Error creando vuelo:', vueloError);
-          throw vueloError;
+          throw new Error(`Error creando vuelo: ${vueloError.message}`);
         }
 
-        if (servicio.segmentos && servicio.segmentos.length) {
+        if (servicio.segmentos && servicio.segmentos.length > 0) {
           await this.createFlightSegments(vuelo.id, servicio.segmentos);
         }
+
+      } else if (servicio.type === 'hotel') {
+        const hotelData = {
+          venta_id: ventaId,
+          nombre: servicio.nombre || servicio.hotel_nombre || ''
+        };
+
+        if (servicio.ciudad || servicio.hotel_ciudad) hotelData.ciudad = servicio.ciudad || servicio.hotel_ciudad;
+        if (servicio.checkin || servicio.fecha_checkin) hotelData.fecha_checkin = servicio.checkin || servicio.fecha_checkin;
+        if (servicio.checkout || servicio.fecha_checkout) hotelData.fecha_checkout = servicio.checkout || servicio.fecha_checkout;
+        if (servicio.huespedes) hotelData.huespedes = servicio.huespedes;
+        if (servicio.precio_venta) hotelData.precio_venta = servicio.precio_venta;
+        if (servicio.precio_costo) hotelData.precio_costo = servicio.precio_costo;
+        if (servicio.proveedor_id) hotelData.proveedor_id = servicio.proveedor_id;
+
+        const { error: hotelError } = await AppState.supabase
+          .from('venta_hoteles')
+          .insert(hotelData);
+
+        if (hotelError) {
+          console.error('Error creando hotel:', hotelError);
+          throw new Error(`Error creando hotel: ${hotelError.message}`);
+        }
+
+      } else if (servicio.type === 'traslado') {
+        const trasladoData = {
+          venta_id: ventaId,
+          origen: servicio.origen || '',
+          destino: servicio.destino || ''
+        };
+
+        if (servicio.fecha || servicio.fecha_traslado) trasladoData.fecha = servicio.fecha || servicio.fecha_traslado;
+        if (servicio.hora) trasladoData.hora = servicio.hora;
+        if (servicio.pasajeros) trasladoData.pasajeros = servicio.pasajeros;
+        if (servicio.precio_venta) trasladoData.precio_venta = servicio.precio_venta;
+        if (servicio.precio_costo) trasladoData.precio_costo = servicio.precio_costo;
+        if (servicio.proveedor_id) trasladoData.proveedor_id = servicio.proveedor_id;
+
+        const { error: trasladoError } = await AppState.supabase
+          .from('venta_traslados')
+          .insert(trasladoData);
+
+        if (trasladoError) {
+          console.error('Error creando traslado:', trasladoError);
+          throw new Error(`Error creando traslado: ${trasladoError.message}`);
+        }
+
+      } else if (servicio.type === 'excursion') {
+        const excursionData = {
+          venta_id: ventaId,
+          nombre: servicio.nombre || servicio.nombre_excursion || ''
+        };
+
+        if (servicio.fecha || servicio.fecha_excursion) excursionData.fecha = servicio.fecha || servicio.fecha_excursion;
+        if (servicio.destino) excursionData.destino = servicio.destino;
+        if (servicio.duracion) excursionData.duracion = servicio.duracion;
+        if (servicio.participantes) excursionData.participantes = servicio.participantes;
+        if (servicio.precio_venta) excursionData.precio_venta = servicio.precio_venta;
+        if (servicio.precio_costo) excursionData.precio_costo = servicio.precio_costo;
+        if (servicio.proveedor_id) excursionData.proveedor_id = servicio.proveedor_id;
+
+        const { error: excursionError } = await AppState.supabase
+          .from('venta_excursiones')
+          .insert(excursionData);
+
+        if (excursionError) {
+          console.error('Error creando excursión:', excursionError);
+          throw new Error(`Error creando excursión: ${excursionError.message}`);
+        }
       }
+
+      console.log(`Servicio ${servicio.type} creado exitosamente`);
+
+    } catch (error) {
+      console.error(`Error creando servicio ${servicio.type}:`, error);
+      throw error;
     }
   }
 
