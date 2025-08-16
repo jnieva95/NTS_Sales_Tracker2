@@ -1538,6 +1538,13 @@ window.toggleEscalasSection = toggleEscalasSection;
 window.addEscalaRow = addEscalaRow;
 window.removeEscalaRow = removeEscalaRow;
 
+document.addEventListener('click', function(e) {
+  if (e.target.matches('#add-segment-btn')) {
+    e.preventDefault();
+    addEscalaRow();
+  }
+});
+
 // ===== INICIALIZACIÓN =====
 let app;
 
