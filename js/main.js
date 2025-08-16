@@ -423,16 +423,29 @@ class NTSApp {
     const input = document.getElementById('cliente-nombre');
     if (!input) return;
 
-    // Cargar clientes inicialmente
+    const datalistId = 'clientes-datalist';
+    let datalist = document.getElementById(datalistId);
+    if (!datalist) {
+      datalist = document.createElement('datalist');
+      datalist.id = datalistId;
+      document.body.appendChild(datalist);
+    }
+    input.setAttribute('list', datalistId);
+
+    // Cargar listado inicial
     this.loadClientes();
 
     input.addEventListener('input', async () => {
-      const value = input.value.trim();
-      if (value.length >= 2) {
-        await this.loadClientes(value);
+      const term = input.value.trim();
+      if (term.length >= 2) {
+        await this.loadClientes(term);
+      } else {
+        datalist.innerHTML = '';
       }
-      const datalist = document.getElementById('clientes-datalist');
-      const option = [...datalist.options].find(o => o.value.toLowerCase() === value.toLowerCase());
+    });
+
+    input.addEventListener('change', () => {
+      const option = [...datalist.options].find(o => o.value.toLowerCase() === input.value.toLowerCase());
       if (option) {
         const emailField = document.getElementById('cliente-email');
         const telField = document.getElementById('cliente-telefono');
