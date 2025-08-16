@@ -909,17 +909,22 @@ class NTSApp {
     const row = document.createElement('div');
     row.className = 'segment-row';
     row.style.display = 'grid';
-    row.style.gridTemplateColumns = 'repeat(7, 1fr) auto';
+    row.style.gridTemplateColumns = 'repeat(12, 1fr) auto';
     row.style.gap = 'var(--spacing-sm)';
     row.style.marginBottom = 'var(--spacing-sm)';
     row.innerHTML = `
       <input type="text" class="form-control segment-origen" placeholder="Origen">
       <input type="text" class="form-control segment-destino" placeholder="Destino">
       <input type="text" class="form-control segment-aerolinea" placeholder="Aerolínea">
+      <input type="text" class="form-control segment-numero-vuelo" placeholder="N° Vuelo">
       <input type="text" class="form-control segment-clase" placeholder="Clase">
       <input type="datetime-local" class="form-control segment-salida">
       <input type="datetime-local" class="form-control segment-llegada">
-      <input type="text" class="form-control segment-descripcion" placeholder="Descripción">
+      <input type="checkbox" class="form-control segment-escala" style="width:20px;height:20px;margin:auto;">
+      <input type="text" class="form-control segment-aeropuerto-escala" placeholder="Aerop. Escala">
+      <input type="text" class="form-control segment-duracion-escala" placeholder="Duración Escala">
+      <input type="text" class="form-control segment-tiempo-siguiente" placeholder="Tiempo Siguiente">
+      <input type="text" class="form-control segment-observaciones" placeholder="Observaciones">
       <button type="button" class="btn btn-danger remove-segment">&times;</button>
     `;
     return row;
@@ -958,10 +963,17 @@ class NTSApp {
           aeropuerto_origen: row.querySelector('.segment-origen')?.value?.trim(),
           aeropuerto_destino: row.querySelector('.segment-destino')?.value?.trim(),
           aerolinea: row.querySelector('.segment-aerolinea')?.value?.trim(),
+          numero_vuelo: row.querySelector('.segment-numero-vuelo')?.value?.trim(),
           clase: row.querySelector('.segment-clase')?.value?.trim(),
-          descripcion: row.querySelector('.segment-descripcion')?.value?.trim(),
           fecha_hora_salida_local: row.querySelector('.segment-salida')?.value || null,
-          fecha_hora_llegada_local: row.querySelector('.segment-llegada')?.value || null
+          fecha_hora_llegada_local: row.querySelector('.segment-llegada')?.value || null,
+          fecha_hora_salida_utc: row.querySelector('.segment-salida')?.value ? new Date(row.querySelector('.segment-salida').value).toISOString() : null,
+          fecha_hora_llegada_utc: row.querySelector('.segment-llegada')?.value ? new Date(row.querySelector('.segment-llegada').value).toISOString() : null,
+          tiene_escala: row.querySelector('.segment-escala')?.checked || false,
+          aeropuerto_escala: row.querySelector('.segment-aeropuerto-escala')?.value?.trim() || null,
+          duracion_escala: row.querySelector('.segment-duracion-escala')?.value?.trim() || null,
+          tiempo_hasta_siguiente_vuelo: row.querySelector('.segment-tiempo-siguiente')?.value?.trim() || null,
+          observaciones: row.querySelector('.segment-observaciones')?.value?.trim() || null
         }));
         return {
           ...baseData,
@@ -1290,11 +1302,18 @@ class NTSApp {
             numero_segmento: seg.numero_segmento,
             aeropuerto_origen: seg.aeropuerto_origen,
             aeropuerto_destino: seg.aeropuerto_destino,
-            aerolinea: seg.aerolinea,
-            clase: seg.clase,
-            descripcion: seg.descripcion,
             fecha_hora_salida_local: seg.fecha_hora_salida_local,
-            fecha_hora_llegada_local: seg.fecha_hora_llegada_local
+            fecha_hora_llegada_local: seg.fecha_hora_llegada_local,
+            fecha_hora_salida_utc: seg.fecha_hora_salida_utc,
+            fecha_hora_llegada_utc: seg.fecha_hora_llegada_utc,
+            tiene_escala: seg.tiene_escala,
+            aeropuerto_escala: seg.aeropuerto_escala,
+            duracion_escala: seg.duracion_escala,
+            tiempo_hasta_siguiente_vuelo: seg.tiempo_hasta_siguiente_vuelo,
+            aerolinea: seg.aerolinea,
+            numero_vuelo: seg.numero_vuelo,
+            clase: seg.clase,
+            observaciones: seg.observaciones
           }));
           const { error: segError } = await AppState.supabase
             .from('venta_vuelo_segmentos')
