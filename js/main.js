@@ -1,4 +1,5 @@
 // ===== MAIN.JS - APLICACIÓN PRINCIPAL NTS V2.0 =====
+// Incluye manejo de tramos de vuelo y búsqueda de clientes
 
 console.log('🚀 Iniciando NTS Sistema v2.0...');
 
