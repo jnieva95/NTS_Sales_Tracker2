@@ -520,7 +520,7 @@ class NTSApp {
       this.updateClientDatalist();
       this.renderClientesTable();
     } catch (error) {
-      console.error('Error cargando clientes:', error);
+      console.error('Error cargando clientes:', error.message || error);
     }
   }
 
