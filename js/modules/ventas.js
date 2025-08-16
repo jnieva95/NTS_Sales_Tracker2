@@ -73,7 +73,7 @@ async function loadVentasData() {
         // Cargar clientes
         const { data: clientes, error: clientesError } = await supabase
             .from('clientes')
-            .select('id, nombre, email, telefono, vendedor_id')
+            .select('id, nombre, email, telefono, dni, vendedor_id')
             .order('nombre');
         
         if (clientesError) throw clientesError;
@@ -184,6 +184,7 @@ function setupClienteAutocomplete() {
         option.value = cliente.nombre;
         option.setAttribute('data-email', cliente.email || '');
         option.setAttribute('data-telefono', cliente.telefono || '');
+        option.setAttribute('data-dni', cliente.dni || '');
         option.setAttribute('data-id', cliente.id);
         datalist.appendChild(option);
     });
@@ -197,10 +198,12 @@ function setupClienteAutocomplete() {
         if (selectedOption) {
             const emailField = document.getElementById('cliente-email');
             const telefonoField = document.getElementById('cliente-telefono');
-            
+            const dniField = document.getElementById('cliente-dni');
+
             if (emailField) emailField.value = selectedOption.getAttribute('data-email');
             if (telefonoField) telefonoField.value = selectedOption.getAttribute('data-telefono');
-            
+            if (dniField) dniField.value = selectedOption.getAttribute('data-dni');
+
             VentasModule.currentVenta.cliente.id = selectedOption.getAttribute('data-id');
             VentasModule.currentVenta.cliente.esExistente = true;
             
@@ -594,7 +597,6 @@ function getServiceFormData(tipo) {
                 origen: origen,
                 destino: destino,
                 tipo_itinerario: document.getElementById('vuelo-tipo')?.value || 'ida_vuelta',
-                aerolinea: document.getElementById('vuelo-aerolinea')?.value?.trim() || '',
                 clase_vuelo: document.getElementById('vuelo-clase')?.value || 'economica',
                 pasajeros: parseInt(document.getElementById('vuelo-pasajeros')?.value) || 1,
                 
@@ -882,7 +884,7 @@ function buildVentaData() {
             nombre: document.getElementById('cliente-nombre')?.value?.trim(),
             email: document.getElementById('cliente-email')?.value?.trim(),
             telefono: document.getElementById('cliente-telefono')?.value?.trim(),
-            documento: document.getElementById('cliente-documento')?.value?.trim(),
+            dni: document.getElementById('cliente-dni')?.value?.trim(),
             vendedor_id: parseInt(document.getElementById('vendedor-select-nts')?.value),
             esExistente: VentasModule.currentVenta.cliente.esExistente || false,
             id: VentasModule.currentVenta.cliente.id || null
@@ -917,7 +919,7 @@ async function crearVentaEnDB(ventaData) {
                     nombre: ventaData.cliente.nombre,
                     email: ventaData.cliente.email,
                     telefono: ventaData.cliente.telefono,
-                    documento: ventaData.cliente.documento,
+                    dni: ventaData.cliente.dni,
                     vendedor_id: ventaData.cliente.vendedor_id
                 })
                 .select()
@@ -954,7 +956,6 @@ async function crearVentaEnDB(ventaData) {
                         origen: servicio.origen,
                         destino: servicio.destino,
                         tipo_itinerario: servicio.tipo_itinerario,
-                        aerolinea: servicio.aerolinea,
                         clase_vuelo: servicio.clase_vuelo,
                         pasajeros: servicio.pasajeros,
                         fecha_hora_salida: servicio.fecha_hora_salida,
@@ -997,7 +998,7 @@ async function crearVentaLocal(ventaData) {
 // ===== FUNCIONES DE UTILIDAD =====
 function limpiarFormularioCompleto() {
     // Limpiar campos de cliente
-    ['cliente-nombre', 'cliente-email', 'cliente-telefono', 'cliente-documento'].forEach(id => {
+    ['cliente-nombre', 'cliente-email', 'cliente-telefono', 'cliente-dni'].forEach(id => {
         const field = document.getElementById(id);
         if (field) field.value = '';
     });
