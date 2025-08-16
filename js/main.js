@@ -1284,6 +1284,7 @@ class NTSApp {
       servicios: AppState.currentSale.services,
       totales: AppState.currentSale.totals,
       fecha_creacion: new Date().toISOString(),
+      vendedor_id: AppState.user?.id ? parseInt(AppState.user.id, 10) : 1,
       estado: 'pendiente',
       estado_pago: 'no_pagado'
     };
@@ -1297,6 +1298,7 @@ class NTSApp {
       .insert({
         numero_venta: saleData.numero_venta,
         cliente_id: saleData.cliente.id ? parseInt(saleData.cliente.id, 10) : null,
+        vendedor_id: saleData.vendedor_id,
         fecha_viaje_inicio: saleData.viaje.fechaInicio || null,
         fecha_viaje_fin: saleData.viaje.fechaFin || null,
         observaciones: saleData.viaje.observaciones || null,
