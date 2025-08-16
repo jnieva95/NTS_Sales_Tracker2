@@ -128,6 +128,46 @@ function setupVentasUI() {
     
     // Actualizar descripción de vuelos automáticamente
     setupVueloDescriptionUpdate();
+    
+    // Configurar campos de fecha/hora para vuelos
+    setupVueloDateTimeFields();
+}
+
+function setupVueloDateTimeFields() {
+    const tipoItinerario = document.getElementById('vuelo-tipo');
+    const regresoRow = document.getElementById('vuelo-regreso-row');
+    
+    if (tipoItinerario && regresoRow) {
+        // Mostrar/ocultar campos de regreso según el tipo
+        tipoItinerario.addEventListener('change', function() {
+            if (this.value === 'ida_vuelta') {
+                regresoRow.style.display = 'block';
+            } else {
+                regresoRow.style.display = 'none';
+                // Limpiar campos de regreso
+                document.getElementById('vuelo-fecha-regreso').value = '';
+                document.getElementById('vuelo-llegada-regreso').value = '';
+            }
+        });
+        
+        // Configurar fecha mínima (no puede ser en el pasado)
+        const now = new Date();
+        const minDateTime = now.toISOString().slice(0, 16); // Formato YYYY-MM-DDTHH:MM
+        
+        const fechaSalida = document.getElementById('vuelo-fecha-salida');
+        const fechaLlegada = document.getElementById('vuelo-fecha-llegada');
+        const fechaRegreso = document.getElementById('vuelo-fecha-regreso');
+        
+        if (fechaSalida) {
+            fechaSalida.min = minDateTime;
+            
+            // Cuando cambie la fecha de salida, actualizar mínimos
+            fechaSalida.addEventListener('change', function() {
+                if (fechaLlegada) fechaLlegada.min = this.value;
+                if (fechaRegreso) fechaRegreso.min = this.value;
+            });
+        }
+    }
 }
 
 function createVendedorSelect() {
@@ -393,9 +433,17 @@ function getServiceFormData(tipo) {
                 origen: origen,
                 destino: destino,
                 tipo_itinerario: document.getElementById('vuelo-tipo')?.value || 'ida_vuelta',
-                fecha_salida: document.getElementById('vuelo-fecha-salida')?.value || '',
                 aerolinea: document.getElementById('vuelo-aerolinea')?.value?.trim() || '',
-                pasajeros: parseInt(document.getElementById('vuelo-pasajeros')?.value) || 1
+                pasajeros: parseInt(document.getElementById('vuelo-pasajeros')?.value) || 1,
+                
+                // Fechas y horas (convertir datetime-local a ISO)
+                fecha_hora_salida: document.getElementById('vuelo-fecha-salida')?.value || null,
+                fecha_hora_llegada: document.getElementById('vuelo-fecha-llegada')?.value || null,
+                fecha_hora_regreso: document.getElementById('vuelo-fecha-regreso')?.value || null,
+                fecha_hora_llegada_regreso: document.getElementById('vuelo-llegada-regreso')?.value || null,
+                
+                // Campos adicionales
+                clase_vuelo: document.getElementById('vuelo-clase')?.value || 'economica'
             };
         case 'hotel':
             return {
