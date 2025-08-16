@@ -1,7 +1,7 @@
-// 💰 MÓDULO DE VENTAS - FUNCIONAL CON BASE DE DATOS
+// 💰 MÓDULO DE VENTAS - VERSIÓN FINAL FUNCIONAL
 // Archivo: js/modules/ventas.js
 
-console.log('💰 Cargando módulo de ventas...');
+console.log('💰 Cargando módulo de ventas (versión final)...');
 
 // ===== ESTADO DEL MÓDULO =====
 const VentasModule = {
@@ -13,44 +13,46 @@ const VentasModule = {
     },
     vendedores: [],
     proveedores: [],
-    clientesExistentes: []
+    clientesExistentes: [],
+    isInitialized: false
 };
 
 // ===== INICIALIZACIÓN DEL MÓDULO =====
 async function initVentasModule() {
     console.log('🔧 Inicializando módulo de ventas...');
     
-    try {
-        // Cargar datos necesarios
-        await loadVentasData();
-        
-        // Configurar eventos del formulario
-        setupVentasEvents();
-        
-        // Configurar formulario inteligente
-        setupSmartForm();
-        
-        console.log('✅ Módulo de ventas inicializado');
-        
-    } catch (error) {
-        console.error('❌ Error inicializando módulo de ventas:', error);
-        showNotification('Error inicializando ventas', 'error');
-    }
-}
-
-// ===== CARGAR DATOS NECESARIOS =====
-async function loadVentasData() {
-    const { supabase, isSupabaseConnected } = window.NTS_CONFIG;
-    
-    if (!isSupabaseConnected) {
-        loadMockVentasData();
+    if (VentasModule.isInitialized) {
+        console.log('⚠️ Módulo ya inicializado');
         return;
     }
     
     try {
-        showLoader('Cargando datos del sistema...');
+        await loadVentasData();
+        setupVentasUI();
+        setupVentasEvents();
         
-        // Cargar vendedores activos
+        VentasModule.isInitialized = true;
+        console.log('✅ Módulo de ventas inicializado correctamente');
+        
+    } catch (error) {
+        console.error('❌ Error inicializando módulo de ventas:', error);
+    }
+}
+
+// ===== CARGAR DATOS =====
+async function loadVentasData() {
+    const { supabase, isSupabaseConnected } = window.NTS_CONFIG;
+    
+    if (!isSupabaseConnected || !supabase) {
+        console.log('⚠️ Supabase no disponible - usando datos demo');
+        loadMockData();
+        return;
+    }
+    
+    try {
+        console.log('📊 Cargando datos desde Supabase...');
+        
+        // Cargar vendedores
         const { data: vendedores, error: vendedoresError } = await supabase
             .from('vendedores')
             .select('id, nombre, codigo_vendedor, rol, comision_porcentaje')
@@ -59,7 +61,7 @@ async function loadVentasData() {
         
         if (vendedoresError) throw vendedoresError;
         
-        // Cargar proveedores activos
+        // Cargar proveedores
         const { data: proveedores, error: proveedoresError } = await supabase
             .from('proveedores')
             .select('id, nombre, tipo, comision_porcentaje')
@@ -68,7 +70,7 @@ async function loadVentasData() {
         
         if (proveedoresError) throw proveedoresError;
         
-        // Cargar clientes existentes
+        // Cargar clientes
         const { data: clientes, error: clientesError } = await supabase
             .from('clientes')
             .select('id, nombre, email, telefono, vendedor_id')
@@ -76,124 +78,125 @@ async function loadVentasData() {
         
         if (clientesError) throw clientesError;
         
-        // Guardar en el estado
+        // Asignar datos
         VentasModule.vendedores = vendedores || [];
         VentasModule.proveedores = proveedores || [];
         VentasModule.clientesExistentes = clientes || [];
         
-        // Actualizar formulario con los datos
-        updateFormWithData();
-        
-        console.log('📊 Datos cargados:', {
+        console.log('✅ Datos cargados:', {
             vendedores: VentasModule.vendedores.length,
             proveedores: VentasModule.proveedores.length,
             clientes: VentasModule.clientesExistentes.length
         });
         
     } catch (error) {
-        console.error('Error cargando datos:', error);
-        loadMockVentasData(); // Fallback
-    } finally {
-        hideLoader();
+        console.error('❌ Error cargando datos desde Supabase:', error);
+        loadMockData();
     }
 }
 
-function loadMockVentasData() {
+function loadMockData() {
     VentasModule.vendedores = [
-        { id: 1, nombre: 'Ana García', codigo_vendedor: 'V001', rol: 'vendedor', comision_porcentaje: 5 },
-        { id: 2, nombre: 'Carlos López', codigo_vendedor: 'V002', rol: 'supervisor', comision_porcentaje: 6 }
+        { id: 1, nombre: 'Ana García', codigo_vendedor: 'V001', rol: 'gerente', comision_porcentaje: 6 },
+        { id: 2, nombre: 'Carlos López', codigo_vendedor: 'V002', rol: 'vendedor', comision_porcentaje: 5 }
     ];
     
     VentasModule.proveedores = [
-        { id: 1, nombre: 'Consolidadora Aérea SA', tipo: 'vuelos', comision_porcentaje: 8 },
-        { id: 2, nombre: 'Hoteles Directos', tipo: 'hoteles', comision_porcentaje: 15 },
-        { id: 3, nombre: 'Miami Transport', tipo: 'traslados', comision_porcentaje: 20 }
+        { id: 1, nombre: 'Aerolíneas Demo', tipo: 'vuelos', comision_porcentaje: 8 },
+        { id: 2, nombre: 'Hoteles Demo', tipo: 'hoteles', comision_porcentaje: 15 },
+        { id: 3, nombre: 'Traslados Demo', tipo: 'traslados', comision_porcentaje: 20 },
+        { id: 4, nombre: 'Excursiones Demo', tipo: 'excursiones', comision_porcentaje: 25 }
     ];
     
-    updateFormWithData();
+    VentasModule.clientesExistentes = [];
+    
+    console.log('✅ Datos demo cargados');
 }
 
-// ===== ACTUALIZAR FORMULARIO CON DATOS =====
-function updateFormWithData() {
-    // Actualizar select de vendedores
-    updateVendedoresSelect();
+// ===== CONFIGURAR INTERFAZ =====
+function setupVentasUI() {
+    console.log('🎨 Configurando interfaz...');
     
-    // Actualizar autocompletado de clientes
+    // Crear select de vendedores
+    createVendedorSelect();
+    
+    // Configurar autocompletado de clientes
     setupClienteAutocomplete();
     
-    // Actualizar selects de proveedores en cada servicio
-    updateProveedoresSelects();
+    // Crear selects de proveedores
+    createProveedorSelects();
     
-    // Configurar validaciones inteligentes
-    setupIntelligentValidation();
+    // Actualizar descripción de vuelos automáticamente
+    setupVueloDescriptionUpdate();
 }
 
-function updateVendedoresSelect() {
-    // Agregar select de vendedor al formulario si no existe
+function createVendedorSelect() {
+    // Buscar si ya existe
+    if (document.getElementById('vendedor-select-nts')) return;
+    
     const clienteSection = document.querySelector('#nueva-venta .form-section');
+    if (!clienteSection) return;
     
-    if (!document.getElementById('vendedor-select')) {
-        const vendedorRow = document.createElement('div');
-        vendedorRow.className = 'form-row';
-        vendedorRow.innerHTML = `
-            <div>
-                <label for="vendedor-select">🧑‍💼 Vendedor Responsable *</label>
-                <select id="vendedor-select" required>
-                    <option value="">Seleccionar vendedor...</option>
-                </select>
-            </div>
-        `;
-        
-        clienteSection.appendChild(vendedorRow);
-    }
+    const vendedorRow = document.createElement('div');
+    vendedorRow.className = 'form-row';
+    vendedorRow.innerHTML = `
+        <div>
+            <label for="vendedor-select-nts"><strong>🧑‍💼 Vendedor Responsable *</strong></label>
+            <select id="vendedor-select-nts" required>
+                <option value="">Seleccionar vendedor...</option>
+            </select>
+            <small>Seleccione el vendedor responsable de esta venta</small>
+        </div>
+    `;
     
-    const vendedorSelect = document.getElementById('vendedor-select');
-    vendedorSelect.innerHTML = '<option value="">Seleccionar vendedor...</option>';
+    clienteSection.appendChild(vendedorRow);
     
+    const select = document.getElementById('vendedor-select-nts');
     VentasModule.vendedores.forEach(vendedor => {
         const option = document.createElement('option');
         option.value = vendedor.id;
         option.textContent = `${vendedor.nombre} (${vendedor.codigo_vendedor}) - ${vendedor.rol}`;
-        vendedorSelect.appendChild(option);
+        select.appendChild(option);
     });
+    
+    console.log('✅ Select de vendedores creado');
 }
 
 function setupClienteAutocomplete() {
     const clienteNombre = document.getElementById('cliente-nombre');
-    const clienteEmail = document.getElementById('cliente-email');
-    const clienteTelefono = document.getElementById('cliente-telefono');
-    
     if (!clienteNombre) return;
     
-    // Crear datalist para autocompletado
-    let datalist = document.getElementById('clientes-datalist');
+    // Crear datalist si no existe
+    let datalist = document.getElementById('clientes-datalist-nts');
     if (!datalist) {
         datalist = document.createElement('datalist');
-        datalist.id = 'clientes-datalist';
+        datalist.id = 'clientes-datalist-nts';
         document.body.appendChild(datalist);
     }
     
-    // Llenar datalist con clientes existentes
+    // Llenar datalist
     datalist.innerHTML = '';
     VentasModule.clientesExistentes.forEach(cliente => {
         const option = document.createElement('option');
         option.value = cliente.nombre;
-        option.setAttribute('data-email', cliente.email);
-        option.setAttribute('data-telefono', cliente.telefono);
+        option.setAttribute('data-email', cliente.email || '');
+        option.setAttribute('data-telefono', cliente.telefono || '');
         option.setAttribute('data-id', cliente.id);
         datalist.appendChild(option);
     });
     
-    // Configurar autocompletado
-    clienteNombre.setAttribute('list', 'clientes-datalist');
+    clienteNombre.setAttribute('list', 'clientes-datalist-nts');
     
-    // Event listener para autocompletar datos
+    // Event listener para autocompletar
     clienteNombre.addEventListener('input', function() {
         const selectedOption = [...datalist.options].find(option => option.value === this.value);
         
         if (selectedOption) {
-            clienteEmail.value = selectedOption.getAttribute('data-email') || '';
-            clienteTelefono.value = selectedOption.getAttribute('data-telefono') || '';
+            const emailField = document.getElementById('cliente-email');
+            const telefonoField = document.getElementById('cliente-telefono');
+            
+            if (emailField) emailField.value = selectedOption.getAttribute('data-email');
+            if (telefonoField) telefonoField.value = selectedOption.getAttribute('data-telefono');
             
             VentasModule.currentVenta.cliente.id = selectedOption.getAttribute('data-id');
             VentasModule.currentVenta.cliente.esExistente = true;
@@ -203,45 +206,49 @@ function setupClienteAutocomplete() {
             VentasModule.currentVenta.cliente.esExistente = false;
         }
     });
+    
+    console.log('✅ Autocompletado de clientes configurado');
 }
 
-function updateProveedoresSelects() {
+function createProveedorSelects() {
     const serviceForms = ['vuelo', 'hotel', 'traslado', 'excursion'];
     
     serviceForms.forEach(serviceType => {
         const serviceForm = document.getElementById(`service-${serviceType}`);
         if (!serviceForm) return;
         
-        // Agregar select de proveedor si no existe
-        let proveedorSelect = serviceForm.querySelector('.proveedor-select');
-        if (!proveedorSelect) {
-            const proveedorRow = document.createElement('div');
-            proveedorRow.className = 'form-row';
-            proveedorRow.innerHTML = `
-                <div>
-                    <label>🏢 Proveedor</label>
-                    <select class="proveedor-select" data-service="${serviceType}">
-                        <option value="">Seleccionar proveedor...</option>
-                    </select>
-                </div>
-                <div>
-                    <label>💰 Precio Costo</label>
-                    <input type="number" class="precio-costo" placeholder="Costo del proveedor" step="0.01" min="0">
-                </div>
-            `;
-            
-            // Insertar después del primer form-row
-            const firstRow = serviceForm.querySelector('.form-row');
-            if (firstRow) {
-                firstRow.parentNode.insertBefore(proveedorRow, firstRow.nextSibling);
-            }
-            
-            proveedorSelect = serviceForm.querySelector('.proveedor-select');
+        // Verificar si ya existe
+        if (serviceForm.querySelector('.proveedor-select-nts')) return;
+        
+        // Crear fila de proveedor
+        const proveedorRow = document.createElement('div');
+        proveedorRow.className = 'form-row';
+        proveedorRow.style.marginTop = '15px';
+        proveedorRow.style.paddingTop = '15px';
+        proveedorRow.style.borderTop = '1px solid #e9ecef';
+        
+        proveedorRow.innerHTML = `
+            <div>
+                <label><strong>🏢 Proveedor</strong></label>
+                <select class="proveedor-select-nts" data-service="${serviceType}">
+                    <option value="">Seleccionar proveedor...</option>
+                </select>
+            </div>
+            <div>
+                <label><strong>💰 Precio Costo</strong></label>
+                <input type="number" class="precio-costo-nts" placeholder="0.00" step="0.01" min="0">
+                <small>Precio que te cobra el proveedor</small>
+            </div>
+        `;
+        
+        // Insertar después del primer form-row
+        const firstRow = serviceForm.querySelector('.form-row');
+        if (firstRow) {
+            firstRow.parentNode.insertBefore(proveedorRow, firstRow.nextSibling);
         }
         
-        // Llenar select con proveedores del tipo correcto
-        proveedorSelect.innerHTML = '<option value="">Seleccionar proveedor...</option>';
-        
+        // Llenar select con proveedores filtrados
+        const select = proveedorRow.querySelector('.proveedor-select-nts');
         const tipoMapping = {
             'vuelo': 'vuelos',
             'hotel': 'hoteles',
@@ -257,189 +264,156 @@ function updateProveedoresSelects() {
             const option = document.createElement('option');
             option.value = proveedor.id;
             option.textContent = `${proveedor.nombre} (${proveedor.tipo})`;
-            proveedorSelect.appendChild(option);
+            select.appendChild(option);
         });
     });
+    
+    console.log('✅ Selects de proveedores creados');
 }
 
-// ===== CONFIGURAR EVENTOS INTELIGENTES =====
+function setupVueloDescriptionUpdate() {
+    const origenInput = document.getElementById('vuelo-origen');
+    const destinoInput = document.getElementById('vuelo-destino');
+    const descripcionInput = document.getElementById('vuelo-descripcion');
+    
+    if (!origenInput || !destinoInput || !descripcionInput) return;
+    
+    function updateDescription() {
+        const origen = origenInput.value.trim();
+        const destino = destinoInput.value.trim();
+        
+        if (origen && destino) {
+            descripcionInput.value = `Vuelo ${origen} → ${destino}`;
+        }
+    }
+    
+    origenInput.addEventListener('input', updateDescription);
+    destinoInput.addEventListener('input', updateDescription);
+}
+
+// ===== CONFIGURAR EVENTOS =====
 function setupVentasEvents() {
-    console.log('🔧 Configurando eventos de ventas...');
+    console.log('🎯 Configurando eventos...');
     
-    // Event listener mejorado para agregar servicios
+    // Event listener para botones de agregar servicio
     document.addEventListener('click', function(e) {
-        if (e.target.matches('.btn-add-service') || e.target.closest('.btn-add-service')) {
+        if (e.target.matches('.btn-add-service[data-service]')) {
             e.preventDefault();
-            const button = e.target.matches('.btn-add-service') ? e.target : e.target.closest('.btn-add-service');
-            const serviceType = button.getAttribute('data-service') || 
-                              button.getAttribute('onclick')?.match(/agregarServicio\('(.+)'\)/)?.[1];
-            
-            if (serviceType) {
-                agregarServicioMejorado(serviceType);
-            }
+            const serviceType = e.target.getAttribute('data-service');
+            agregarServicioMejorado(serviceType);
         }
     });
     
-    // Event listener para crear venta
-    const crearVentaBtn = document.querySelector('button[onclick="crearVenta()"]');
-    if (crearVentaBtn) {
-        crearVentaBtn.replaceWith(crearVentaBtn.cloneNode(true)); // Remover eventos anteriores
-        const newBtn = document.querySelector('button[onclick="crearVenta()"]');
-        newBtn.removeAttribute('onclick');
-        newBtn.addEventListener('click', crearVentaCompleta);
-    }
-    
-    // Event listener para limpiar formulario
-    const limpiarBtn = document.querySelector('button[onclick="limpiarFormulario()"]');
-    if (limpiarBtn) {
-        limpiarBtn.replaceWith(limpiarBtn.cloneNode(true));
-        const newBtn = document.querySelector('button[onclick="limpiarFormulario()"]');
-        newBtn.removeAttribute('onclick');
-        newBtn.addEventListener('click', limpiarFormularioCompleto);
-    }
-}
-
-function setupSmartForm() {
-    // Configurar validación en tiempo real
-    const requiredFields = ['cliente-nombre', 'vendedor-select'];
-    
-    requiredFields.forEach(fieldId => {
-        const field = document.getElementById(fieldId);
-        if (field) {
-            field.addEventListener('blur', validateField);
-            field.addEventListener('input', clearFieldError);
-        }
-    });
-    
-    // Configurar cálculo automático de márgenes
-    setupMarginCalculation();
-}
-
-function setupMarginCalculation() {
+    // Event listener para calcular márgenes
     document.addEventListener('input', function(e) {
-        if (e.target.matches('.precio-costo') || e.target.matches('[id$="-precio"]')) {
-            calculateMarginForService(e.target);
+        if (e.target.matches('.precio-costo-nts') || e.target.matches('[id$="-precio"]')) {
+            calculateMargin(e.target);
         }
     });
 }
 
-function calculateMarginForService(element) {
+function calculateMargin(element) {
     const serviceForm = element.closest('.service-form');
     if (!serviceForm) return;
     
-    const precioCosto = parseFloat(serviceForm.querySelector('.precio-costo')?.value) || 0;
+    const precioCosto = parseFloat(serviceForm.querySelector('.precio-costo-nts')?.value) || 0;
     const precioVenta = parseFloat(serviceForm.querySelector('[id$="-precio"]')?.value) || 0;
     
     if (precioCosto > 0 && precioVenta > 0) {
         const margen = precioVenta - precioCosto;
         const porcentaje = ((margen / precioCosto) * 100).toFixed(1);
         
-        // Mostrar margen calculado
-        let margenDisplay = serviceForm.querySelector('.margen-display');
+        // Mostrar margen
+        let margenDisplay = serviceForm.querySelector('.margen-display-nts');
         if (!margenDisplay) {
             margenDisplay = document.createElement('div');
-            margenDisplay.className = 'margen-display';
-            margenDisplay.style.cssText = 'margin-top: 10px; padding: 10px; background: #e8f5e8; border-radius: 5px; font-size: 14px;';
+            margenDisplay.className = 'margen-display-nts margen-display';
             serviceForm.appendChild(margenDisplay);
         }
         
+        const color = margen >= 0 ? '#27ae60' : '#e74c3c';
+        const icon = margen >= 0 ? '✅' : '⚠️';
+        
         margenDisplay.innerHTML = `
-            💰 <strong>Margen:</strong> $${margen.toLocaleString()} (${porcentaje}%)
-            ${margen < 0 ? '<span style="color: red;">⚠️ Pérdida</span>' : '<span style="color: green;">✅ Ganancia</span>'}
+            💰 <strong>Margen:</strong> $${margen.toLocaleString()} (${porcentaje}%) 
+            <span style="color: ${color};">${icon} ${margen >= 0 ? 'Ganancia' : 'Pérdida'}</span>
         `;
     }
 }
 
-// ===== AGREGAR SERVICIO MEJORADO =====
+// ===== AGREGAR SERVICIOS =====
 function agregarServicioMejorado(tipo) {
-    console.log(`➕ Agregando servicio mejorado: ${tipo}`);
+    console.log(`➕ Agregando servicio: ${tipo}`);
     
-    const serviceData = getServiceFormDataMejorado(tipo);
+    const serviceData = getServiceFormData(tipo);
     
-    if (!validateServiceDataMejorado(serviceData, tipo)) {
+    if (!validateServiceData(serviceData, tipo)) {
         return;
     }
     
-    // Agregar datos calculados
+    // Agregar al estado
     serviceData.id = Date.now();
     serviceData.tipo = tipo;
     serviceData.margen_ganancia = (serviceData.precio_venta || 0) - (serviceData.precio_costo || 0);
     
-    // Agregar a la lista
     VentasModule.currentVenta.servicios.push(serviceData);
     
     // Actualizar vista
-    renderServiciosAgregadosMejorado();
-    updateVentaTotalsMejorado();
-    
-    // Limpiar formulario
-    clearServiceFormMejorado(tipo);
+    renderServiciosAgregados();
+    updateVentaTotals();
+    clearServiceForm(tipo);
     
     showNotification(`✅ ${tipo} agregado correctamente`, 'success');
 }
 
-function getServiceFormDataMejorado(tipo) {
+function getServiceFormData(tipo) {
+    const serviceForm = document.getElementById(`service-${tipo}`);
+    
     const baseData = {
-        proveedor_id: getValue(`service-${tipo} .proveedor-select`),
-        precio_costo: parseFloat(getValue(`service-${tipo} .precio-costo`)) || 0,
-        precio_venta: parseFloat(getValue(`${tipo}-precio`)) || 0
+        proveedor_id: serviceForm.querySelector('.proveedor-select-nts')?.value || null,
+        precio_costo: parseFloat(serviceForm.querySelector('.precio-costo-nts')?.value) || 0,
+        precio_venta: parseFloat(document.getElementById(`${tipo}-precio`)?.value) || 0
     };
     
     switch(tipo) {
         case 'vuelo':
             return {
                 ...baseData,
-                descripcion: getValue('vuelo-descripcion'),
-                tipo_itinerario: getValue('vuelo-tipo'),
-                pasajeros: parseInt(getValue('vuelo-pasajeros')) || 1,
-                origen: getValue('vuelo-origen') || '',
-                destino: getValue('vuelo-destino') || '',
-                fecha_salida: getValue('vuelo-fecha-salida'),
-                aerolinea: getValue('vuelo-aerolinea') || ''
+                descripcion: document.getElementById('vuelo-descripcion')?.value || `Vuelo ${document.getElementById('vuelo-origen')?.value || ''} → ${document.getElementById('vuelo-destino')?.value || ''}`,
+                origen: document.getElementById('vuelo-origen')?.value || '',
+                destino: document.getElementById('vuelo-destino')?.value || '',
+                pasajeros: parseInt(document.getElementById('vuelo-pasajeros')?.value) || 1
             };
         case 'hotel':
             return {
                 ...baseData,
-                hotel_nombre: getValue('hotel-nombre'),
-                hotel_ciudad: getValue('hotel-ciudad'),
-                fecha_checkin: getValue('hotel-checkin'),
-                fecha_checkout: getValue('hotel-checkout'),
-                huespedes: parseInt(getValue('hotel-huespedes')) || 1,
-                noches: calculateNights(getValue('hotel-checkin'), getValue('hotel-checkout'))
+                hotel_nombre: document.getElementById('hotel-nombre')?.value || '',
+                hotel_ciudad: document.getElementById('hotel-ciudad')?.value || '',
+                fecha_checkin: document.getElementById('hotel-checkin')?.value || '',
+                fecha_checkout: document.getElementById('hotel-checkout')?.value || '',
+                huespedes: parseInt(document.getElementById('hotel-huespedes')?.value) || 1
             };
         case 'traslado':
             return {
                 ...baseData,
-                origen: getValue('traslado-origen'),
-                destino: getValue('traslado-destino'),
-                fecha_traslado: getValue('traslado-fecha'),
-                tipo_traslado: 'libre',
-                pasajeros: 1
+                origen: document.getElementById('traslado-origen')?.value || '',
+                destino: document.getElementById('traslado-destino')?.value || '',
+                fecha_traslado: document.getElementById('traslado-fecha')?.value || '',
+                pasajeros: parseInt(document.getElementById('traslado-pasajeros')?.value) || 1
             };
         case 'excursion':
             return {
                 ...baseData,
-                nombre_excursion: getValue('excursion-nombre'),
-                fecha_excursion: getValue('excursion-fecha'),
-                participantes: parseInt(getValue('excursion-participantes')) || 1
+                nombre_excursion: document.getElementById('excursion-nombre')?.value || '',
+                fecha_excursion: document.getElementById('excursion-fecha')?.value || '',
+                participantes: parseInt(document.getElementById('excursion-participantes')?.value) || 1
             };
         default:
             return baseData;
     }
 }
 
-function calculateNights(checkin, checkout) {
-    if (!checkin || !checkout) return 0;
-    
-    const checkinDate = new Date(checkin);
-    const checkoutDate = new Date(checkout);
-    const diffTime = checkoutDate - checkinDate;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    return Math.max(0, diffDays);
-}
-
-function validateServiceDataMejorado(serviceData, tipo) {
+function validateServiceData(serviceData, tipo) {
     if (!serviceData.precio_venta || serviceData.precio_venta <= 0) {
         showNotification('⚠️ Ingrese un precio de venta válido', 'warning');
         return false;
@@ -448,8 +422,8 @@ function validateServiceDataMejorado(serviceData, tipo) {
     // Validaciones específicas por tipo
     switch(tipo) {
         case 'vuelo':
-            if (!serviceData.descripcion) {
-                showNotification('⚠️ Ingrese la descripción del vuelo', 'warning');
+            if (!serviceData.descripcion || serviceData.descripcion.includes('→')) {
+                showNotification('⚠️ Complete origen y destino del vuelo', 'warning');
                 return false;
             }
             break;
@@ -458,14 +432,10 @@ function validateServiceDataMejorado(serviceData, tipo) {
                 showNotification('⚠️ Ingrese el nombre del hotel', 'warning');
                 return false;
             }
-            if (!serviceData.fecha_checkin || !serviceData.fecha_checkout) {
-                showNotification('⚠️ Ingrese las fechas de check-in y check-out', 'warning');
-                return false;
-            }
             break;
         case 'traslado':
             if (!serviceData.origen || !serviceData.destino) {
-                showNotification('⚠️ Ingrese origen y destino del traslado', 'warning');
+                showNotification('⚠️ Complete origen y destino del traslado', 'warning');
                 return false;
             }
             break;
@@ -480,8 +450,32 @@ function validateServiceDataMejorado(serviceData, tipo) {
     return true;
 }
 
-// ===== RENDERIZAR SERVICIOS MEJORADO =====
-function renderServiciosAgregadosMejorado() {
+function clearServiceForm(tipo) {
+    const serviceForm = document.getElementById(`service-${tipo}`);
+    if (!serviceForm) return;
+    
+    // Limpiar inputs excepto los que tienen valores por defecto
+    serviceForm.querySelectorAll('input').forEach(input => {
+        if (input.type === 'number' && input.hasAttribute('value')) {
+            input.value = input.getAttribute('value');
+        } else {
+            input.value = '';
+        }
+    });
+    
+    serviceForm.querySelectorAll('select').forEach(select => {
+        select.selectedIndex = 0;
+    });
+    
+    // Remover display de margen
+    const margenDisplay = serviceForm.querySelector('.margen-display-nts');
+    if (margenDisplay) {
+        margenDisplay.remove();
+    }
+}
+
+// ===== RENDERIZAR SERVICIOS =====
+function renderServiciosAgregados() {
     const container = document.getElementById('servicios-lista');
     if (!container) return;
     
@@ -491,25 +485,24 @@ function renderServiciosAgregadosMejorado() {
     }
     
     const serviciosHTML = VentasModule.currentVenta.servicios.map(servicio => {
-        const descripcion = getServiceDescriptionMejorado(servicio);
+        const descripcion = getServiceDescription(servicio);
         const proveedor = VentasModule.proveedores.find(p => p.id == servicio.proveedor_id);
-        const margenColor = servicio.margen_ganancia >= 0 ? '#27ae60' : '#e74c3c';
         
         return `
             <div class="service-item service-item-mejorado" data-id="${servicio.id}">
                 <div class="service-info">
                     <div class="service-header">
                         <span class="service-description">${descripcion}</span>
-                        <span class="service-price">${formatCurrency(servicio.precio_venta)}</span>
+                        <span class="service-price">$${servicio.precio_venta.toLocaleString()}</span>
                     </div>
                     <div class="service-details">
                         ${proveedor ? `<span class="service-provider">🏢 ${proveedor.nombre}</span>` : ''}
-                        <span class="service-margin" style="color: ${margenColor}">
-                            💰 Margen: ${formatCurrency(servicio.margen_ganancia)}
+                        <span class="service-margin" style="color: ${servicio.margen_ganancia >= 0 ? '#27ae60' : '#e74c3c'}">
+                            💰 Margen: $${servicio.margen_ganancia.toLocaleString()}
                         </span>
                     </div>
                 </div>
-                <button type="button" onclick="eliminarServicioMejorado(${servicio.id})" class="btn-remove">🗑️</button>
+                <button type="button" onclick="eliminarServicio(${servicio.id})" class="btn-remove">🗑️</button>
             </div>
         `;
     }).join('');
@@ -517,14 +510,14 @@ function renderServiciosAgregadosMejorado() {
     container.innerHTML = serviciosHTML;
 }
 
-function getServiceDescriptionMejorado(servicio) {
+function getServiceDescription(servicio) {
     switch(servicio.tipo) {
         case 'vuelo':
             return `✈️ ${servicio.descripcion} (${servicio.pasajeros} pax)`;
         case 'hotel':
-            return `🏨 ${servicio.hotel_nombre} - ${servicio.hotel_ciudad} (${servicio.huespedes} huéspedes, ${servicio.noches} noches)`;
+            return `🏨 ${servicio.hotel_nombre} - ${servicio.hotel_ciudad} (${servicio.huespedes} huéspedes)`;
         case 'traslado':
-            return `🚌 ${servicio.origen} → ${servicio.destino}`;
+            return `🚌 ${servicio.origen} → ${servicio.destino} (${servicio.pasajeros} pax)`;
         case 'excursion':
             return `🗺️ ${servicio.nombre_excursion} (${servicio.participantes} pax)`;
         default:
@@ -532,13 +525,47 @@ function getServiceDescriptionMejorado(servicio) {
     }
 }
 
-// ===== CREAR VENTA COMPLETA =====
+function updateVentaTotals() {
+    const total = VentasModule.currentVenta.servicios.reduce((sum, s) => sum + s.precio_venta, 0);
+    const totalCosto = VentasModule.currentVenta.servicios.reduce((sum, s) => sum + (s.precio_costo || 0), 0);
+    const margenTotal = total - totalCosto;
+    
+    // Actualizar total simple
+    const totalElement = document.getElementById('total-venta');
+    if (totalElement) {
+        totalElement.textContent = total.toLocaleString();
+    }
+    
+    // Actualizar sección detallada si hay servicios
+    const totalSection = document.querySelector('.total-section');
+    if (totalSection && VentasModule.currentVenta.servicios.length > 0) {
+        totalSection.innerHTML = `
+            <div class="total-breakdown">
+                <div class="total-row">
+                    <span>💰 Total de Venta:</span>
+                    <span class="total-amount">$${total.toLocaleString()}</span>
+                </div>
+                <div class="total-row">
+                    <span>💸 Total Costos:</span>
+                    <span class="cost-amount">$${totalCosto.toLocaleString()}</span>
+                </div>
+                <div class="total-row total-margin">
+                    <span>📈 Margen Total:</span>
+                    <span class="margin-amount" style="color: ${margenTotal >= 0 ? '#27ae60' : '#e74c3c'}">
+                        $${margenTotal.toLocaleString()}
+                    </span>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// ===== CREAR VENTA =====
 async function crearVentaCompleta() {
-    console.log('💾 Creando venta completa...');
+    console.log('💾 Creando venta...');
     
     try {
-        // Validar formulario completo
-        if (!validateVentaCompleta()) {
+        if (!validateVentaForm()) {
             return;
         }
         
@@ -557,11 +584,6 @@ async function crearVentaCompleta() {
         showNotification('✅ Venta creada exitosamente', 'success');
         limpiarFormularioCompleto();
         
-        // Recargar dashboard si estamos en esa pestaña
-        if (window.NTS_APP?.currentTab === 'dashboard') {
-            loadDashboard();
-        }
-        
     } catch (error) {
         console.error('Error creando venta:', error);
         showNotification('❌ Error al crear la venta: ' + error.message, 'error');
@@ -570,31 +592,24 @@ async function crearVentaCompleta() {
     }
 }
 
-function validateVentaCompleta() {
-    // Validar cliente
-    const clienteNombre = getValue('cliente-nombre');
+function validateVentaForm() {
+    const clienteNombre = document.getElementById('cliente-nombre')?.value?.trim();
+    const vendedorId = document.getElementById('vendedor-select-nts')?.value;
+    
     if (!clienteNombre) {
         showNotification('⚠️ Ingrese el nombre del cliente', 'warning');
+        document.getElementById('cliente-nombre')?.focus();
         return false;
     }
     
-    // Validar vendedor
-    const vendedorId = getValue('vendedor-select');
     if (!vendedorId) {
         showNotification('⚠️ Seleccione un vendedor responsable', 'warning');
+        document.getElementById('vendedor-select-nts')?.focus();
         return false;
     }
     
-    // Validar servicios
     if (VentasModule.currentVenta.servicios.length === 0) {
         showNotification('⚠️ Agregue al menos un servicio', 'warning');
-        return false;
-    }
-    
-    // Validar email si está presente
-    const clienteEmail = getValue('cliente-email');
-    if (clienteEmail && !isValidEmail(clienteEmail)) {
-        showNotification('⚠️ El email del cliente no es válido', 'warning');
         return false;
     }
     
@@ -605,28 +620,25 @@ function buildVentaData() {
     const total = VentasModule.currentVenta.servicios.reduce((sum, s) => sum + s.precio_venta, 0);
     
     return {
-        // Datos del cliente
         cliente: {
-            nombre: getValue('cliente-nombre'),
-            email: getValue('cliente-email'),
-            telefono: getValue('cliente-telefono'),
-            documento: getValue('cliente-documento'),
-            vendedor_id: parseInt(getValue('vendedor-select')),
+            nombre: document.getElementById('cliente-nombre')?.value?.trim(),
+            email: document.getElementById('cliente-email')?.value?.trim(),
+            telefono: document.getElementById('cliente-telefono')?.value?.trim(),
+            documento: document.getElementById('cliente-documento')?.value?.trim(),
+            vendedor_id: parseInt(document.getElementById('vendedor-select-nts')?.value),
             esExistente: VentasModule.currentVenta.cliente.esExistente || false,
             id: VentasModule.currentVenta.cliente.id || null
         },
-        // Datos de la venta
         venta: {
-            vendedor_id: parseInt(getValue('vendedor-select')),
+            vendedor_id: parseInt(document.getElementById('vendedor-select-nts')?.value),
             fecha_venta: new Date().toISOString().split('T')[0],
-            fecha_viaje_inicio: getValue('fecha-viaje-inicio'),
-            fecha_viaje_fin: getValue('fecha-viaje-fin'),
+            fecha_viaje_inicio: document.getElementById('fecha-viaje-inicio')?.value,
+            fecha_viaje_fin: document.getElementById('fecha-viaje-fin')?.value,
             total_final: total,
             estado: 'pendiente',
             estado_pago: 'no_pagado',
-            observaciones: getValue('observaciones-venta')
+            observaciones: document.getElementById('observaciones-venta')?.value?.trim()
         },
-        // Servicios
         servicios: [...VentasModule.currentVenta.servicios]
     };
 }
@@ -641,7 +653,6 @@ async function crearVentaEnDB(ventaData) {
         if (ventaData.cliente.esExistente && ventaData.cliente.id) {
             clienteId = ventaData.cliente.id;
         } else {
-            // Crear nuevo cliente
             const { data: nuevoCliente, error: clienteError } = await supabase
                 .from('clientes')
                 .insert({
@@ -674,23 +685,6 @@ async function crearVentaEnDB(ventaData) {
         
         if (ventaError) throw ventaError;
         
-        // 4. Crear servicios
-        for (const servicio of ventaData.servicios) {
-            const tablaServicio = `venta_${servicio.tipo}s`;
-            
-            const { error: servicioError } = await supabase
-                .from(tablaServicio)
-                .insert({
-                    ...servicio,
-                    venta_id: nuevaVenta.id
-                });
-            
-            if (servicioError) {
-                console.error(`Error creando ${servicio.tipo}:`, servicioError);
-                // Continuar con otros servicios
-            }
-        }
-        
         console.log('✅ Venta creada en DB:', numeroVenta);
         
     } catch (error) {
@@ -700,9 +694,6 @@ async function crearVentaEnDB(ventaData) {
 }
 
 async function crearVentaLocal(ventaData) {
-    console.log('💾 Guardando venta localmente:', ventaData);
-    
-    // Simular guardado local
     const ventas = JSON.parse(localStorage.getItem('nts_ventas') || '[]');
     ventas.push({
         ...ventaData,
@@ -712,201 +703,47 @@ async function crearVentaLocal(ventaData) {
     });
     
     localStorage.setItem('nts_ventas', JSON.stringify(ventas));
+    console.log('✅ Venta guardada localmente');
 }
 
-// ===== UTILIDADES =====
+// ===== FUNCIONES DE UTILIDAD =====
 function limpiarFormularioCompleto() {
-    // Limpiar datos del cliente
+    // Limpiar campos de cliente
     ['cliente-nombre', 'cliente-email', 'cliente-telefono', 'cliente-documento'].forEach(id => {
-        setValue(id, '');
+        const field = document.getElementById(id);
+        if (field) field.value = '';
     });
     
     // Limpiar vendedor
-    setValue('vendedor-select', '');
+    const vendedorSelect = document.getElementById('vendedor-select-nts');
+    if (vendedorSelect) vendedorSelect.selectedIndex = 0;
     
     // Limpiar fechas y observaciones
-    setValue('fecha-viaje-inicio', '');
-    setValue('fecha-viaje-fin', '');
-    setValue('observaciones-venta', '');
+    ['fecha-viaje-inicio', 'fecha-viaje-fin', 'observaciones-venta'].forEach(id => {
+        const field = document.getElementById(id);
+        if (field) field.value = '';
+    });
     
     // Limpiar servicios
     VentasModule.currentVenta.servicios = [];
     VentasModule.currentVenta.cliente = {};
     
-    renderServiciosAgregadosMejorado();
-    updateVentaTotalsMejorado();
+    renderServiciosAgregados();
+    updateVentaTotals();
     
     // Limpiar formularios de servicios
     ['vuelo', 'hotel', 'traslado', 'excursion'].forEach(tipo => {
-        clearServiceFormMejorado(tipo);
+        clearServiceForm(tipo);
     });
     
     showNotification('🗑️ Formulario limpiado', 'info');
 }
 
-function clearServiceFormMejorado(tipo) {
-    const serviceForm = document.getElementById(`service-${tipo}`);
-    if (!serviceForm) return;
-    
-    // Limpiar todos los inputs
-    const inputs = serviceForm.querySelectorAll('input, select');
-    inputs.forEach(input => {
-        if (input.type !== 'number' || !input.hasAttribute('min')) {
-            input.value = '';
-        } else {
-            // Para campos numéricos con valor por defecto
-            const defaultValue = input.getAttribute('value');
-            input.value = defaultValue || '';
-        }
-    });
-    
-    // Remover display de margen
-    const margenDisplay = serviceForm.querySelector('.margen-display');
-    if (margenDisplay) {
-        margenDisplay.remove();
-    }
-}
-
-function updateVentaTotalsMejorado() {
-    const total = VentasModule.currentVenta.servicios.reduce((sum, s) => sum + s.precio_venta, 0);
-    const totalCosto = VentasModule.currentVenta.servicios.reduce((sum, s) => sum + (s.precio_costo || 0), 0);
-    const margenTotal = total - totalCosto;
-    
-    const totalElement = document.getElementById('total-venta');
-    if (totalElement) {
-        totalElement.textContent = total.toLocaleString();
-    }
-    
-    // Actualizar sección de totales con más información
-    const totalSection = document.querySelector('.total-section');
-    if (totalSection && VentasModule.currentVenta.servicios.length > 0) {
-        totalSection.innerHTML = `
-            <div class="total-breakdown">
-                <div class="total-row">
-                    <span>💰 Total de Venta:</span>
-                    <span class="total-amount">${formatCurrency(total)}</span>
-                </div>
-                <div class="total-row">
-                    <span>💸 Total Costos:</span>
-                    <span class="cost-amount">${formatCurrency(totalCosto)}</span>
-                </div>
-                <div class="total-row total-margin">
-                    <span>📈 Margen Total:</span>
-                    <span class="margin-amount" style="color: ${margenTotal >= 0 ? '#27ae60' : '#e74c3c'}">
-                        ${formatCurrency(margenTotal)}
-                    </span>
-                </div>
-                <div class="total-row">
-                    <span>📊 Servicios:</span>
-                    <span>${VentasModule.currentVenta.servicios.length}</span>
-                </div>
-            </div>
-        `;
-    }
-}
-
-function eliminarServicioMejorado(id) {
+function eliminarServicio(id) {
     VentasModule.currentVenta.servicios = VentasModule.currentVenta.servicios.filter(s => s.id !== id);
-    renderServiciosAgregadosMejorado();
-    updateVentaTotalsMejorado();
+    renderServiciosAgregados();
+    updateVentaTotals();
     showNotification('🗑️ Servicio eliminado', 'info');
-}
-
-function validateField(e) {
-    const field = e.target;
-    const value = field.value.trim();
-    
-    // Remover clases de error previas
-    field.classList.remove('field-error');
-    
-    if (field.hasAttribute('required') && !value) {
-        field.classList.add('field-error');
-        showFieldError(field, 'Este campo es requerido');
-        return false;
-    }
-    
-    if (field.type === 'email' && value && !isValidEmail(value)) {
-        field.classList.add('field-error');
-        showFieldError(field, 'Email inválido');
-        return false;
-    }
-    
-    return true;
-}
-
-function clearFieldError(e) {
-    const field = e.target;
-    field.classList.remove('field-error');
-    
-    const errorMsg = field.parentNode.querySelector('.field-error-msg');
-    if (errorMsg) {
-        errorMsg.remove();
-    }
-}
-
-function showFieldError(field, message) {
-    // Remover mensaje de error anterior
-    const existingError = field.parentNode.querySelector('.field-error-msg');
-    if (existingError) {
-        existingError.remove();
-    }
-    
-    // Crear nuevo mensaje de error
-    const errorMsg = document.createElement('div');
-    errorMsg.className = 'field-error-msg';
-    errorMsg.style.cssText = 'color: #e74c3c; font-size: 12px; margin-top: 5px;';
-    errorMsg.textContent = message;
-    
-    field.parentNode.appendChild(errorMsg);
-}
-
-function setupIntelligentValidation() {
-    // Validación de fechas de viaje
-    const fechaInicio = document.getElementById('fecha-viaje-inicio');
-    const fechaFin = document.getElementById('fecha-viaje-fin');
-    
-    if (fechaInicio && fechaFin) {
-        fechaInicio.addEventListener('change', function() {
-            if (fechaFin.value && fechaInicio.value > fechaFin.value) {
-                showNotification('⚠️ La fecha de inicio no puede ser posterior a la fecha de fin', 'warning');
-                fechaInicio.value = '';
-            }
-        });
-        
-        fechaFin.addEventListener('change', function() {
-            if (fechaInicio.value && fechaFin.value < fechaInicio.value) {
-                showNotification('⚠️ La fecha de fin no puede ser anterior a la fecha de inicio', 'warning');
-                fechaFin.value = '';
-            }
-        });
-    }
-}
-
-// ===== FUNCIONES HELPER =====
-function getValue(selector) {
-    const element = typeof selector === 'string' && selector.includes(' ') 
-        ? document.querySelector(selector)
-        : document.getElementById(selector);
-    return element ? element.value.trim() : '';
-}
-
-function setValue(elementId, value) {
-    const element = document.getElementById(elementId);
-    if (element) {
-        element.value = value || '';
-    }
-}
-
-function formatCurrency(amount) {
-    if (typeof amount !== 'number') {
-        amount = parseFloat(amount) || 0;
-    }
-    return `${amount.toLocaleString()}`;
-}
-
-function isValidEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
 }
 
 function generateSaleNumber() {
@@ -915,6 +752,7 @@ function generateSaleNumber() {
     return `NTS-${year}-${timestamp}`;
 }
 
+// ===== FUNCIONES DE UTILIDAD =====
 function showLoader(message) {
     if (window.NTS_UTILS && window.NTS_UTILS.showLoader) {
         window.NTS_UTILS.showLoader(message);
@@ -939,12 +777,19 @@ function showNotification(message, type) {
 window.VentasModule = {
     init: initVentasModule,
     agregarServicio: agregarServicioMejorado,
-    eliminarServicio: eliminarServicioMejorado,
+    eliminarServicio: eliminarServicio,
     crearVenta: crearVentaCompleta,
     limpiarFormulario: limpiarFormularioCompleto,
     currentVenta: VentasModule.currentVenta,
     vendedores: VentasModule.vendedores,
-    proveedores: VentasModule.proveedores
+    proveedores: VentasModule.proveedores,
+    clientesExistentes: VentasModule.clientesExistentes
 };
+
+// ===== FUNCIONES GLOBALES PARA COMPATIBILIDAD =====
+window.agregarServicio = agregarServicioMejorado;
+window.crearVenta = crearVentaCompleta;
+window.limpiarFormulario = limpiarFormularioCompleto;
+window.eliminarServicio = eliminarServicio;
 
 console.log('✅ Módulo de ventas cargado correctamente');
