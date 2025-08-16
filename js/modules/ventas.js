@@ -594,7 +594,6 @@ function getServiceFormData(tipo) {
                 origen: origen,
                 destino: destino,
                 tipo_itinerario: document.getElementById('vuelo-tipo')?.value || 'ida_vuelta',
-                aerolinea: document.getElementById('vuelo-aerolinea')?.value?.trim() || '',
                 clase_vuelo: document.getElementById('vuelo-clase')?.value || 'economica',
                 pasajeros: parseInt(document.getElementById('vuelo-pasajeros')?.value) || 1,
                 
@@ -954,7 +953,6 @@ async function crearVentaEnDB(ventaData) {
                         origen: servicio.origen,
                         destino: servicio.destino,
                         tipo_itinerario: servicio.tipo_itinerario,
-                        aerolinea: servicio.aerolinea,
                         clase_vuelo: servicio.clase_vuelo,
                         pasajeros: servicio.pasajeros,
                         fecha_hora_salida: servicio.fecha_hora_salida,

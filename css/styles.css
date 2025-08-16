@@ -1059,3 +1059,43 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--gray-400);
 }
+
+/* ===== FLIGHT SEGMENTS ===== */
+#segments-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  overflow-x: auto;
+}
+
+.segment-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  border: 1px solid var(--gray-300);
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+}
+
+.segment-section {
+  display: grid;
+  gap: var(--spacing-sm);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.segment-row .remove-segment {
+  align-self: flex-end;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+}
+
+.segment-row .escala-fields {
+  display: none;
+}
+
+.segment-scale-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}

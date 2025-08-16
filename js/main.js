@@ -1,4 +1,5 @@
 // ===== MAIN.JS - APLICACIÓN PRINCIPAL NTS V2.0 =====
+// Incluye manejo de tramos de vuelo y búsqueda de clientes
 
 console.log('🚀 Iniciando NTS Sistema v2.0...');
 
@@ -22,6 +23,7 @@ const AppState = {
   isConnected: false,
   user: null,
   notifications: [],
+  clientes: [],
   
   // Datos de la venta actual
   currentSale: {
@@ -80,9 +82,18 @@ class NTSApp {
   async initSupabase() {
     try {
       if (typeof window.supabase !== 'undefined') {
+        // Incluir la API key en cada petición para evitar errores de autenticación
         AppState.supabase = window.supabase.createClient(
           APP_CONFIG.supabase.url,
-          APP_CONFIG.supabase.key
+          APP_CONFIG.supabase.key,
+          {
+            global: {
+              headers: {
+                apikey: APP_CONFIG.supabase.key,
+                Authorization: `Bearer ${APP_CONFIG.supabase.key}`
+              }
+            }
+          }
         );
         
         // Test connection
@@ -162,17 +173,23 @@ class NTSApp {
     if (fullscreenBtn) {
       fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
     }
-    
+
     // Botón de notificaciones
     const notificationsBtn = document.getElementById('notifications-btn');
     if (notificationsBtn) {
       notificationsBtn.addEventListener('click', () => this.showNotificationsPanel());
     }
-    
+
     // Botón de configuración
     const settingsBtn = document.getElementById('settings-btn');
     if (settingsBtn) {
       settingsBtn.addEventListener('click', () => this.showSettingsPanel());
+    }
+
+    // Login con GitHub
+    const loginGitHubBtn = document.getElementById('login-github-btn');
+    if (loginGitHubBtn) {
+      loginGitHubBtn.addEventListener('click', () => this.loginWithGitHub());
     }
   }
 
@@ -262,6 +279,7 @@ class NTSApp {
     try {
       if (AppState.isConnected) {
         await this.loadDashboardData();
+        this.setupClientAutocomplete();
       } else {
         this.loadMockData();
       }
@@ -363,6 +381,80 @@ class NTSApp {
     if (window.lucide) {
       window.lucide.createIcons();
     }
+  }
+
+  async loadClientes(search = '') {
+    try {
+      if (!AppState.isConnected) return;
+      let query = AppState.supabase
+        .from('clientes')
+        .select('id, nombre, email, telefono');
+      if (search) {
+        query = query.ilike('nombre', `%${search}%`);
+      } else {
+        query = query.order('nombre');
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      AppState.clientes = data || [];
+      this.updateClientDatalist();
+    } catch (error) {
+      console.error('Error cargando clientes:', error);
+    }
+  }
+
+  updateClientDatalist() {
+    const input = document.getElementById('cliente-nombre');
+    if (!input) return;
+
+    let datalist = document.getElementById('clientes-datalist');
+    if (!datalist) {
+      datalist = document.createElement('datalist');
+      datalist.id = 'clientes-datalist';
+      document.body.appendChild(datalist);
+      input.setAttribute('list', 'clientes-datalist');
+    }
+
+    datalist.innerHTML = AppState.clientes
+      .map(c => `<option value="${c.nombre}" data-id="${c.id}" data-email="${c.email || ''}" data-telefono="${c.telefono || ''}"></option>`)
+      .join('');
+  }
+
+  setupClientAutocomplete() {
+    const input = document.getElementById('cliente-nombre');
+    if (!input) return;
+
+    const datalistId = 'clientes-datalist';
+    let datalist = document.getElementById(datalistId);
+    if (!datalist) {
+      datalist = document.createElement('datalist');
+      datalist.id = datalistId;
+      document.body.appendChild(datalist);
+    }
+    input.setAttribute('list', datalistId);
+
+    // Cargar listado inicial
+    this.loadClientes();
+
+    input.addEventListener('input', async () => {
+      const term = input.value.trim();
+      if (term.length >= 2) {
+        await this.loadClientes(term);
+      } else {
+        datalist.innerHTML = '';
+      }
+    });
+
+    input.addEventListener('change', () => {
+      const option = [...datalist.options].find(o => o.value.toLowerCase() === input.value.toLowerCase());
+      if (option) {
+        const emailField = document.getElementById('cliente-email');
+        const telField = document.getElementById('cliente-telefono');
+        if (emailField) emailField.value = option.dataset.email;
+        if (telField) telField.value = option.dataset.telefono;
+        AppState.currentSale.client.id = option.dataset.id;
+      }
+    });
   }
 
   loadMockActivity() {
@@ -562,6 +654,7 @@ class NTSApp {
     
     // Guardar datos del cliente
     AppState.currentSale.client = {
+      ...AppState.currentSale.client,
       nombre: nombre,
       email: document.getElementById('cliente-email')?.value?.trim(),
       telefono: document.getElementById('cliente-telefono')?.value?.trim(),
@@ -651,28 +744,39 @@ class NTSApp {
               <input type="text" id="vuelo-destino" class="form-control" placeholder="Miami (MIA)" required>
             </div>
             <div class="form-group">
-              <label for="vuelo-fecha">Fecha de Salida *</label>
-              <input type="date" id="vuelo-fecha" class="form-control" required>
-            </div>
-            <div class="form-group">
               <label for="vuelo-precio">Precio *</label>
               <input type="number" id="vuelo-precio" class="form-control" placeholder="1500" step="0.01" min="0" required>
+            </div>
+            <div class="form-group">
+              <label for="vuelo-precio-costo">Precio Costo</label>
+              <input type="number" id="vuelo-precio-costo" class="form-control precio-costo-nts" placeholder="0.00" step="0.01" min="0">
             </div>
             <div class="form-group">
               <label for="vuelo-pasajeros">Pasajeros</label>
               <input type="number" id="vuelo-pasajeros" class="form-control" value="1" min="1">
             </div>
             <div class="form-group">
-              <label for="vuelo-aerolinea">Aerolínea</label>
-              <input type="text" id="vuelo-aerolinea" class="form-control" placeholder="American Airlines">
+              <label for="vuelo-tipo">Tipo Itinerario</label>
+              <select id="vuelo-tipo" class="form-control">
+                <option value="ida_vuelta">Ida y vuelta</option>
+                <option value="solo_ida">Solo ida</option>
+                <option value="multidestino">Multidestino</option>
+              </select>
+            </div>
+            <div class="form-group full-width">
+              <label><strong>Tramos del Vuelo</strong></label>
+              <div id="segments-container"></div>
+              <button type="button" class="btn btn-secondary" id="add-segment-btn" style="margin-top: var(--spacing-sm);">
+                Agregar tramo
+              </button>
             </div>
           </div>
-          <div class="form-actions" style="margin-top: var(--spacing-lg);">
-            <button type="button" class="btn btn-primary" onclick="app.addService('vuelo')">
-              <i data-lucide="plus"></i>
-              Agregar Vuelo
-            </button>
-          </div>
+        <div class="form-actions" style="margin-top: var(--spacing-lg);">
+          <button type="button" class="btn btn-primary" onclick="app.addService('vuelo')">
+            <i data-lucide="plus"></i>
+            Agregar Vuelo
+          </button>
+        </div>
         </div>
       </div>
     `;
@@ -811,8 +915,60 @@ class NTSApp {
   }
 
   setupServiceFormEvents(serviceType) {
-    // Aquí se pueden agregar eventos específicos para cada tipo de servicio
+    // Eventos específicos por tipo de servicio
     console.log(`Configurando eventos para servicio: ${serviceType}`);
+    if (serviceType === 'vuelo') {
+      const container = document.getElementById('segments-container');
+      const addBtn = document.getElementById('add-segment-btn');
+      if (!container || !addBtn) return;
+
+      const addSegment = () => {
+        container.appendChild(this.createSegmentRow());
+      };
+
+      addBtn.addEventListener('click', addSegment);
+      addSegment();
+
+      container.addEventListener('click', (e) => {
+        if (e.target.classList.contains('remove-segment')) {
+          e.target.closest('.segment-row')?.remove();
+        }
+      });
+    }
+  }
+
+  createSegmentRow() {
+    const row = document.createElement('div');
+    row.className = 'segment-row';
+    row.innerHTML = `
+      <div class="segment-section main-fields">
+        <input type="text" class="form-control segment-origen" placeholder="Origen">
+        <input type="text" class="form-control segment-destino" placeholder="Destino">
+        <input type="text" class="form-control segment-aerolinea" placeholder="Aerolínea">
+        <input type="text" class="form-control segment-numero-vuelo" placeholder="N° Vuelo">
+        <input type="text" class="form-control segment-clase" placeholder="Clase">
+        <input type="datetime-local" class="form-control segment-salida" placeholder="Salida">
+        <input type="datetime-local" class="form-control segment-llegada" placeholder="Llegada">
+        <label class="segment-scale-toggle"><input type="checkbox" class="segment-escala"> Escala</label>
+      </div>
+      <div class="segment-section escala-fields">
+        <input type="text" class="form-control segment-aeropuerto-escala" placeholder="Aeropuerto de escala">
+        <input type="text" class="form-control segment-duracion-escala" placeholder="Duración de escala">
+        <input type="text" class="form-control segment-tiempo-siguiente" placeholder="Tiempo hasta próximo vuelo">
+      </div>
+      <div class="segment-section">
+        <input type="text" class="form-control segment-observaciones" placeholder="Observaciones">
+      </div>
+      <button type="button" class="btn btn-danger remove-segment">&times;</button>
+    `;
+
+    const escalaToggle = row.querySelector('.segment-escala');
+    const escalaFields = row.querySelector('.escala-fields');
+    escalaToggle.addEventListener('change', () => {
+      escalaFields.style.display = escalaToggle.checked ? 'grid' : 'none';
+    });
+
+    return row;
   }
 
   addService(serviceType) {
@@ -842,13 +998,32 @@ class NTSApp {
     
     switch (serviceType) {
       case 'vuelo':
+        const segmentRows = document.querySelectorAll('#segments-container .segment-row');
+        const segmentos = Array.from(segmentRows).map((row, index) => ({
+          numero_segmento: index + 1,
+          aeropuerto_origen: row.querySelector('.segment-origen')?.value?.trim(),
+          aeropuerto_destino: row.querySelector('.segment-destino')?.value?.trim(),
+          aerolinea: row.querySelector('.segment-aerolinea')?.value?.trim(),
+          numero_vuelo: row.querySelector('.segment-numero-vuelo')?.value?.trim(),
+          clase: row.querySelector('.segment-clase')?.value?.trim(),
+          fecha_hora_salida_local: row.querySelector('.segment-salida')?.value || null,
+          fecha_hora_llegada_local: row.querySelector('.segment-llegada')?.value || null,
+          fecha_hora_salida_utc: row.querySelector('.segment-salida')?.value ? new Date(row.querySelector('.segment-salida').value).toISOString() : null,
+          fecha_hora_llegada_utc: row.querySelector('.segment-llegada')?.value ? new Date(row.querySelector('.segment-llegada').value).toISOString() : null,
+          tiene_escala: row.querySelector('.segment-escala')?.checked || false,
+          aeropuerto_escala: row.querySelector('.segment-aeropuerto-escala')?.value?.trim() || null,
+          duracion_escala: row.querySelector('.segment-duracion-escala')?.value?.trim() || null,
+          tiempo_hasta_siguiente_vuelo: row.querySelector('.segment-tiempo-siguiente')?.value?.trim() || null,
+          observaciones: row.querySelector('.segment-observaciones')?.value?.trim() || null
+        }));
         return {
           ...baseData,
+          precio_costo: parseFloat(document.getElementById('vuelo-precio-costo')?.value) || 0,
           origen: document.getElementById('vuelo-origen')?.value?.trim(),
           destino: document.getElementById('vuelo-destino')?.value?.trim(),
-          fecha: document.getElementById('vuelo-fecha')?.value,
           pasajeros: parseInt(document.getElementById('vuelo-pasajeros')?.value) || 1,
-          aerolinea: document.getElementById('vuelo-aerolinea')?.value?.trim()
+          tipo_itinerario: document.getElementById('vuelo-tipo')?.value || 'ida_vuelta',
+          segmentos
         };
       case 'hotel':
         return {
@@ -893,6 +1068,15 @@ class NTSApp {
       case 'vuelo':
         if (!serviceData.origen || !serviceData.destino) {
           this.showNotification('Por favor complete origen y destino del vuelo', 'warning');
+          return false;
+        }
+        if (!serviceData.segmentos || serviceData.segmentos.length === 0) {
+          this.showNotification('Agregue al menos un tramo de vuelo', 'warning');
+          return false;
+        }
+        const invalid = serviceData.segmentos.some(s => !s.aeropuerto_origen || !s.aeropuerto_destino);
+        if (invalid) {
+          this.showNotification('Complete origen y destino en todos los tramos', 'warning');
           return false;
         }
         break;
@@ -1018,13 +1202,21 @@ class NTSApp {
     const form = document.querySelector('#service-forms .form-card');
     if (!form) return;
     
-    form.querySelectorAll('input').forEach(input => {
-      if (input.type === 'number' && input.hasAttribute('value')) {
-        input.value = input.getAttribute('value');
+    form.querySelectorAll('input, select').forEach(field => {
+      if (field.tagName === 'INPUT' && field.type === 'number' && field.hasAttribute('value')) {
+        field.value = field.getAttribute('value');
       } else {
-        input.value = '';
+        field.value = '';
       }
     });
+
+    if (serviceType === 'vuelo') {
+      const container = document.getElementById('segments-container');
+      if (container) {
+        container.innerHTML = '';
+        container.appendChild(this.createSegmentRow());
+      }
+    }
   }
 
   // ===== ACCIONES PRINCIPALES =====
@@ -1092,15 +1284,91 @@ class NTSApp {
       servicios: AppState.currentSale.services,
       totales: AppState.currentSale.totals,
       fecha_creacion: new Date().toISOString(),
+      vendedor_id: AppState.user?.id ? parseInt(AppState.user.id, 10) : 1,
       estado: 'pendiente',
       estado_pago: 'no_pagado'
     };
   }
 
   async createSaleInDB(saleData) {
-    // Implementar creación en Supabase
+    if (!AppState.supabase) return;
     console.log('Creando venta en DB:', saleData);
-    // Por ahora solo log, implementar según estructura de DB
+    const { data: venta, error: ventaError } = await AppState.supabase
+      .from('ventas')
+      .insert({
+        numero_venta: saleData.numero_venta,
+        cliente_id: saleData.cliente.id ? parseInt(saleData.cliente.id, 10) : null,
+        vendedor_id: saleData.vendedor_id,
+        fecha_venta: new Date().toISOString().slice(0, 10),
+        fecha_viaje_inicio: saleData.viaje.fechaInicio || null,
+        fecha_viaje_fin: saleData.viaje.fechaFin || null,
+        observaciones: saleData.viaje.observaciones || null,
+        total_final: saleData.totales.total,
+        total_pagado: 0,
+        saldo_pendiente: saleData.totales.total,
+        comision_vendedor: 0,
+        estado: saleData.estado,
+        estado_pago: saleData.estado_pago,
+        forma_pago_principal: saleData.forma_pago_principal || null
+      })
+      .select()
+      .single();
+
+    if (ventaError) {
+      console.error('Error creando venta:', ventaError.message, ventaError.details);
+      throw ventaError;
+    }
+
+    for (const servicio of saleData.servicios) {
+      if (servicio.type === 'vuelo') {
+        const { data: vuelo, error: vueloError } = await AppState.supabase
+          .from('venta_vuelos')
+          .insert({
+            venta_id: venta.id,
+            origen: servicio.origen,
+            destino: servicio.destino,
+            pasajeros: servicio.pasajeros,
+            tipo_itinerario: servicio.tipo_itinerario,
+            precio: servicio.precio,
+            precio_costo: servicio.precio_costo
+          })
+          .select()
+          .single();
+
+        if (vueloError) {
+          console.error('Error creando vuelo:', vueloError);
+          throw vueloError;
+        }
+
+        if (servicio.segmentos && servicio.segmentos.length) {
+          const segmentos = servicio.segmentos.map(seg => ({
+            venta_vuelo_id: vuelo.id,
+            numero_segmento: seg.numero_segmento,
+            aeropuerto_origen: seg.aeropuerto_origen,
+            aeropuerto_destino: seg.aeropuerto_destino,
+            fecha_hora_salida_local: seg.fecha_hora_salida_local,
+            fecha_hora_llegada_local: seg.fecha_hora_llegada_local,
+            fecha_hora_salida_utc: seg.fecha_hora_salida_utc,
+            fecha_hora_llegada_utc: seg.fecha_hora_llegada_utc,
+            tiene_escala: seg.tiene_escala,
+            aeropuerto_escala: seg.aeropuerto_escala,
+            duracion_escala: seg.duracion_escala,
+            tiempo_hasta_siguiente_vuelo: seg.tiempo_hasta_siguiente_vuelo,
+            aerolinea: seg.aerolinea,
+            numero_vuelo: seg.numero_vuelo,
+            clase: seg.clase,
+            observaciones: seg.observaciones
+          }));
+          const { error: segError } = await AppState.supabase
+            .from('venta_vuelo_segmentos')
+            .insert(segmentos);
+          if (segError) {
+            console.error('Error creando segmentos:', segError);
+            throw segError;
+          }
+        }
+      }
+    }
   }
 
   createSaleLocally(saleData) {
@@ -1172,6 +1440,22 @@ class NTSApp {
 
   showSettingsPanel() {
     this.showNotification('Panel de configuración en desarrollo', 'info');
+  }
+
+  async loginWithGitHub() {
+    if (!AppState.supabase) return;
+    try {
+      const { error } = await AppState.supabase.auth.signInWithOAuth({
+        provider: 'github'
+      });
+      if (error) {
+        console.error('Error al iniciar sesión con GitHub:', error);
+        this.showNotification('Error al iniciar sesión con GitHub', 'error');
+      }
+    } catch (err) {
+      console.error('Error al iniciar sesión con GitHub:', err);
+      this.showNotification('Error al iniciar sesión con GitHub', 'error');
+    }
   }
 
   updateConnectionStatus(isConnected) {
@@ -1291,9 +1575,7 @@ let app;
 
 document.addEventListener('DOMContentLoaded', () => {
   app = new NTSApp();
+  // Exponer la instancia para manejar eventos desde el HTML
+  window.app = app;
+  console.log('✅ NTS Sistema v2.0 cargado correctamente');
 });
-
-// ===== EXPORT GLOBAL =====
-window.app = app;
-
-console.log('✅ NTS Sistema v2.0 cargado correctamente');
