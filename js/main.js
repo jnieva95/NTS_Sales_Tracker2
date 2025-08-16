@@ -269,7 +269,7 @@ class NTSApp {
     try {
       if (AppState.isConnected) {
         await this.loadDashboardData();
-        await this.loadClientes();
+        this.setupClientAutocomplete();
       } else {
         this.loadMockData();
       }
@@ -373,22 +373,27 @@ class NTSApp {
     }
   }
 
-  async loadClientes() {
+  async loadClientes(search = '') {
     try {
       if (!AppState.isConnected) return;
-      const { data, error } = await AppState.supabase
+      let query = AppState.supabase
         .from('clientes')
-        .select('id, nombre, email, telefono')
-        .order('nombre');
+        .select('id, nombre, email, telefono');
+      if (search) {
+        query = query.ilike('nombre', `%${search}%`);
+      } else {
+        query = query.order('nombre');
+      }
+      const { data, error } = await query;
       if (error) throw error;
       AppState.clientes = data || [];
-      this.setupClientAutocomplete();
+      this.updateClientDatalist();
     } catch (error) {
       console.error('Error cargando clientes:', error);
     }
   }
 
-  setupClientAutocomplete() {
+  updateClientDatalist() {
     const input = document.getElementById('cliente-nombre');
     if (!input) return;
 
@@ -397,16 +402,28 @@ class NTSApp {
       datalist = document.createElement('datalist');
       datalist.id = 'clientes-datalist';
       document.body.appendChild(datalist);
+      input.setAttribute('list', 'clientes-datalist');
     }
 
     datalist.innerHTML = AppState.clientes
       .map(c => `<option value="${c.nombre}" data-id="${c.id}" data-email="${c.email || ''}" data-telefono="${c.telefono || ''}"></option>`)
       .join('');
+  }
 
-    input.setAttribute('list', 'clientes-datalist');
+  setupClientAutocomplete() {
+    const input = document.getElementById('cliente-nombre');
+    if (!input) return;
 
-    input.addEventListener('input', function () {
-      const option = [...datalist.options].find(o => o.value.toLowerCase() === this.value.toLowerCase());
+    // Cargar clientes inicialmente
+    this.loadClientes();
+
+    input.addEventListener('input', async () => {
+      const value = input.value.trim();
+      if (value.length >= 2) {
+        await this.loadClientes(value);
+      }
+      const datalist = document.getElementById('clientes-datalist');
+      const option = [...datalist.options].find(o => o.value.toLowerCase() === value.toLowerCase());
       if (option) {
         const emailField = document.getElementById('cliente-email');
         const telField = document.getElementById('cliente-telefono');
