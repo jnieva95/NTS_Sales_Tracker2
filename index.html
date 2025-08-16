@@ -6,6 +6,16 @@
     <title>NTS - Sistema de Gestión</title>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="icon" type="image/x-icon" href="images/favicon.ico">
+
+<!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+<!-- Flatpickr Theme (opcional - tema más bonito) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
+
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 </head>
 <body>
     <div class="container">
@@ -145,7 +155,7 @@
             </div>
 <!-- 📍 BUSCA ESTA SECCIÓN EN TU INDEX.HTML Y REEMPLÁZALA COMPLETA -->
 
-<!-- Formulario Vuelos MEJORADO -->
+<!-- ✈️ FORMULARIO DE VUELOS CON FLATPICKR -->
 <div id="service-vuelo" class="service-form active">
     <div class="form-row">
         <div>
@@ -178,31 +188,31 @@
         </div>
     </div>
     
-    <!-- NUEVOS CAMPOS DE FECHA/HORA -->
+    <!-- CAMPOS CON FLATPICKR -->
     <div class="form-row">
         <div>
-            <label for="vuelo-fecha-salida"><strong>📅 Fecha y Hora de Salida *</strong></label>
-            <input type="datetime-local" id="vuelo-fecha-salida" required>
-            <small>Fecha y hora exacta del vuelo de salida</small>
+            <label for="vuelo-fecha-salida-flat"><strong>🛫 Fecha y Hora de Salida *</strong></label>
+            <input type="text" id="vuelo-fecha-salida-flat" placeholder="📅 Click para seleccionar..." required readonly>
+            <small>📅 Fecha y hora exacta del vuelo de salida</small>
         </div>
         <div>
-            <label for="vuelo-fecha-llegada"><strong>📅 Fecha y Hora de Llegada</strong></label>
-            <input type="datetime-local" id="vuelo-fecha-llegada">
-            <small>Fecha y hora estimada de llegada (opcional)</small>
+            <label for="vuelo-fecha-llegada-flat"><strong>🛬 Fecha y Hora de Llegada</strong></label>
+            <input type="text" id="vuelo-fecha-llegada-flat" placeholder="📅 Click para seleccionar..." readonly>
+            <small>📅 Fecha y hora estimada de llegada (opcional)</small>
         </div>
     </div>
     
-    <!-- CAMPOS DE REGRESO (se muestran solo para ida/vuelta) -->
-    <div class="form-row" id="vuelo-regreso-row" style="display: block;">
+    <!-- CAMPOS DE REGRESO (solo para ida/vuelta) -->
+    <div class="form-row" id="vuelo-regreso-flat-row">
         <div>
-            <label for="vuelo-fecha-regreso"><strong>🔄 Fecha y Hora de Regreso</strong></label>
-            <input type="datetime-local" id="vuelo-fecha-regreso">
-            <small>Solo para vuelos ida y vuelta</small>
+            <label for="vuelo-fecha-regreso-flat"><strong>🔄 Fecha y Hora de Regreso</strong></label>
+            <input type="text" id="vuelo-fecha-regreso-flat" placeholder="📅 Click para seleccionar..." readonly>
+            <small>📅 Solo para vuelos ida y vuelta</small>
         </div>
         <div>
-            <label for="vuelo-llegada-regreso"><strong>🔄 Llegada del Regreso</strong></label>
-            <input type="datetime-local" id="vuelo-llegada-regreso">
-            <small>Hora de llegada del vuelo de regreso</small>
+            <label for="vuelo-fecha-llegada-regreso-flat"><strong>🔄 Llegada del Regreso</strong></label>
+            <input type="text" id="vuelo-fecha-llegada-regreso-flat" placeholder="📅 Click para seleccionar..." readonly>
+            <small>📅 Hora de llegada del vuelo de regreso</small>
         </div>
     </div>
     
@@ -240,7 +250,6 @@
     
     <button type="button" class="btn-add-service" data-service="vuelo">➕ Agregar Vuelo</button>
 </div>
-
             <!-- Formulario Hoteles MEJORADO -->
             <div id="service-hotel" class="service-form">
                 <div class="form-row">
