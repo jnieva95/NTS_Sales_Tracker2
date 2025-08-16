@@ -82,6 +82,7 @@ class NTSApp {
   async initSupabase() {
     try {
       if (typeof window.supabase !== 'undefined') {
+        // Incluir la API key en cada petición para evitar errores de autenticación
         AppState.supabase = window.supabase.createClient(
           APP_CONFIG.supabase.url,
           APP_CONFIG.supabase.key,
@@ -1567,7 +1568,7 @@ let app;
 
 document.addEventListener('DOMContentLoaded', () => {
   app = new NTSApp();
+  // Exponer la instancia para manejar eventos desde el HTML
   window.app = app;
+  console.log('✅ NTS Sistema v2.0 cargado correctamente');
 });
-
-console.log('✅ NTS Sistema v2.0 cargado correctamente');
