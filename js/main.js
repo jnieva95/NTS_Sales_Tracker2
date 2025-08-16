@@ -233,18 +233,21 @@ class NTSApp {
 
   setupUI() {
     console.log('🎨 Configurando interfaz...');
-    
+
     // Configurar navegación
     this.setupNavigation();
-    
+
     // Configurar formulario de pasos
     this.setupStepForm();
-    
+
     // Configurar servicios
     this.setupServices();
-    
+
     // Configurar header actions
     this.setupHeaderActions();
+
+    // Configurar formulario de cliente
+    this.setupClientDocumentFields();
   }
 
   setupNavigation() {
@@ -505,7 +508,7 @@ class NTSApp {
       if (!AppState.isConnected) return;
       let query = AppState.supabase
         .from('clientes')
-        .select('id, nombre, email, telefono');
+        .select('id, nombre, email, telefono, dni, dni_expiracion, pasaporte, pasaporte_expiracion');
       if (search) {
         query = query.ilike('nombre', `%${search}%`);
       } else {
@@ -533,7 +536,7 @@ class NTSApp {
     }
 
     datalist.innerHTML = AppState.clientes
-      .map(c => `<option value="${c.nombre}" data-id="${c.id}" data-email="${c.email || ''}" data-telefono="${c.telefono || ''}"></option>`)
+      .map(c => `<option value="${c.nombre}" data-id="${c.id}" data-email="${c.email || ''}" data-telefono="${c.telefono || ''}" data-dni="${c.dni || ''}" data-dni-exp="${c.dni_expiracion || ''}" data-pasaporte="${c.pasaporte || ''}" data-pasaporte-exp="${c.pasaporte_expiracion || ''}"></option>`)
       .join('');
   }
 
@@ -570,8 +573,108 @@ class NTSApp {
         if (emailField) emailField.value = option.dataset.email;
         if (telField) telField.value = option.dataset.telefono;
         AppState.currentSale.client.id = option.dataset.id;
+        if (option.dataset.dni) {
+          this.setDocType('dni');
+          const dniField = document.getElementById('cliente-dni');
+          if (dniField) dniField.value = option.dataset.dni;
+          const dniExp = document.getElementById('cliente-dni-exp');
+          if (dniExp && option.dataset.dniExp) dniExp.value = option.dataset.dniExp;
+        } else if (option.dataset.pasaporte) {
+          this.setDocType('pasaporte');
+          const passField = document.getElementById('cliente-pasaporte');
+          if (passField) passField.value = option.dataset.pasaporte;
+          const passExp = document.getElementById('cliente-pasaporte-exp');
+          if (passExp && option.dataset.pasaporteExp) passExp.value = option.dataset.pasaporteExp;
+        }
       }
     });
+  }
+
+  setupClientDocumentFields() {
+    const docRadios = document.querySelectorAll('input[name="cliente-doc"]');
+    const dniInput = document.getElementById('cliente-dni');
+    const pasaporteInput = document.getElementById('cliente-pasaporte');
+
+    docRadios.forEach(radio => {
+      radio.addEventListener('change', () => this.setDocType(radio.value));
+    });
+
+    this.setDocType(document.querySelector('input[name="cliente-doc"]:checked')?.value || 'dni');
+
+    if (dniInput) {
+      dniInput.addEventListener('change', () => this.populateClientByDocument('dni', dniInput.value.trim()));
+    }
+    if (pasaporteInput) {
+      pasaporteInput.addEventListener('change', () => this.populateClientByDocument('pasaporte', pasaporteInput.value.trim()));
+    }
+  }
+
+  setDocType(type) {
+    const dniFields = document.getElementById('dni-fields');
+    const passFields = document.getElementById('pasaporte-fields');
+    const dniRadio = document.querySelector('input[name="cliente-doc"][value="dni"]');
+    const passRadio = document.querySelector('input[name="cliente-doc"][value="pasaporte"]');
+    const dniNumber = document.getElementById('cliente-dni');
+    const dniExp = document.getElementById('cliente-dni-exp');
+    const passNumber = document.getElementById('cliente-pasaporte');
+    const passExp = document.getElementById('cliente-pasaporte-exp');
+
+    if (type === 'pasaporte') {
+      if (passRadio) passRadio.checked = true;
+      if (dniFields) dniFields.style.display = 'none';
+      if (passFields) passFields.style.display = 'block';
+      if (dniNumber) dniNumber.required = false;
+      if (dniExp) dniExp.required = false;
+      if (passNumber) passNumber.required = true;
+      if (passExp) passExp.required = true;
+    } else {
+      if (dniRadio) dniRadio.checked = true;
+      if (dniFields) dniFields.style.display = 'block';
+      if (passFields) passFields.style.display = 'none';
+      if (dniNumber) dniNumber.required = true;
+      if (dniExp) dniExp.required = true;
+      if (passNumber) passNumber.required = false;
+      if (passExp) passExp.required = false;
+    }
+  }
+
+  async populateClientByDocument(type, value) {
+    if (!value) return;
+    let client = AppState.clientes.find(c => c[type] === value);
+    if (!client && AppState.isConnected) {
+      try {
+        const { data } = await AppState.supabase
+          .from('clientes')
+          .select('id, nombre, email, telefono, dni, dni_expiracion, pasaporte, pasaporte_expiracion')
+          .eq(type, value)
+          .maybeSingle();
+        if (data) {
+          client = data;
+          AppState.clientes.push(data);
+          this.updateClientDatalist();
+        }
+      } catch (e) {
+        console.error('Error buscando cliente por documento:', e);
+      }
+    }
+
+    if (client) {
+      const nameField = document.getElementById('cliente-nombre');
+      const emailField = document.getElementById('cliente-email');
+      const telField = document.getElementById('cliente-telefono');
+      if (nameField) nameField.value = client.nombre || '';
+      if (emailField) emailField.value = client.email || '';
+      if (telField) telField.value = client.telefono || '';
+      AppState.currentSale.client.id = client.id;
+      if (type === 'dni' && client.dni_expiracion) {
+        const dniExpField = document.getElementById('cliente-dni-exp');
+        if (dniExpField) dniExpField.value = client.dni_expiracion;
+      }
+      if (type === 'pasaporte' && client.pasaporte_expiracion) {
+        const passExpField = document.getElementById('cliente-pasaporte-exp');
+        if (passExpField) passExpField.value = client.pasaporte_expiracion;
+      }
+    }
   }
 
   loadMockActivity() {
@@ -762,22 +865,44 @@ class NTSApp {
 
   validateClientStep() {
     const nombre = document.getElementById('cliente-nombre')?.value?.trim();
-    
     if (!nombre) {
       this.showNotification('Por favor ingrese el nombre del cliente', 'warning');
       document.getElementById('cliente-nombre')?.focus();
       return false;
     }
-    
-    // Guardar datos del cliente
+
+    const docType = document.querySelector('input[name="cliente-doc"]:checked')?.value || 'dni';
+    let numero = '';
+    let expiracion = '';
+
+    if (docType === 'dni') {
+      numero = document.getElementById('cliente-dni')?.value?.trim();
+      expiracion = document.getElementById('cliente-dni-exp')?.value;
+      if (!numero || !expiracion) {
+        this.showNotification('Complete número y fecha de expiración del DNI', 'warning');
+        document.getElementById('cliente-dni')?.focus();
+        return false;
+      }
+    } else {
+      numero = document.getElementById('cliente-pasaporte')?.value?.trim();
+      expiracion = document.getElementById('cliente-pasaporte-exp')?.value;
+      if (!numero || !expiracion) {
+        this.showNotification('Complete número y fecha de expiración del pasaporte', 'warning');
+        document.getElementById('cliente-pasaporte')?.focus();
+        return false;
+      }
+    }
+
     AppState.currentSale.client = {
       ...AppState.currentSale.client,
       nombre: nombre,
       email: document.getElementById('cliente-email')?.value?.trim(),
       telefono: document.getElementById('cliente-telefono')?.value?.trim(),
-      documento: document.getElementById('cliente-documento')?.value?.trim()
+      documento_tipo: docType,
+      documento_numero: numero,
+      documento_expiracion: expiracion
     };
-    
+
     return true;
   }
 

@@ -881,7 +881,13 @@ function buildVentaData() {
             nombre: document.getElementById('cliente-nombre')?.value?.trim(),
             email: document.getElementById('cliente-email')?.value?.trim(),
             telefono: document.getElementById('cliente-telefono')?.value?.trim(),
-            documento: document.getElementById('cliente-documento')?.value?.trim(),
+            documento_tipo: document.querySelector('input[name="cliente-doc"]:checked')?.value || 'dni',
+            documento_numero: (document.querySelector('input[name="cliente-doc"]:checked')?.value === 'dni'
+                ? document.getElementById('cliente-dni')?.value?.trim()
+                : document.getElementById('cliente-pasaporte')?.value?.trim()),
+            documento_expiracion: (document.querySelector('input[name="cliente-doc"]:checked')?.value === 'dni'
+                ? document.getElementById('cliente-dni-exp')?.value
+                : document.getElementById('cliente-pasaporte-exp')?.value),
             vendedor_id: parseInt(document.getElementById('vendedor-select-nts')?.value),
             esExistente: VentasModule.currentVenta.cliente.esExistente || false,
             id: VentasModule.currentVenta.cliente.id || null
@@ -995,11 +1001,17 @@ async function crearVentaLocal(ventaData) {
 // ===== FUNCIONES DE UTILIDAD =====
 function limpiarFormularioCompleto() {
     // Limpiar campos de cliente
-    ['cliente-nombre', 'cliente-email', 'cliente-telefono', 'cliente-documento'].forEach(id => {
+    ['cliente-nombre', 'cliente-email', 'cliente-telefono', 'cliente-dni', 'cliente-dni-exp', 'cliente-pasaporte', 'cliente-pasaporte-exp'].forEach(id => {
         const field = document.getElementById(id);
         if (field) field.value = '';
     });
-    
+    const dniRadio = document.querySelector('input[name="cliente-doc"][value="dni"]');
+    if (dniRadio) dniRadio.checked = true;
+    const dniFields = document.getElementById('dni-fields');
+    const passFields = document.getElementById('pasaporte-fields');
+    if (dniFields) dniFields.style.display = 'block';
+    if (passFields) passFields.style.display = 'none';
+
     // Limpiar vendedor
     const vendedorSelect = document.getElementById('vendedor-select-nts');
     if (vendedorSelect) vendedorSelect.selectedIndex = 0;

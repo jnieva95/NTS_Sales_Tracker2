@@ -331,8 +331,25 @@
                                     </div>
                                     
                                     <div class="form-group">
-                                        <label for="cliente-documento">DNI/Pasaporte</label>
-                                        <input type="text" id="cliente-documento" class="form-control" placeholder="12345678">
+                                        <label>Documento *</label>
+                                        <div class="radio-group" id="cliente-doc-tipo">
+                                            <label><input type="radio" name="cliente-doc" value="dni" checked> DNI</label>
+                                            <label><input type="radio" name="cliente-doc" value="pasaporte"> Pasaporte</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group" id="dni-fields">
+                                        <label for="cliente-dni">Número de DNI *</label>
+                                        <input type="text" id="cliente-dni" class="form-control" placeholder="12345678">
+                                        <label for="cliente-dni-exp">Fecha de expiración DNI *</label>
+                                        <input type="date" id="cliente-dni-exp" class="form-control">
+                                    </div>
+
+                                    <div class="form-group" id="pasaporte-fields" style="display: none;">
+                                        <label for="cliente-pasaporte">Número de Pasaporte *</label>
+                                        <input type="text" id="cliente-pasaporte" class="form-control" placeholder="AB123456">
+                                        <label for="cliente-pasaporte-exp">Fecha de expiración Pasaporte *</label>
+                                        <input type="date" id="cliente-pasaporte-exp" class="form-control">
                                     </div>
                                 </div>
                             </div>
