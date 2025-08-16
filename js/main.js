@@ -929,6 +929,10 @@ class NTSApp {
   createSegmentRow() {
     const row = document.createElement('div');
     row.className = 'segment-row';
+    row.style.display = 'grid';
+    row.style.gridTemplateColumns = 'repeat(12, 1fr) auto';
+    row.style.gap = 'var(--spacing-sm)';
+    row.style.marginBottom = 'var(--spacing-sm)';
     row.innerHTML = `
       <input type="text" class="form-control segment-origen" placeholder="Origen">
       <input type="text" class="form-control segment-destino" placeholder="Destino">
