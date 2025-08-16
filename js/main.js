@@ -38,6 +38,55 @@ const AppState = {
   }
 };
 
+// ===== ENUM tipo_itinerario =====
+// Valores aceptados por la base de datos y sus posibles equivalencias
+const TIPO_ITINERARIO_MAP = {
+  ida: 'ida',
+  solo_ida: 'ida',
+  one_way: 'ida',
+  ida_vuelta: 'ida_vuelta',
+  ida_y_vuelta: 'ida_vuelta',
+  round_trip: 'ida_vuelta',
+  vuelta: 'ida_vuelta',
+  multitramo: 'multitramo',
+  multi_city: 'multitramo',
+  multiples_destinos: 'multitramo',
+  multi_tramo: 'multitramo',
+  stopover: 'stopover',
+  escala: 'stopover',
+  conexion: 'stopover'
+};
+
+function getValidTipoItinerario(value) {
+  if (!value) return 'ida_vuelta';
+  const normalized = value.toLowerCase().trim();
+  return TIPO_ITINERARIO_MAP[normalized] || 'ida_vuelta';
+}
+
+function updateVueloTypeSelect() {
+  const select = document.getElementById('vuelo-tipo');
+  if (!select) return;
+  select.innerHTML = '';
+  const options = [
+    { value: 'ida', label: '✈️ Solo Ida' },
+    { value: 'ida_vuelta', label: '✈️🔄 Ida y Vuelta' },
+    { value: 'multitramo', label: '✈️🗺️ Multitramo' },
+    { value: 'stopover', label: '✈️⏸️ Con Escala' }
+  ];
+  options.forEach(opt => {
+    const o = document.createElement('option');
+    o.value = opt.value;
+    o.textContent = opt.label;
+    select.appendChild(o);
+  });
+  select.value = 'ida_vuelta';
+}
+
+// Exponer helpers para depuración
+window.TIPO_ITINERARIO_MAP = TIPO_ITINERARIO_MAP;
+window.getValidTipoItinerario = getValidTipoItinerario;
+window.updateVueloTypeSelect = updateVueloTypeSelect;
+
 // ===== INICIALIZACIÓN =====
 class NTSApp {
   constructor() {
@@ -757,11 +806,7 @@ class NTSApp {
             </div>
             <div class="form-group">
               <label for="vuelo-tipo">Tipo Itinerario</label>
-              <select id="vuelo-tipo" class="form-control">
-                <option value="ida_vuelta">Ida y vuelta</option>
-                <option value="solo_ida">Solo ida</option>
-                <option value="multidestino">Multidestino</option>
-              </select>
+              <select id="vuelo-tipo" class="form-control"></select>
             </div>
             <div class="form-group full-width">
               <label><strong>Tramos del Vuelo</strong></label>
@@ -918,6 +963,7 @@ class NTSApp {
     // Eventos específicos por tipo de servicio
     console.log(`Configurando eventos para servicio: ${serviceType}`);
     if (serviceType === 'vuelo') {
+      updateVueloTypeSelect();
       const container = document.getElementById('segments-container');
       const addBtn = document.getElementById('add-segment-btn');
       if (!container || !addBtn) return;
@@ -1024,7 +1070,7 @@ class NTSApp {
           origen: document.getElementById('vuelo-origen')?.value?.trim(),
           destino: document.getElementById('vuelo-destino')?.value?.trim(),
           pasajeros: parseInt(document.getElementById('vuelo-pasajeros')?.value) || 1,
-          tipo_itinerario: document.getElementById('vuelo-tipo')?.value || 'ida_vuelta',
+          tipo_itinerario: getValidTipoItinerario(document.getElementById('vuelo-tipo')?.value),
           segmentos
         };
       case 'hotel':
@@ -1343,22 +1389,16 @@ class NTSApp {
           destino: servicio.destino || ''
         };
 
-        if (servicio.fecha) vueloData.fecha = servicio.fecha;
         if (servicio.pasajeros) vueloData.pasajeros = servicio.pasajeros;
-        if (servicio.aerolinea) vueloData.aerolinea = servicio.aerolinea;
-        if (servicio.descripcion) vueloData.descripcion = servicio.descripcion;
         if (servicio.tipo_itinerario) vueloData.tipo_itinerario = servicio.tipo_itinerario;
-        if (servicio.clase_vuelo) vueloData.clase_vuelo = servicio.clase_vuelo;
-        if (servicio.fecha_hora_salida) vueloData.fecha_hora_salida = servicio.fecha_hora_salida;
-        if (servicio.fecha_hora_llegada) vueloData.fecha_hora_llegada = servicio.fecha_hora_llegada;
-        if (servicio.fecha_hora_regreso) vueloData.fecha_hora_regreso = servicio.fecha_hora_regreso;
-        if (servicio.fecha_hora_llegada_regreso) vueloData.fecha_hora_llegada_regreso = servicio.fecha_hora_llegada_regreso;
-        if (servicio.precio_venta) vueloData.precio_venta = servicio.precio_venta;
+        if (servicio.precio_venta !== undefined) vueloData.precio_venta = servicio.precio_venta;
+        if (servicio.precio !== undefined && vueloData.precio_venta === undefined) vueloData.precio_venta = servicio.precio;
         if (servicio.precio_costo) vueloData.precio_costo = servicio.precio_costo;
         if (servicio.proveedor_id) vueloData.proveedor_id = servicio.proveedor_id;
+        if (servicio.descripcion) vueloData.descripcion = servicio.descripcion;
         if (servicio.itinerario_observaciones) vueloData.itinerario_observaciones = servicio.itinerario_observaciones;
 
-        console.log('Datos del vuelo para DB (sin precio):', vueloData);
+        console.log('Datos del vuelo para DB (sin fecha):', vueloData);
 
         const { data: vuelo, error: vueloError } = await AppState.supabase
           .from('venta_vuelos')
