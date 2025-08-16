@@ -772,6 +772,29 @@ body {
   margin-top: var(--spacing-xs);
 }
 
+/* ===== TABLES ===== */
+.table-container {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--gray-200);
+  text-align: left;
+}
+
+.data-table th {
+  background: var(--gray-50);
+  font-weight: 600;
+  color: var(--gray-700);
+}
+
 /* ===== SERVICES ===== */
 .services-container {
   background: white;

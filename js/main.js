@@ -518,6 +518,7 @@ class NTSApp {
       if (error) throw error;
       AppState.clientes = data || [];
       this.updateClientDatalist();
+      this.renderClientesTable();
     } catch (error) {
       console.error('Error cargando clientes:', error);
     }
@@ -679,6 +680,17 @@ class NTSApp {
 
   initClientesPage() {
     const form = document.getElementById('cliente-form');
+    const searchInput = document.getElementById('clientes-search');
+    if (searchInput) {
+      searchInput.addEventListener('input', () => {
+        this.renderClientesTable(searchInput.value);
+      });
+    }
+    if (AppState.clientes.length === 0) {
+      this.loadClientes();
+    } else {
+      this.renderClientesTable();
+    }
     if (!form) return;
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -687,7 +699,9 @@ class NTSApp {
         email: document.getElementById('nuevo-cliente-email')?.value.trim() || null,
         telefono: document.getElementById('nuevo-cliente-telefono')?.value.trim() || null,
         dni: document.getElementById('nuevo-cliente-dni')?.value.trim() || null,
+        dni_expiracion: document.getElementById('nuevo-cliente-dni-exp')?.value || null,
         pasaporte: document.getElementById('nuevo-cliente-pasaporte')?.value.trim() || null,
+        pasaporte_expiracion: document.getElementById('nuevo-cliente-pasaporte-exp')?.value || null,
         direccion: document.getElementById('nuevo-cliente-direccion')?.value.trim() || null,
         ciudad: document.getElementById('nuevo-cliente-ciudad')?.value.trim() || null,
         pais: document.getElementById('nuevo-cliente-pais')?.value.trim() || null,
@@ -708,6 +722,25 @@ class NTSApp {
         this.showNotification('Error al crear cliente', 'error');
       }
     });
+  }
+
+  renderClientesTable(search = '') {
+    const tbody = document.querySelector('#clientes-table tbody');
+    if (!tbody) return;
+    const q = search.toLowerCase();
+    const rows = AppState.clientes
+      .filter(c => [c.nombre, c.email, c.telefono, c.dni, c.pasaporte]
+        .some(v => (v || '').toLowerCase().includes(q)))
+      .map(c => `
+        <tr>
+          <td>${c.nombre}</td>
+          <td>${c.email || ''}</td>
+          <td>${c.telefono || ''}</td>
+          <td>${c.dni || ''}</td>
+          <td>${c.pasaporte || ''}</td>
+        </tr>`)
+      .join('');
+    tbody.innerHTML = rows;
   }
 
   loadMockActivity() {

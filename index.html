@@ -261,7 +261,6 @@
                         </div>
                     </div>
                 </div>
-            </section>
 
             <!-- Nueva Venta -->
             <section id="nueva-venta" class="tab-content">
@@ -527,8 +526,16 @@
                                 <input type="text" id="nuevo-cliente-dni" class="form-control">
                             </div>
                             <div class="form-group">
+                                <label for="nuevo-cliente-dni-exp">Fecha exp. DNI</label>
+                                <input type="date" id="nuevo-cliente-dni-exp" class="form-control">
+                            </div>
+                            <div class="form-group">
                                 <label for="nuevo-cliente-pasaporte">Pasaporte</label>
                                 <input type="text" id="nuevo-cliente-pasaporte" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="nuevo-cliente-pasaporte-exp">Fecha exp. Pasaporte</label>
+                                <input type="date" id="nuevo-cliente-pasaporte-exp" class="form-control">
                             </div>
                             <div class="form-group">
                                 <label for="nuevo-cliente-direccion">Dirección</label>
@@ -549,6 +556,28 @@
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+                <div class="form-card">
+                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3><i data-lucide="users"></i> Lista de Clientes</h3>
+                        <input type="text" id="clientes-search" class="form-control" placeholder="Buscar..." style="max-width: 200px;">
+                    </div>
+                    <div class="card-content">
+                        <div class="table-container">
+                            <table id="clientes-table" class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Email</th>
+                                        <th>Teléfono</th>
+                                        <th>DNI</th>
+                                        <th>Pasaporte</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </section>
