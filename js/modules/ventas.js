@@ -167,35 +167,23 @@ function createVendedorSelect() {
 
 // ===== MANEJO DE ESCALAS EN VUELOS =====
 function toggleEscalasSection() {
-    const checkbox = document.getElementById('vuelo-tiene-escalas');
-    const escalasSection = document.getElementById('escalas-section');
-    const segmentsContainer = document.getElementById('segments-container');
-    
-    if (checkbox?.checked) {
-        escalasSection.style.display = 'block';
-        // Agregar primera escala automáticamente
-        if (!segmentsContainer.children.length) {
-            addEscalaRow();
-        }
-        showNotification('✈️ Sección de escalas habilitada', 'info');
-    } else {
-        escalasSection.style.display = 'none';
-        // Limpiar escalas
-        segmentsContainer.innerHTML = '';
-        showNotification('✈️ Sección de escalas ocultada', 'info');
-    }
+    const show = document.getElementById('vuelo-tiene-escalas')?.checked;
+    document.querySelectorAll('.escala-extra').forEach(div => {
+        div.style.display = show ? 'block' : 'none';
+    });
+    showNotification(show ? '✈️ Campos de escala visibles' : '✈️ Campos de escala ocultos', 'info');
 }
 
-function addEscalaRow() {
+function addSegmentRow() {
     const container = document.getElementById('segments-container');
     if (!container) return;
-    const escalaIndex = container.children.length + 1;
-    
-    const escalaRow = document.createElement('div');
-    escalaRow.className = 'escala-row';
-    escalaRow.style.cssText = `
+    const index = container.children.length + 1;
+
+    const row = document.createElement('div');
+    row.className = 'segment-row';
+    row.style.cssText = `
         display: grid;
-        grid-template-columns: repeat(4, 1fr) auto;
+        grid-template-columns: repeat(6, 1fr) auto;
         gap: 0.5rem;
         margin-bottom: 0.5rem;
         padding: 1rem;
@@ -203,15 +191,23 @@ function addEscalaRow() {
         border-radius: 0.5rem;
         background: var(--gray-50);
     `;
-    
-    escalaRow.innerHTML = `
+
+    row.innerHTML = `
         <div class="form-group">
-            <label>Origen Escala ${escalaIndex}</label>
+            <label>Origen Tramo ${index}</label>
             <input type="text" class="form-control segment-origen" placeholder="Origen">
         </div>
         <div class="form-group">
-            <label>Destino Escala ${escalaIndex}</label>
+            <label>Destino Tramo ${index}</label>
             <input type="text" class="form-control segment-destino" placeholder="Destino">
+        </div>
+        <div class="form-group">
+            <label>Aerolínea</label>
+            <input type="text" class="form-control segment-aerolinea" placeholder="Aerolínea">
+        </div>
+        <div class="form-group">
+            <label>Número de vuelo</label>
+            <input type="text" class="form-control segment-numero" placeholder="AB123">
         </div>
         <div class="form-group">
             <label>Salida</label>
@@ -222,37 +218,58 @@ function addEscalaRow() {
             <input type="datetime-local" class="form-control segment-llegada">
         </div>
         <div class="form-group" style="display: flex; align-items: end;">
-            <button type="button" class="btn btn-danger remove-segment" onclick="removeEscalaRow(this)" title="Eliminar escala">
-                <i data-lucide="trash-2"></i>
-            </button>
+            ${index > 1 ? `<button type="button" class="btn btn-danger remove-segment" onclick="removeSegmentRow(this)" title="Eliminar tramo"><i data-lucide="trash-2"></i></button>` : ''}
+        </div>
+        <div class="escala-extra">
+            <div class="escala-grid">
+                <div class="form-group">
+                    <label>Aeropuerto de escala</label>
+                    <input type="text" class="form-control segment-aeropuerto-escala" placeholder="Aeropuerto de escala">
+                </div>
+                <div class="form-group">
+                    <label>Duración de la escala</label>
+                    <input type="text" class="form-control segment-duracion-escala" placeholder="01:30">
+                </div>
+                <div class="form-group">
+                    <label>Tiempo total de vuelo</label>
+                    <input type="text" class="form-control segment-tiempo-total" placeholder="05:45">
+                </div>
+            </div>
         </div>
     `;
-    
-    container.appendChild(escalaRow);
-    
+
+    container.appendChild(row);
+    toggleEscalasSection();
+
     if (window.lucide) {
         window.lucide.createIcons();
     }
 }
 
-function removeEscalaRow(button) {
-    const escalaRow = button.closest('.escala-row');
-    escalaRow.remove();
-    
+function removeSegmentRow(button) {
+    const row = button.closest('.segment-row');
+    row.remove();
+    renumberSegments();
+    showNotification('🗑️ Tramo eliminado', 'info');
+}
+
+function renumberSegments() {
     const container = document.getElementById('segments-container');
     Array.from(container.children).forEach((row, index) => {
         const labels = row.querySelectorAll('label');
-        labels[0].textContent = `Origen Escala ${index + 1}`;
-        labels[1].textContent = `Destino Escala ${index + 1}`;
+        labels[0].textContent = `Origen Tramo ${index + 1}`;
+        labels[1].textContent = `Destino Tramo ${index + 1}`;
+        const removeBtn = row.querySelector('.remove-segment');
+        if (removeBtn) {
+            removeBtn.style.display = index === 0 ? 'none' : 'inline-flex';
+        }
     });
-    
-    showNotification('🗑️ Escala eliminada', 'info');
 }
 
 // Exportar funciones globalmente
 window.toggleEscalasSection = toggleEscalasSection;
-window.addEscalaRow = addEscalaRow;
-window.removeEscalaRow = removeEscalaRow;
+window.addSegmentRow = addSegmentRow;
+window.removeSegmentRow = removeSegmentRow;
 
 function setupClienteAutocomplete() {
     const clienteNombre = document.getElementById('cliente-nombre');
@@ -701,7 +718,7 @@ function setupVentasEvents() {
     document.addEventListener('click', function(e) {
         if (e.target.matches('#add-segment-btn')) {
             e.preventDefault();
-            addEscalaRow();
+            addSegmentRow();
         }
     });
 }

@@ -712,7 +712,7 @@ class NTSApp {
                 <span class="checkmark"></span>
                 ¿El vuelo tiene escalas?
               </label>
-              <button type="button" class="btn btn-secondary" id="add-segment-btn" style="display: none;">
+              <button type="button" class="btn btn-secondary" id="add-segment-btn">
                 <i data-lucide="plus"></i>
                 Agregar tramo
               </button>
@@ -907,19 +907,25 @@ class NTSApp {
     switch (serviceType) {
       case 'vuelo':
         const segmentRows = document.querySelectorAll('#segments-container .segment-row');
+        const tieneEscalas = document.getElementById('vuelo-tiene-escalas')?.checked;
         const segmentos = Array.from(segmentRows).map((row, index) => ({
           numero_segmento: index + 1,
           aeropuerto_origen: row.querySelector('.segment-origen')?.value?.trim(),
           aeropuerto_destino: row.querySelector('.segment-destino')?.value?.trim(),
+          aerolinea: row.querySelector('.segment-aerolinea')?.value?.trim(),
+          numero_vuelo: row.querySelector('.segment-numero')?.value?.trim(),
           fecha_hora_salida_local: row.querySelector('.segment-salida')?.value || null,
-          fecha_hora_llegada_local: row.querySelector('.segment-llegada')?.value || null
+          fecha_hora_llegada_local: row.querySelector('.segment-llegada')?.value || null,
+          aeropuerto_escala: tieneEscalas ? row.querySelector('.segment-aeropuerto-escala')?.value?.trim() : '',
+          duracion_escala: tieneEscalas ? row.querySelector('.segment-duracion-escala')?.value?.trim() : '',
+          tiempo_total_tramo: tieneEscalas ? row.querySelector('.segment-tiempo-total')?.value?.trim() : ''
         }));
         return {
           ...baseData,
           pasajeros: parseInt(document.getElementById('vuelo-pasajeros')?.value) || 1,
           origen: segmentos[0]?.aeropuerto_origen || '',
           destino: segmentos[segmentos.length - 1]?.aeropuerto_destino || '',
-          tieneEscalas: document.getElementById('vuelo-tiene-escalas')?.checked && segmentos.length > 1,
+          tieneEscalas,
           segmentos
         };
       case 'hotel':
@@ -968,10 +974,17 @@ class NTSApp {
           return false;
         }
 
-        const invalid = serviceData.segmentos.some(s => !s.aeropuerto_origen || !s.aeropuerto_destino);
+        const invalid = serviceData.segmentos.some(s => !s.aeropuerto_origen || !s.aeropuerto_destino || !s.aerolinea || !s.numero_vuelo);
         if (invalid) {
-          this.showNotification('Complete origen y destino en todos los tramos', 'warning');
+          this.showNotification('Complete origen, destino, aerolínea y número de vuelo en todos los tramos', 'warning');
           return false;
+        }
+        if (serviceData.tieneEscalas) {
+          const escalaInvalid = serviceData.segmentos.some(s => !s.aeropuerto_escala || !s.duracion_escala || !s.tiempo_total_tramo);
+          if (escalaInvalid) {
+            this.showNotification('Complete los datos de escala en todos los tramos', 'warning');
+            return false;
+          }
         }
         break;
       case 'hotel':
@@ -1437,18 +1450,11 @@ class NTSApp {
 
 // ===== MANEJO DE ESCALAS EN VUELOS =====
 function toggleEscalasSection() {
-  const checkbox = document.getElementById('vuelo-tiene-escalas');
-  const addBtn = document.getElementById('add-segment-btn');
-  const container = document.getElementById('segments-container');
-
-  if (checkbox?.checked) {
-    if (addBtn) addBtn.style.display = 'inline-flex';
-    app?.showNotification('✈️ Puede agregar escalas', 'info');
-  } else {
-    if (addBtn) addBtn.style.display = 'none';
-    Array.from(container.children).slice(1).forEach(row => row.remove());
-    renumberSegments();
-  }
+  const show = document.getElementById('vuelo-tiene-escalas')?.checked;
+  document.querySelectorAll('.escala-extra').forEach(div => {
+    div.style.display = show ? 'block' : 'none';
+  });
+  app?.showNotification(show ? '✈️ Campos de escala visibles' : '✈️ Campos de escala ocultos', 'info');
 }
 
 function addSegmentRow() {
@@ -1460,7 +1466,7 @@ function addSegmentRow() {
   row.className = 'segment-row';
   row.style.cssText = `
     display: grid;
-    grid-template-columns: repeat(4, 1fr) auto;
+    grid-template-columns: repeat(6, 1fr) auto;
     gap: 0.5rem;
     margin-bottom: 0.5rem;
     padding: 1rem;
@@ -1479,6 +1485,14 @@ function addSegmentRow() {
       <input type="text" class="form-control segment-destino" placeholder="Destino">
     </div>
     <div class="form-group">
+      <label>Aerolínea</label>
+      <input type="text" class="form-control segment-aerolinea" placeholder="Aerolínea">
+    </div>
+    <div class="form-group">
+      <label>Número de vuelo</label>
+      <input type="text" class="form-control segment-numero" placeholder="AB123">
+    </div>
+    <div class="form-group">
       <label>Salida</label>
       <input type="datetime-local" class="form-control segment-salida">
     </div>
@@ -1489,9 +1503,27 @@ function addSegmentRow() {
     <div class="form-group" style="display: flex; align-items: end;">
       ${index > 1 ? `<button type="button" class="btn btn-danger remove-segment" onclick="removeSegmentRow(this)" title="Eliminar tramo"><i data-lucide="trash-2"></i></button>` : ''}
     </div>
+    <div class="escala-extra">
+      <div class="escala-grid">
+        <div class="form-group">
+          <label>Aeropuerto de escala</label>
+          <input type="text" class="form-control segment-aeropuerto-escala" placeholder="Aeropuerto de escala">
+        </div>
+        <div class="form-group">
+          <label>Duración de la escala</label>
+          <input type="text" class="form-control segment-duracion-escala" placeholder="01:30">
+        </div>
+        <div class="form-group">
+          <label>Tiempo total de vuelo</label>
+          <input type="text" class="form-control segment-tiempo-total" placeholder="05:45">
+        </div>
+      </div>
+    </div>
   `;
 
   container.appendChild(row);
+
+  toggleEscalasSection();
 
   if (window.lucide) {
     window.lucide.createIcons();

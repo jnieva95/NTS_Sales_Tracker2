@@ -1148,6 +1148,18 @@ mark {
   animation: slideIn 0.3s ease;
 }
 
+.escala-extra {
+  grid-column: 1 / -1;
+  display: none;
+}
+
+.escala-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
 @keyframes slideIn {
   from {
     opacity: 0;
