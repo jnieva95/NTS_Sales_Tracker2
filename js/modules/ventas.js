@@ -165,53 +165,238 @@ function createVendedorSelect() {
     console.log('✅ Select de vendedores creado');
 }
 
+// ===== MANEJO DE ESCALAS EN VUELOS =====
+function toggleEscalasSection() {
+    const checkbox = document.getElementById('vuelo-tiene-escalas');
+    const escalasSection = document.getElementById('escalas-section');
+    const segmentsContainer = document.getElementById('segments-container');
+    
+    if (checkbox?.checked) {
+        escalasSection.style.display = 'block';
+        // Agregar primera escala automáticamente
+        if (!segmentsContainer.children.length) {
+            addEscalaRow();
+        }
+        showNotification('✈️ Sección de escalas habilitada', 'info');
+    } else {
+        escalasSection.style.display = 'none';
+        // Limpiar escalas
+        segmentsContainer.innerHTML = '';
+        showNotification('✈️ Sección de escalas ocultada', 'info');
+    }
+}
+
+function addEscalaRow() {
+    const container = document.getElementById('segments-container');
+    if (!container) return;
+    const escalaIndex = container.children.length + 1;
+    
+    const escalaRow = document.createElement('div');
+    escalaRow.className = 'escala-row';
+    escalaRow.style.cssText = `
+        display: grid;
+        grid-template-columns: repeat(4, 1fr) auto;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+        padding: 1rem;
+        border: 1px solid var(--gray-200);
+        border-radius: 0.5rem;
+        background: var(--gray-50);
+    `;
+    
+    escalaRow.innerHTML = `
+        <div class="form-group">
+            <label>Origen Escala ${escalaIndex}</label>
+            <input type="text" class="form-control segment-origen" placeholder="Origen">
+        </div>
+        <div class="form-group">
+            <label>Destino Escala ${escalaIndex}</label>
+            <input type="text" class="form-control segment-destino" placeholder="Destino">
+        </div>
+        <div class="form-group">
+            <label>Salida</label>
+            <input type="datetime-local" class="form-control segment-salida">
+        </div>
+        <div class="form-group">
+            <label>Llegada</label>
+            <input type="datetime-local" class="form-control segment-llegada">
+        </div>
+        <div class="form-group" style="display: flex; align-items: end;">
+            <button type="button" class="btn btn-danger remove-segment" onclick="removeEscalaRow(this)" title="Eliminar escala">
+                <i data-lucide="trash-2"></i>
+            </button>
+        </div>
+    `;
+    
+    container.appendChild(escalaRow);
+    
+    if (window.lucide) {
+        window.lucide.createIcons();
+    }
+}
+
+function removeEscalaRow(button) {
+    const escalaRow = button.closest('.escala-row');
+    escalaRow.remove();
+    
+    const container = document.getElementById('segments-container');
+    Array.from(container.children).forEach((row, index) => {
+        const labels = row.querySelectorAll('label');
+        labels[0].textContent = `Origen Escala ${index + 1}`;
+        labels[1].textContent = `Destino Escala ${index + 1}`;
+    });
+    
+    showNotification('🗑️ Escala eliminada', 'info');
+}
+
+// Exportar funciones globalmente
+window.toggleEscalasSection = toggleEscalasSection;
+window.addEscalaRow = addEscalaRow;
+window.removeEscalaRow = removeEscalaRow;
+
 function setupClienteAutocomplete() {
     const clienteNombre = document.getElementById('cliente-nombre');
     if (!clienteNombre) return;
+
+    // Crear container de búsqueda
+    const searchContainer = document.createElement('div');
+    searchContainer.className = 'cliente-search-container';
+    searchContainer.style.cssText = `
+        position: relative;
+        width: 100%;
+    `;
+
+    // Envolver el input original
+    const originalParent = clienteNombre.parentNode;
+    originalParent.insertBefore(searchContainer, clienteNombre);
+    searchContainer.appendChild(clienteNombre);
+
+    // Crear dropdown de resultados
+    const dropdown = document.createElement('div');
+    dropdown.id = 'cliente-search-dropdown';
+    dropdown.style.cssText = `
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid var(--gray-300);
+        border-top: none;
+        border-radius: 0 0 0.5rem 0.5rem;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    `;
+    searchContainer.appendChild(dropdown);
+
+    // Agregar icono de búsqueda
+    clienteNombre.placeholder = "🔍 Buscar cliente existente o crear nuevo...";
     
-    // Crear datalist si no existe
-    let datalist = document.getElementById('clientes-datalist-nts');
-    if (!datalist) {
-        datalist = document.createElement('datalist');
-        datalist.id = 'clientes-datalist-nts';
-        document.body.appendChild(datalist);
-    }
+    let searchTimeout;
     
-    // Llenar datalist
-    datalist.innerHTML = '';
-    VentasModule.clientesExistentes.forEach(cliente => {
-        const option = document.createElement('option');
-        option.value = cliente.nombre;
-        option.setAttribute('data-email', cliente.email || '');
-        option.setAttribute('data-telefono', cliente.telefono || '');
-        option.setAttribute('data-id', cliente.id);
-        datalist.appendChild(option);
-    });
-    
-    clienteNombre.setAttribute('list', 'clientes-datalist-nts');
-    
-    // Event listener para autocompletar
+    // Event listener para búsqueda en tiempo real
     clienteNombre.addEventListener('input', function() {
-        const selectedOption = [...datalist.options].find(option => option.value === this.value);
+        clearTimeout(searchTimeout);
+        const searchTerm = this.value.trim().toLowerCase();
         
-        if (selectedOption) {
-            const emailField = document.getElementById('cliente-email');
-            const telefonoField = document.getElementById('cliente-telefono');
-            
-            if (emailField) emailField.value = selectedOption.getAttribute('data-email');
-            if (telefonoField) telefonoField.value = selectedOption.getAttribute('data-telefono');
-            
-            VentasModule.currentVenta.cliente.id = selectedOption.getAttribute('data-id');
-            VentasModule.currentVenta.cliente.esExistente = true;
-            
-            showNotification('✅ Cliente encontrado - datos autocompletados', 'success');
-        } else {
-            VentasModule.currentVenta.cliente.esExistente = false;
+        if (searchTerm.length < 2) {
+            hideDropdown();
+            return;
+        }
+        
+        searchTimeout = setTimeout(() => {
+            searchClientes(searchTerm);
+        }, 300); // Debounce de 300ms
+    });
+
+    // Ocultar dropdown al hacer clic fuera
+    document.addEventListener('click', function(e) {
+        if (!searchContainer.contains(e.target)) {
+            hideDropdown();
         }
     });
-    
-    console.log('✅ Autocompletado de clientes configurado');
+
+    function searchClientes(searchTerm) {
+        // Filtrar clientes que coincidan con el término de búsqueda
+        const clientesFiltrados = VentasModule.clientesExistentes.filter(cliente => {
+            return cliente.nombre.toLowerCase().includes(searchTerm) ||
+                   (cliente.email && cliente.email.toLowerCase().includes(searchTerm)) ||
+                   (cliente.telefono && cliente.telefono.includes(searchTerm)) ||
+                   (cliente.documento && cliente.documento.includes(searchTerm));
+        });
+
+        showSearchResults(clientesFiltrados, searchTerm);
+    }
+
+    function showSearchResults(clientes, searchTerm) {
+        const dropdown = document.getElementById('cliente-search-dropdown');
+        
+        if (clientes.length === 0) {
+            dropdown.innerHTML = `
+                <div class="search-result-item no-results">
+                    <div class="no-results-content">
+                        <i data-lucide="user-plus"></i>
+                        <span>No se encontraron clientes</span>
+                        <small>Se creará un cliente nuevo: "${searchTerm}"</small>
+                    </div>
+                </div>
+            `;
+        } else {
+            dropdown.innerHTML = clientes.map(cliente => `
+                <div class="search-result-item" onclick="selectCliente(${cliente.id}, '${cliente.nombre}', '${cliente.email || ''}', '${cliente.telefono || ''}')">
+                    <div class="cliente-info">
+                        <div class="cliente-nombre">${highlightMatch(cliente.nombre, searchTerm)}</div>
+                        <div class="cliente-detalles">
+                            ${cliente.email ? `📧 ${cliente.email}` : ''} 
+                            ${cliente.telefono ? `📱 ${cliente.telefono}` : ''}
+                        </div>
+                    </div>
+                    <div class="cliente-status">
+                        <span class="status-badge existing">Existente</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        dropdown.style.display = 'block';
+        
+        // Re-inicializar iconos
+        if (window.lucide) {
+            window.lucide.createIcons();
+        }
+    }
+
+    function hideDropdown() {
+        const dropdown = document.getElementById('cliente-search-dropdown');
+        dropdown.style.display = 'none';
+    }
+
+    function highlightMatch(text, searchTerm) {
+        const regex = new RegExp(`(${searchTerm})`, 'gi');
+        return text.replace(regex, '<mark>$1</mark>');
+    }
 }
+
+// NUEVA FUNCIÓN GLOBAL: Seleccionar cliente
+window.selectCliente = function(id, nombre, email, telefono) {
+    document.getElementById('cliente-nombre').value = nombre;
+    document.getElementById('cliente-email').value = email;
+    document.getElementById('cliente-telefono').value = telefono;
+
+    VentasModule.currentVenta.cliente = {
+        id: id,
+        nombre: nombre,
+        email: email,
+        telefono: telefono,
+        esExistente: true
+    };
+
+    document.getElementById('cliente-search-dropdown').style.display = 'none';
+    showNotification(`✅ Cliente seleccionado: ${nombre}`, 'success');
+    document.getElementById('cliente-email')?.focus();
+};
 
 function createProveedorSelects() {
     const serviceForms = ['vuelo', 'hotel', 'traslado', 'excursion'];
@@ -511,6 +696,14 @@ function setupVentasEvents() {
             calculateMargin(e.target);
         }
     });
+
+    // Event listener para botón de agregar escala
+    document.addEventListener('click', function(e) {
+        if (e.target.matches('#add-segment-btn')) {
+            e.preventDefault();
+            addEscalaRow();
+        }
+    });
 }
 
 function calculateMargin(element) {
@@ -652,9 +845,28 @@ function validateServiceData(serviceData, tipo) {
                 showNotification('⚠️ Complete origen y destino del vuelo', 'warning');
                 return false;
             }
-            if (serviceData.origen.trim() === '' || serviceData.destino.trim() === '') {
-                showNotification('⚠️ Origen y destino no pueden estar vacíos', 'warning');
-                return false;
+
+            // Validar escalas si están habilitadas
+            const tieneEscalas = document.getElementById('vuelo-tiene-escalas')?.checked;
+            if (tieneEscalas) {
+                const segmentRows = document.querySelectorAll('#segments-container .escala-row');
+                if (segmentRows.length === 0) {
+                    showNotification('⚠️ Agregue al menos una escala o desactive la opción', 'warning');
+                    return false;
+                }
+
+                let escalaIncompleta = false;
+                segmentRows.forEach((row, index) => {
+                    const origen = row.querySelector('.segment-origen')?.value?.trim();
+                    const destino = row.querySelector('.segment-destino')?.value?.trim();
+
+                    if (!origen || !destino) {
+                        showNotification(`⚠️ Complete origen y destino en la escala ${index + 1}`, 'warning');
+                        escalaIncompleta = true;
+                    }
+                });
+
+                if (escalaIncompleta) return false;
             }
             break;
         case 'hotel':
@@ -1081,3 +1293,4 @@ window.limpiarFormulario = limpiarFormularioCompleto;
 window.eliminarServicio = eliminarServicio;
 
 console.log('✅ Módulo de ventas completo sin duplicados cargado correctamente');
+console.log('✅ Correcciones para escalas y búsqueda de clientes implementadas');
