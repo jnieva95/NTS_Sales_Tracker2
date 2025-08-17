@@ -701,22 +701,23 @@ class NTSApp {
               <label for="vuelo-pasajeros">Pasajeros</label>
               <input type="number" id="vuelo-pasajeros" class="form-control" value="1" min="1">
             </div>
+            <div class="form-group">
+              <label for="vuelo-tipo">Tipo de Itinerario</label>
+              <select id="vuelo-tipo" class="form-control">
+                <option value="ida_vuelta">Ida y vuelta</option>
+                <option value="solo_ida">Solo ida</option>
+                <option value="multidestino">Multidestino</option>
+              </select>
+            </div>
           </div>
 
           <div class="form-group full-width" style="margin-top: 1rem;">
             <label><strong>Itinerario de Vuelo</strong></label>
             <div id="segments-container"></div>
-            <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
-              <label class="checkbox-container" style="margin: 0;">
-                <input type="checkbox" id="vuelo-tiene-escalas" onchange="toggleEscalasSection()">
-                <span class="checkmark"></span>
-                ¿El vuelo tiene escalas?
-              </label>
-              <button type="button" class="btn btn-secondary" id="add-segment-btn">
-                <i data-lucide="plus"></i>
-                Agregar tramo
-              </button>
-            </div>
+            <button type="button" class="btn btn-secondary" id="add-segment-btn" style="margin-top: 0.5rem;">
+              <i data-lucide="plus"></i>
+              Agregar tramo
+            </button>
           </div>
 
           <div class="form-actions" style="margin-top: 1.5rem;">
@@ -870,11 +871,6 @@ class NTSApp {
       if (container && !container.children.length) {
         addSegmentRow();
       }
-      const checkbox = document.getElementById('vuelo-tiene-escalas');
-      if (checkbox) {
-        checkbox.checked = false;
-        toggleEscalasSection();
-      }
     }
   }
 
@@ -907,24 +903,33 @@ class NTSApp {
     switch (serviceType) {
       case 'vuelo':
         const segmentRows = document.querySelectorAll('#segments-container .segment-row');
-        const tieneEscalas = document.getElementById('vuelo-tiene-escalas')?.checked;
-        const segmentos = Array.from(segmentRows).map((row, index) => ({
-          numero_segmento: index + 1,
-          aeropuerto_origen: row.querySelector('.segment-origen')?.value?.trim(),
-          aeropuerto_destino: row.querySelector('.segment-destino')?.value?.trim(),
-          aerolinea: row.querySelector('.segment-aerolinea')?.value?.trim(),
-          numero_vuelo: row.querySelector('.segment-numero')?.value?.trim(),
-          fecha_hora_salida_local: row.querySelector('.segment-salida')?.value || null,
-          fecha_hora_llegada_local: row.querySelector('.segment-llegada')?.value || null,
-          aeropuerto_escala: tieneEscalas ? row.querySelector('.segment-aeropuerto-escala')?.value?.trim() : '',
-          duracion_escala: tieneEscalas ? row.querySelector('.segment-duracion-escala')?.value?.trim() : '',
-          tiempo_total_tramo: row.querySelector('.segment-tiempo-total')?.value?.trim() || ''
-        }));
+        const segmentos = Array.from(segmentRows).map((row, index) => {
+          const hasEscala = row.querySelector('.segment-has-escala')?.checked;
+          return {
+            numero_segmento: index + 1,
+            aeropuerto_origen: row.querySelector('.segment-origen')?.value?.trim(),
+            aeropuerto_destino: row.querySelector('.segment-destino')?.value?.trim(),
+            aerolinea: row.querySelector('.segment-aerolinea')?.value?.trim(),
+            numero_vuelo: row.querySelector('.segment-numero')?.value?.trim(),
+            fecha_hora_salida_local: row.querySelector('.segment-salida')?.value || null,
+            fecha_hora_llegada_local: row.querySelector('.segment-llegada')?.value || null,
+            tiene_escala: hasEscala,
+            aeropuerto_escala: hasEscala ? row.querySelector('.segment-aeropuerto-escala')?.value?.trim() : '',
+            duracion_escala: hasEscala ? row.querySelector('.segment-duracion-escala')?.value?.trim() : '',
+            tiempo_total_tramo: row.querySelector('.segment-tiempo-total')?.value?.trim() || ''
+          };
+        });
+        const origen = segmentos[0]?.aeropuerto_origen || '';
+        const destino = segmentos[segmentos.length - 1]?.aeropuerto_destino || '';
+        const tieneEscalas = segmentos.some(s => s.tiene_escala);
+        const descripcion = origen && destino ? `Vuelo ${origen} → ${destino}` : 'Vuelo';
         return {
           ...baseData,
           pasajeros: parseInt(document.getElementById('vuelo-pasajeros')?.value) || 1,
-          origen: segmentos[0]?.aeropuerto_origen || '',
-          destino: segmentos[segmentos.length - 1]?.aeropuerto_destino || '',
+          tipo_itinerario: document.getElementById('vuelo-tipo')?.value || 'ida_vuelta',
+          origen,
+          destino,
+          descripcion,
           tieneEscalas,
           segmentos
         };
@@ -979,12 +984,10 @@ class NTSApp {
           this.showNotification('Complete origen, destino, aerolínea y número de vuelo en todos los tramos', 'warning');
           return false;
         }
-        if (serviceData.tieneEscalas) {
-          const escalaInvalid = serviceData.segmentos.some(s => !s.aeropuerto_escala || !s.duracion_escala || !s.tiempo_total_tramo);
-          if (escalaInvalid) {
-            this.showNotification('Complete los datos de escala en todos los tramos', 'warning');
-            return false;
-          }
+        const escalaInvalid = serviceData.segmentos.some(s => s.tiene_escala && (!s.aeropuerto_escala || !s.duracion_escala || !s.tiempo_total_tramo));
+        if (escalaInvalid) {
+          this.showNotification('Complete los datos de escala en los tramos con escala', 'warning');
+          return false;
         }
         break;
       case 'hotel':
@@ -1118,11 +1121,7 @@ class NTSApp {
     });
 
     if (serviceType === 'vuelo') {
-      const checkbox = document.getElementById('vuelo-tiene-escalas');
       const container = document.getElementById('segments-container');
-      const addBtn = document.getElementById('add-segment-btn');
-      if (checkbox) checkbox.checked = false;
-      if (addBtn) addBtn.style.display = 'none';
       if (container) {
         container.innerHTML = '';
         addSegmentRow();
@@ -1448,15 +1447,6 @@ class NTSApp {
   }
 }
 
-// ===== MANEJO DE ESCALAS EN VUELOS =====
-function toggleEscalasSection() {
-  const show = document.getElementById('vuelo-tiene-escalas')?.checked;
-  document.querySelectorAll('.escala-extra').forEach(div => {
-    div.style.display = show ? 'block' : 'none';
-  });
-  app?.showNotification(show ? '✈️ Campos de escala visibles' : '✈️ Campos de escala ocultos', 'info');
-}
-
 function addSegmentRow() {
   const container = document.getElementById('segments-container');
   if (!container) return;
@@ -1494,10 +1484,17 @@ function addSegmentRow() {
       <label>Tiempo total de vuelo</label>
       <input type="text" class="form-control segment-tiempo-total" placeholder="00:00" readonly>
     </div>
+    <div class="form-group">
+      <label class="checkbox-container" style="margin-top: 1.5rem;">
+        <input type="checkbox" class="segment-has-escala">
+        <span class="checkmark"></span>
+        ¿El tramo tiene escala?
+      </label>
+    </div>
     <div class="form-group" style="display: flex; align-items: end;">
       ${index > 1 ? `<button type="button" class="btn btn-danger remove-segment" onclick="removeSegmentRow(this)" title="Eliminar tramo"><i data-lucide="trash-2"></i></button>` : ''}
     </div>
-    <div class="escala-extra">
+    <div class="escala-extra" style="display: none;">
       <div class="escala-grid">
         <div class="form-group">
           <label>Aeropuerto de escala</label>
@@ -1518,7 +1515,18 @@ function addSegmentRow() {
   row.querySelector('.segment-llegada').addEventListener('change', updateTotal);
   row.querySelector('.segment-duracion-escala').addEventListener('input', updateTotal);
 
-  toggleEscalasSection();
+  const escalaToggle = row.querySelector('.segment-has-escala');
+  const escalaExtra = row.querySelector('.escala-extra');
+  if (escalaToggle && escalaExtra) {
+    escalaToggle.addEventListener('change', () => {
+      escalaExtra.style.display = escalaToggle.checked ? 'block' : 'none';
+      if (!escalaToggle.checked) {
+        row.querySelector('.segment-aeropuerto-escala').value = '';
+        row.querySelector('.segment-duracion-escala').value = '';
+      }
+      updateTotal();
+    });
+  }
 
   if (window.lucide) {
     window.lucide.createIcons();
@@ -1528,13 +1536,14 @@ function addSegmentRow() {
 function updateSegmentTiempoTotal(row) {
   const salida = row.querySelector('.segment-salida')?.value;
   const llegada = row.querySelector('.segment-llegada')?.value;
-  const escala = row.querySelector('.segment-duracion-escala')?.value;
+  const hasEscala = row.querySelector('.segment-has-escala')?.checked;
+  const escala = hasEscala ? row.querySelector('.segment-duracion-escala')?.value : '';
 
   if (salida && llegada) {
     const start = new Date(salida);
     const end = new Date(llegada);
     let diff = end - start;
-    if (escala) {
+    if (hasEscala && escala) {
       const [h, m] = escala.split(':').map(Number);
       if (!isNaN(h) && !isNaN(m)) {
         diff += (h * 60 + m) * 60 * 1000;
@@ -1575,7 +1584,6 @@ function renumberSegments() {
   });
 }
 
-window.toggleEscalasSection = toggleEscalasSection;
 window.addSegmentRow = addSegmentRow;
 window.removeSegmentRow = removeSegmentRow;
 
