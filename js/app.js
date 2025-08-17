@@ -6,6 +6,7 @@ console.log('🚀 Iniciando aplicación NTS...');
 // ===== VARIABLES GLOBALES =====
 let currentTab = 'dashboard';
 let isLoading = false;
+let salesChartInstance = null;
 
 // ===== INICIALIZACIÓN DE LA APLICACIÓN =====
 document.addEventListener('DOMContentLoaded', async function() {
@@ -184,6 +185,12 @@ async function loadDashboard() {
 
 async function loadDashboardFromDB() {
     try {
+        // Destroy existing chart if it exists
+        if (salesChartInstance) {
+            salesChartInstance.destroy();
+            salesChartInstance = null;
+        }
+        
         const { supabase } = window.NTS_CONFIG;
         
         // Obtener estadísticas de ventas
@@ -231,6 +238,12 @@ async function loadDashboardFromDB() {
 
 function loadDashboardMock() {
     console.log('📊 Cargando dashboard con datos mock...');
+    
+    // Destroy existing chart if it exists
+    if (salesChartInstance) {
+        salesChartInstance.destroy();
+        salesChartInstance = null;
+    }
     
     updateDashboardMetrics({
         ventasDelMes: 125000,
