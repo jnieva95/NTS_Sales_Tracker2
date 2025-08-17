@@ -1,5 +1,7 @@
 // ===== MAIN.JS - APLICACIÓN PRINCIPAL NTS V2.0 =====
 
+import { addEscalaRow, removeEscalaRow } from './modules/ventas.js';
+
 console.log('🚀 Iniciando NTS Sistema v2.0...');
 
 // ===== CONFIGURACIÓN GLOBAL =====
@@ -873,7 +875,7 @@ class NTSApp {
       if (!container || !addBtn) return;
 
       const addSegment = () => {
-        container.appendChild(this.createSegmentRow());
+        addEscalaRow(container);
       };
 
       addBtn.addEventListener('click', addSegment);
@@ -881,28 +883,12 @@ class NTSApp {
 
       container.addEventListener('click', (e) => {
         if (e.target.classList.contains('remove-segment')) {
-          e.target.closest('.segment-row')?.remove();
+          removeEscalaRow(e.target);
         }
       });
     }
   }
 
-  createSegmentRow() {
-    const row = document.createElement('div');
-    row.className = 'segment-row';
-    row.style.display = 'grid';
-    row.style.gridTemplateColumns = 'repeat(4, 1fr) auto';
-    row.style.gap = 'var(--spacing-sm)';
-    row.style.marginBottom = 'var(--spacing-sm)';
-    row.innerHTML = `
-      <input type="text" class="form-control segment-origen" placeholder="Origen">
-      <input type="text" class="form-control segment-destino" placeholder="Destino">
-      <input type="datetime-local" class="form-control segment-salida">
-      <input type="datetime-local" class="form-control segment-llegada">
-      <button type="button" class="btn btn-danger remove-segment">&times;</button>
-    `;
-    return row;
-  }
 
   addService(serviceType) {
     const serviceData = this.getServiceData(serviceType);
@@ -1137,7 +1123,7 @@ class NTSApp {
       const container = document.getElementById('segments-container');
       if (container) {
         container.innerHTML = '';
-        container.appendChild(this.createSegmentRow());
+        addEscalaRow(container);
       }
     }
   }

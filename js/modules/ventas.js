@@ -542,6 +542,39 @@ function calculateMargin(element) {
     }
 }
 
+// ===== ESCALAS / SEGMENTOS =====
+export function toggleEscalasSection(show) {
+    const section = document.getElementById('segments-container');
+    if (!section) return;
+    section.style.display = show ? 'block' : 'none';
+}
+
+export function addEscalaRow(container) {
+    if (!container) return;
+    container.appendChild(createEscalaRow());
+}
+
+export function removeEscalaRow(element) {
+    element.closest('.segment-row')?.remove();
+}
+
+function createEscalaRow() {
+    const row = document.createElement('div');
+    row.className = 'segment-row';
+    row.style.display = 'grid';
+    row.style.gridTemplateColumns = 'repeat(4, 1fr) auto';
+    row.style.gap = 'var(--spacing-sm)';
+    row.style.marginBottom = 'var(--spacing-sm)';
+    row.innerHTML = `
+        <input type="text" class="form-control segment-origen" placeholder="Origen">
+        <input type="text" class="form-control segment-destino" placeholder="Destino">
+        <input type="datetime-local" class="form-control segment-salida">
+        <input type="datetime-local" class="form-control segment-llegada">
+        <button type="button" class="btn btn-danger remove-segment">&times;</button>
+    `;
+    return row;
+}
+
 // ===== AGREGAR SERVICIOS =====
 function agregarServicioMejorado(tipo) {
     console.log(`➕ Agregando servicio: ${tipo}`);
