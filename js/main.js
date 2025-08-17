@@ -72,8 +72,9 @@ class NTSApp {
       this.showNotification('Sistema NTS iniciado correctamente', 'success');
       
     } catch (error) {
-      console.error('❌ Error inicializando aplicación:', error);
-      this.showNotification('Error al inicializar el sistema', 'error');
+      console.error('❌ Error inicializando aplicación:', error.message);
+      if (error.details) console.error('Detalles:', error.details);
+      this.showNotification(`Error al inicializar el sistema: ${error.message}`, 'error');
       this.hideLoader();
     }
   }
@@ -99,8 +100,10 @@ class NTSApp {
         this.updateConnectionStatus(false);
       }
     } catch (error) {
-      console.error('❌ Error conectando Supabase:', error);
+      console.error('❌ Error conectando Supabase:', error.message);
+      if (error.details) console.error('Detalles:', error.details);
       this.updateConnectionStatus(false);
+      this.showNotification(`Error conectando Supabase: ${error.message}`, 'error');
     }
   }
 
@@ -268,7 +271,9 @@ class NTSApp {
         this.loadMockData();
       }
     } catch (error) {
-      console.error('Error cargando datos:', error);
+      console.error('Error cargando datos:', error.message);
+      if (error.details) console.error('Detalles:', error.details);
+      this.showNotification(`Error cargando datos: ${error.message}`, 'error');
       this.loadMockData();
     }
   }
@@ -307,7 +312,9 @@ class NTSApp {
       this.loadRecentActivity(ventas.slice(0, 5));
       
     } catch (error) {
-      console.error('Error cargando datos del dashboard:', error);
+      console.error('Error cargando datos del dashboard:', error.message);
+      if (error.details) console.error('Detalles:', error.details);
+      this.showNotification(`Error cargando datos del dashboard: ${error.message}`, 'error');
       this.loadMockData();
     }
   }
@@ -378,7 +385,9 @@ class NTSApp {
       AppState.clientes = data || [];
       this.setupClientAutocomplete();
     } catch (error) {
-      console.error('Error cargando clientes:', error);
+      console.error('Error cargando clientes:', error.message);
+      if (error.details) console.error('Detalles:', error.details);
+      this.showNotification(`Error cargando clientes: ${error.message}`, 'error');
     }
   }
 
@@ -1167,8 +1176,9 @@ class NTSApp {
       this.showTab('dashboard');
       
     } catch (error) {
-      console.error('Error creando venta:', error);
-      this.showNotification('Error al crear la venta', 'error');
+      console.error('Error creando venta:', error.message);
+      if (error.details) console.error('Detalles:', error.details);
+      this.showNotification(`Error al crear la venta: ${error.message}`, 'error');
     } finally {
       this.hideLoader();
     }
