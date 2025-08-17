@@ -1650,9 +1650,10 @@ let app;
 
 document.addEventListener('DOMContentLoaded', () => {
   app = new NTSApp();
+  window.app = app;
 });
 
 // ===== EXPORT GLOBAL =====
-window.app = app;
+// "app" se define en DOMContentLoaded y se expone globalmente arriba
 
 console.log('✅ NTS Sistema v2.0 cargado correctamente');
