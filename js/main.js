@@ -1441,15 +1441,14 @@ class NTSApp {
   async loadVentasList() {
     const searchInput = document.getElementById('ventas-search');
     const filterSelect = document.getElementById('ventas-filter');
+    const clientInput = document.getElementById('ventas-cliente');
     const table = document.getElementById('ventas-table');
 
     if (!this.ventasListenersSetup) {
-      searchInput?.addEventListener('input', () => {
-        this.renderVentasTable(this.filterVentas());
-      });
-      filterSelect?.addEventListener('change', () => {
-        this.renderVentasTable(this.filterVentas());
-      });
+      const rerender = () => this.renderVentasTable(this.filterVentas());
+      searchInput?.addEventListener('input', rerender);
+      filterSelect?.addEventListener('change', rerender);
+      clientInput?.addEventListener('input', rerender);
       table?.addEventListener('click', (e) => {
         const editBtn = e.target.closest('[data-action="edit"]');
         const deleteBtn = e.target.closest('[data-action="delete"]');
@@ -1492,17 +1491,26 @@ class NTSApp {
       AppState.ventas = [];
     }
 
+    const clientList = document.getElementById('ventas-clientes');
+    if (clientList) {
+      const uniqueClients = [...new Set(AppState.ventas.map(v => v.cliente_nombre).filter(Boolean))];
+      clientList.innerHTML = uniqueClients.map(n => `<option value="${n}"></option>`).join('');
+    }
+
     this.renderVentasTable(this.filterVentas());
+    this.updateVentasStats();
   }
 
   filterVentas() {
     const term = document.getElementById('ventas-search')?.value.toLowerCase() || '';
     const estado = document.getElementById('ventas-filter')?.value || '';
+    const cliente = document.getElementById('ventas-cliente')?.value.toLowerCase() || '';
     return AppState.ventas.filter(v => {
       const matchesTerm = v.numero_venta?.toLowerCase().includes(term) ||
         v.cliente_nombre?.toLowerCase().includes(term);
       const matchesEstado = !estado || v.estado === estado;
-      return matchesTerm && matchesEstado;
+      const matchesCliente = !cliente || v.cliente_nombre?.toLowerCase().includes(cliente);
+      return matchesTerm && matchesEstado && matchesCliente;
     });
   }
 
@@ -1531,8 +1539,37 @@ class NTSApp {
     if (window.lucide) window.lucide.createIcons();
   }
 
-  editVenta(id) {
-    this.showNotification(`Editar venta ${id} en desarrollo`, 'info');
+  async editVenta(id) {
+    const venta = AppState.ventas.find(v => v.id === Number(id));
+    if (!venta) {
+      this.showNotification('Venta no encontrada', 'error');
+      return;
+    }
+
+    const nuevoEstado = prompt('Estado de la venta', venta.estado || 'pendiente');
+    if (nuevoEstado === null) return;
+    const nuevoTotal = parseFloat(prompt('Total final', venta.total_final));
+    try {
+      if (AppState.isConnected && AppState.supabase) {
+        const { error } = await AppState.supabase
+          .from('ventas')
+          .update({ estado: nuevoEstado, total_final: isNaN(nuevoTotal) ? venta.total_final : nuevoTotal })
+          .eq('id', id);
+        if (error) throw error;
+      } else {
+        let ventas = JSON.parse(localStorage.getItem('nts_ventas') || '[]');
+        ventas = ventas.map(v => v.id === Number(id) ? { ...v, estado: nuevoEstado, total_final: isNaN(nuevoTotal) ? v.total_final : nuevoTotal } : v);
+        localStorage.setItem('nts_ventas', JSON.stringify(ventas));
+      }
+      venta.estado = nuevoEstado;
+      if (!isNaN(nuevoTotal)) venta.total_final = nuevoTotal;
+      this.renderVentasTable(this.filterVentas());
+      this.updateVentasStats();
+      this.showNotification('Venta actualizada', 'success');
+    } catch (err) {
+      console.error('Error actualizando venta:', err);
+      this.showNotification('No se pudo actualizar la venta', 'error');
+    }
   }
 
   async deleteVenta(id) {
@@ -1548,10 +1585,31 @@ class NTSApp {
       }
       AppState.ventas = AppState.ventas.filter(v => v.id !== Number(id));
       this.renderVentasTable(this.filterVentas());
+      this.updateVentasStats();
       this.showNotification('Venta eliminada', 'success');
     } catch (err) {
       console.error('Error eliminando venta:', err);
       this.showNotification('No se pudo eliminar la venta', 'error');
+    }
+  }
+
+  updateVentasStats() {
+    const now = new Date();
+    const ventasDelMes = AppState.ventas
+      .filter(v => {
+        const fecha = new Date(v.fecha_venta);
+        return fecha.getMonth() === now.getMonth() && fecha.getFullYear() === now.getFullYear();
+      })
+      .reduce((sum, v) => sum + (v.total_final || 0), 0);
+    const totalVentas = AppState.ventas.length;
+    const pendientes = AppState.ventas.filter(v => v.estado !== 'finalizada' && v.estado !== 'cancelada').length;
+    const totalClientes = parseInt(document.getElementById('total-clientes')?.textContent) || 0;
+    this.updateDashboardStats({ ventasDelMes, totalVentas, pendientes, totalClientes });
+
+    const clientList = document.getElementById('ventas-clientes');
+    if (clientList) {
+      const uniqueClients = [...new Set(AppState.ventas.map(v => v.cliente_nombre).filter(Boolean))];
+      clientList.innerHTML = uniqueClients.map(n => `<option value="${n}"></option>`).join('');
     }
   }
 
