@@ -1582,18 +1582,19 @@ function renumberEscalas(segmentRow) {
   });
 }
 
+function parseDurationToMinutes(val) {
+  const parts = val.split(':').map(Number);
+  if (parts.length !== 2) return 0;
+  const [h, m] = parts;
+  return (isNaN(h) || isNaN(m)) ? 0 : h * 60 + m;
+}
+
 function updateSegmentTiempoTotal(row) {
   const salida = row.querySelector('.segment-salida')?.value;
   const llegada = row.querySelector('.segment-llegada')?.value;
   const escalaDuraciones = Array.from(row.querySelectorAll('.segment-duracion-escala'))
-    .map(i => i.value)
-    .reduce((acc, val) => {
-      const [h, m] = val.split(':').map(Number);
-      if (!isNaN(h) && !isNaN(m)) {
-        return acc + (h * 60 + m);
-      }
-      return acc;
-    }, 0);
+    .map(i => parseDurationToMinutes(i.value))
+    .reduce((acc, val) => acc + val, 0);
 
   if (salida && llegada) {
     const start = new Date(salida);

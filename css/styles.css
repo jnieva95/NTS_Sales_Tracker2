@@ -1160,6 +1160,7 @@ mark {
   margin-top: 0.5rem;
   border-top: 1px dashed var(--gray-200);
   padding-top: 0.5rem;
+  grid-column: 1 / -1;
 }
 
 .escalas-container {
@@ -1170,12 +1171,18 @@ mark {
 
 .escala-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) auto;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 0.5rem;
   padding: 0.5rem;
   border: 1px dashed var(--gray-200);
   border-radius: 0.5rem;
   background: var(--gray-50);
+  width: 100%;
+}
+
+.escala-row .form-group:last-child {
+  display: flex;
+  align-items: flex-end;
 }
 
 @keyframes slideIn {
