@@ -35,7 +35,9 @@ async function initVentasModule() {
         console.log('✅ Módulo de ventas inicializado correctamente');
         
     } catch (error) {
-        console.error('❌ Error inicializando módulo de ventas:', error);
+        console.error('❌ Error inicializando módulo de ventas:', error.message);
+        if (error.details) console.error('Detalles:', error.details);
+        showNotification(`Error inicializando módulo de ventas: ${error.message}`, 'error');
     }
 }
 
@@ -90,7 +92,9 @@ async function loadVentasData() {
         });
         
     } catch (error) {
-        console.error('❌ Error cargando datos desde Supabase:', error);
+        console.error('❌ Error cargando datos desde Supabase:', error.message);
+        if (error.details) console.error('Detalles:', error.details);
+        showNotification(`Error cargando datos desde Supabase: ${error.message}`, 'error');
         loadMockData();
     }
 }
@@ -779,6 +783,9 @@ function formatDateForDisplay(dateString) {
             minute: '2-digit' 
         });
     } catch (error) {
+        console.error('Error formateando fecha:', error.message);
+        if (error.details) console.error('Detalles:', error.details);
+        showNotification(`Error formateando fecha: ${error.message}`, 'error');
         return dateString;
     }
 }
@@ -843,8 +850,9 @@ async function crearVentaCompleta() {
         limpiarFormularioCompleto();
         
     } catch (error) {
-        console.error('Error creando venta:', error);
-        showNotification('❌ Error al crear la venta: ' + error.message, 'error');
+        console.error('Error creando venta:', error.message);
+        if (error.details) console.error('Detalles:', error.details);
+        showNotification(`❌ Error al crear la venta: ${error.message}`, 'error');
     } finally {
         hideLoader();
     }
@@ -976,7 +984,9 @@ async function crearVentaEnDB(ventaData) {
         console.log('✅ Venta creada en DB:', numeroVenta);
         
     } catch (error) {
-        console.error('Error en crearVentaEnDB:', error);
+        console.error('Error en crearVentaEnDB:', error.message);
+        if (error.details) console.error('Detalles:', error.details);
+        showNotification(`Error en crearVentaEnDB: ${error.message}`, 'error');
         throw error;
     }
 }
