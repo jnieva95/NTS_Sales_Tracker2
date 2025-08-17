@@ -37,7 +37,9 @@ const AppState = {
       total: 0
     },
     fechaVenta: null
-  }
+  },
+  editingSaleId: null,
+  editingServiceId: null
 };
 
 // ===== INICIALIZACIÓN =====
@@ -964,22 +966,42 @@ class NTSApp {
 
   addService(serviceType) {
     const serviceData = this.getServiceData(serviceType);
-    
+
     if (!this.validateServiceData(serviceData, serviceType)) {
       return;
     }
-    
-    // Agregar servicio al estado
-    serviceData.id = Date.now();
-    serviceData.type = serviceType;
-    AppState.currentSale.services.push(serviceData);
-    
+
+    const isEdit = !!AppState.editingServiceId;
+    if (isEdit) {
+      const idx = AppState.currentSale.services.findIndex(
+        s => s.id === AppState.editingServiceId
+      );
+      if (idx !== -1) {
+        AppState.currentSale.services[idx] = {
+          ...serviceData,
+          id: AppState.editingServiceId,
+          type: serviceType
+        };
+      }
+      AppState.editingServiceId = null;
+    } else {
+      serviceData.id = Date.now();
+      serviceData.type = serviceType;
+      AppState.currentSale.services.push(serviceData);
+    }
+
     // Actualizar UI
     this.updateServicesList();
     this.updateTotals();
     this.clearServiceForm(serviceType);
-    
-    this.showNotification(`${serviceType} agregado correctamente`, 'success');
+
+    const btn = document.querySelector('#service-forms .btn.btn-primary');
+    if (btn) {
+      btn.innerHTML = `<i data-lucide="plus"></i> Agregar ${serviceType.charAt(0).toUpperCase() + serviceType.slice(1)}`;
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    this.showNotification(`${serviceType} ${isEdit ? 'actualizado' : 'agregado'} correctamente`, 'success');
   }
 
   getServiceData(serviceType) {
@@ -1134,9 +1156,14 @@ class NTSApp {
               <div class="service-title">${description}</div>
               <div class="service-price">${this.formatCurrency(service.precio)}</div>
             </div>
-            <button type="button" class="btn-icon" onclick="app.removeService(${service.id})" title="Eliminar servicio">
-              <i data-lucide="trash-2"></i>
-            </button>
+            <div class="service-actions">
+              <button type="button" class="btn-icon" onclick="app.editService(${service.id})" title="Editar servicio">
+                <i data-lucide="edit"></i>
+              </button>
+              <button type="button" class="btn-icon" onclick="app.removeService(${service.id})" title="Eliminar servicio">
+                <i data-lucide="trash-2"></i>
+              </button>
+            </div>
           </div>
         `;
       }).join('');
@@ -1179,6 +1206,92 @@ class NTSApp {
     this.updateServicesList();
     this.updateTotals();
     this.showNotification('Servicio eliminado', 'info');
+  }
+
+  editService(serviceId) {
+    const service = AppState.currentSale.services.find(s => s.id === serviceId);
+    if (!service) return;
+    AppState.editingServiceId = serviceId;
+    this.showServiceTab(service.type);
+    setTimeout(() => {
+      this.populateServiceForm(service);
+      const btn = document.querySelector('#service-forms .btn.btn-primary');
+      if (btn) {
+        btn.innerHTML = '<i data-lucide="check"></i> Guardar servicio';
+        if (window.lucide) window.lucide.createIcons();
+      }
+    });
+  }
+
+  populateServiceForm(service) {
+    switch (service.type) {
+      case 'vuelo': {
+        document.getElementById('vuelo-itinerario').value = service.tipo_itinerario || 'ida_vuelta';
+        document.getElementById('vuelo-pasajeros').value = service.pasajeros || 1;
+        document.getElementById('vuelo-costo').value = service.costo || '';
+        document.getElementById('vuelo-precio').value = service.precio || '';
+        const container = document.getElementById('segments-container');
+        if (container) {
+          container.innerHTML = '';
+          service.segmentos.forEach(seg => {
+            addSegmentRow();
+            const row = container.lastElementChild;
+            row.querySelector('.segment-origen').value = seg.aeropuerto_origen || '';
+            row.querySelector('.segment-destino').value = seg.aeropuerto_destino || '';
+            row.querySelector('.segment-aerolinea').value = seg.aerolinea || '';
+            row.querySelector('.segment-numero').value = seg.numero_vuelo || '';
+            row.querySelector('.segment-salida').value = seg.fecha_hora_salida_local || '';
+            row.querySelector('.segment-llegada').value = seg.fecha_hora_llegada_local || '';
+            row.querySelector('.segment-tiempo-total').value = seg.tiempo_total_tramo || '';
+            if (seg.tiene_escala) {
+              const toggle = row.querySelector('.segment-has-escala');
+              toggle.checked = true;
+              const escalaSection = row.querySelector('.escalas-section');
+              escalaSection.style.display = 'block';
+              const escalaContainer = row.querySelector('.escalas-container');
+              escalaContainer.innerHTML = '';
+              seg.escalas.forEach(es => {
+                addEscalaRowToSegment(row);
+                const escalaRow = escalaContainer.lastElementChild;
+                escalaRow.querySelector('.segment-aeropuerto-escala').value = es.aeropuerto || '';
+                escalaRow.querySelector('.segment-duracion-escala').value = es.duracion || '';
+              });
+            }
+          });
+        }
+        break;
+      }
+      case 'hotel':
+        document.getElementById('hotel-nombre').value = service.nombre || '';
+        document.getElementById('hotel-ciudad').value = service.ciudad || '';
+        document.getElementById('hotel-checkin').value = service.checkin || '';
+        document.getElementById('hotel-checkout').value = service.checkout || '';
+        document.getElementById('hotel-huespedes').value = service.huespedes || 1;
+        const hCosto = document.getElementById('hotel-costo');
+        if (hCosto) hCosto.value = service.costo || '';
+        document.getElementById('hotel-precio').value = service.precio || '';
+        break;
+      case 'traslado':
+        document.getElementById('traslado-origen').value = service.origen || '';
+        document.getElementById('traslado-destino').value = service.destino || '';
+        document.getElementById('traslado-fecha').value = service.fecha || '';
+        document.getElementById('traslado-hora').value = service.hora || '';
+        document.getElementById('traslado-pasajeros').value = service.pasajeros || 1;
+        const tCosto = document.getElementById('traslado-costo');
+        if (tCosto) tCosto.value = service.costo || '';
+        document.getElementById('traslado-precio').value = service.precio || '';
+        break;
+      case 'excursion':
+        document.getElementById('excursion-nombre').value = service.nombre || '';
+        document.getElementById('excursion-destino').value = service.destino || '';
+        document.getElementById('excursion-fecha').value = service.fecha || '';
+        document.getElementById('excursion-duracion').value = service.duracion || '';
+        document.getElementById('excursion-participantes').value = service.participantes || 1;
+        const eCosto = document.getElementById('excursion-costo');
+        if (eCosto) eCosto.value = service.costo || '';
+        document.getElementById('excursion-precio').value = service.precio || '';
+        break;
+    }
   }
 
   updateTotals() {
@@ -1231,27 +1344,33 @@ class NTSApp {
   // ===== ACCIONES PRINCIPALES =====
   async createSale() {
     try {
-      this.showLoader('Creando venta...');
-      
-      // Validar datos completos
+      this.showLoader(AppState.editingSaleId ? 'Actualizando venta...' : 'Creando venta...');
+
       if (!this.validateSaleData()) {
         this.hideLoader();
         return;
       }
-      
-      // Crear venta
+
       const saleData = this.buildSaleData();
-      
-      if (AppState.isConnected) {
-        await this.createSaleInDB(saleData);
+
+      if (AppState.editingSaleId) {
+        if (AppState.isConnected) {
+          await this.updateSaleInDB(saleData);
+        } else {
+          this.updateSaleLocally(saleData);
+        }
+        this.showNotification('Venta actualizada', 'success');
       } else {
-        this.createSaleLocally(saleData);
+        if (AppState.isConnected) {
+          await this.createSaleInDB(saleData);
+        } else {
+          this.createSaleLocally(saleData);
+        }
+        this.showNotification('Venta creada exitosamente', 'success');
       }
-      
-      this.showNotification('Venta creada exitosamente', 'success');
+
       this.resetSaleForm();
-      this.showTab('dashboard');
-      
+      this.showTab('ventas');
     } catch (error) {
       console.error('Error creando venta:', error);
       this.showNotification('Error al crear la venta', 'error');
@@ -1301,9 +1420,14 @@ class NTSApp {
   }
 
   buildSaleData() {
-    const vendedorId = parseInt(document.getElementById('vendedor-select-nts')?.value) || null;
+    const vendedorId =
+      parseInt(document.getElementById('vendedor-select-nts')?.value) ||
+      AppState.currentSale.vendedor_id ||
+      null;
     return {
-      numero_venta: this.generateSaleNumber(),
+      id: AppState.editingSaleId || undefined,
+      numero_venta:
+        AppState.currentSale.numero_venta || this.generateSaleNumber(),
       cliente: AppState.currentSale.client,
       viaje: AppState.currentSale.trip,
       servicios: AppState.currentSale.services,
@@ -1394,10 +1518,138 @@ class NTSApp {
     }
   }
 
+  async updateSaleInDB(saleData) {
+    if (!AppState.supabase || !AppState.editingSaleId) return;
+    const id = AppState.editingSaleId;
+
+    const { error: ventaError } = await AppState.supabase
+      .from('ventas')
+      .update({
+        cliente_id: saleData.cliente.id || null,
+        vendedor_id: saleData.vendedor_id,
+        fecha_venta: saleData.fecha_venta,
+        fecha_viaje_inicio: saleData.viaje.fechaInicio || null,
+        fecha_viaje_fin: saleData.viaje.fechaFin || null,
+        observaciones: saleData.viaje.observaciones || null,
+        total_final: saleData.totales.total,
+        estado: saleData.estado,
+        estado_pago: saleData.estado_pago
+      })
+      .eq('id', id);
+    if (ventaError) throw ventaError;
+
+    // Remove existing services
+    const { data: vuelosExistentes } = await AppState.supabase
+      .from('venta_vuelos')
+      .select('id')
+      .eq('venta_id', id);
+    if (vuelosExistentes) {
+      for (const v of vuelosExistentes) {
+        await AppState.supabase
+          .from('vuelo_segmentos')
+          .delete()
+          .eq('venta_vuelo_id', v.id);
+      }
+    }
+    await AppState.supabase.from('venta_vuelos').delete().eq('venta_id', id);
+    await AppState.supabase.from('venta_hoteles').delete().eq('venta_id', id);
+    await AppState.supabase.from('venta_traslados').delete().eq('venta_id', id);
+    await AppState.supabase.from('venta_excursiones').delete().eq('venta_id', id);
+
+    for (const servicio of saleData.servicios) {
+      if (servicio.type === 'vuelo') {
+        const { data: vuelo, error: vueloError } = await AppState.supabase
+          .from('venta_vuelos')
+          .insert({
+            venta_id: id,
+            descripcion: servicio.descripcion,
+            tipo_itinerario: servicio.tipo_itinerario,
+            pasajeros: servicio.pasajeros,
+            precio_costo: servicio.costo,
+            precio_venta: servicio.precio,
+            margen_ganancia: servicio.precio - servicio.costo,
+            monto_pagado: 0,
+            saldo_pendiente_servicio: servicio.costo,
+            estado_pago_servicio: 'no_pagado',
+            tiempo_total_vuelo: servicio.tiempo_total_vuelo || null,
+            cantidad_escalas: servicio.cantidad_escalas || 0,
+            tiene_escalas: servicio.tieneEscalas
+          })
+          .select()
+          .single();
+        if (vueloError) throw vueloError;
+        if (servicio.segmentos && servicio.segmentos.length) {
+          const segmentos = servicio.segmentos.map(seg => ({
+            venta_vuelo_id: vuelo.id,
+            numero_segmento: seg.numero_segmento,
+            aeropuerto_origen: seg.aeropuerto_origen,
+            aeropuerto_destino: seg.aeropuerto_destino,
+            fecha_hora_salida_local: seg.fecha_hora_salida_local,
+            fecha_hora_llegada_local: seg.fecha_hora_llegada_local,
+            aerolinea: seg.aerolinea || null,
+            numero_vuelo: seg.numero_vuelo || null,
+            tiene_escala: seg.tiene_escala,
+            aeropuerto_escala: seg.escalas[0]?.aeropuerto || null,
+            duracion_escala: seg.escalas[0]?.duracion || null
+          }));
+          const { error: segError } = await AppState.supabase
+            .from('vuelo_segmentos')
+            .insert(segmentos);
+          if (segError) throw segError;
+        }
+      } else if (servicio.type === 'hotel') {
+        await AppState.supabase.from('venta_hoteles').insert({
+          venta_id: id,
+          hotel_nombre: servicio.nombre,
+          hotel_ciudad: servicio.ciudad,
+          fecha_checkin: servicio.checkin,
+          fecha_checkout: servicio.checkout,
+          huespedes: servicio.huespedes || 1,
+          precio_costo: servicio.costo,
+          precio_venta: servicio.precio,
+          margen_ganancia: servicio.precio - servicio.costo
+        });
+      } else if (servicio.type === 'traslado') {
+        await AppState.supabase.from('venta_traslados').insert({
+          venta_id: id,
+          origen: servicio.origen,
+          destino: servicio.destino,
+          fecha_traslado: servicio.fecha,
+          hora_traslado: servicio.hora,
+          pasajeros: servicio.pasajeros || 1,
+          precio_costo: servicio.costo,
+          precio_venta: servicio.precio,
+          margen_ganancia: servicio.precio - servicio.costo
+        });
+      } else if (servicio.type === 'excursion') {
+        await AppState.supabase.from('venta_excursiones').insert({
+          venta_id: id,
+          nombre_excursion: servicio.nombre,
+          destino_excursion: servicio.destino,
+          fecha_excursion: servicio.fecha,
+          duracion_horas: servicio.duracion,
+          participantes: servicio.participantes || 1,
+          precio_costo: servicio.costo,
+          precio_venta: servicio.precio,
+          margen_ganancia: servicio.precio - servicio.costo
+        });
+      }
+    }
+  }
+
+  updateSaleLocally(saleData) {
+    let sales = JSON.parse(localStorage.getItem('nts_ventas') || '[]');
+    sales = sales.map(s =>
+      s.id === AppState.editingSaleId ? { ...saleData, id: AppState.editingSaleId } : s
+    );
+    localStorage.setItem('nts_ventas', JSON.stringify(sales));
+    console.log('Venta actualizada localmente:', saleData);
+  }
+
   createSaleLocally(saleData) {
-    const sales = JSON.parse(localStorage.getItem('nts_sales') || '[]');
+    const sales = JSON.parse(localStorage.getItem('nts_ventas') || '[]');
     sales.push({ ...saleData, id: Date.now() });
-    localStorage.setItem('nts_sales', JSON.stringify(sales));
+    localStorage.setItem('nts_ventas', JSON.stringify(sales));
     console.log('Venta guardada localmente:', saleData);
   }
 
@@ -1407,9 +1659,13 @@ class NTSApp {
       trip: {},
       services: [],
       totals: { subtotal: 0, descuentos: 0, total: 0 },
-      fechaVenta: null
+      fechaVenta: null,
+      numero_venta: null,
+      vendedor_id: null
     };
-    
+    AppState.editingSaleId = null;
+    AppState.editingServiceId = null;
+
     AppState.currentStep = 1;
     this.updateStepForm();
     this.updateServicesList();
@@ -1424,6 +1680,12 @@ class NTSApp {
     if (docTipo) {
       docTipo.value = 'dni';
       this.toggleDocumentoFields();
+    }
+
+    const createBtn = document.getElementById('create-sale');
+    if (createBtn) {
+      createBtn.innerHTML = '<i data-lucide="check"></i> Crear Venta';
+      if (window.lucide) window.lucide.createIcons();
     }
   }
 
@@ -1540,36 +1802,168 @@ class NTSApp {
   }
 
   async editVenta(id) {
-    const venta = AppState.ventas.find(v => v.id === Number(id));
-    if (!venta) {
-      this.showNotification('Venta no encontrada', 'error');
-      return;
-    }
-
-    const nuevoEstado = prompt('Estado de la venta', venta.estado || 'pendiente');
-    if (nuevoEstado === null) return;
-    const nuevoTotal = parseFloat(prompt('Total final', venta.total_final));
     try {
+      let data;
       if (AppState.isConnected && AppState.supabase) {
-        const { error } = await AppState.supabase
+        const { data: venta, error } = await AppState.supabase
           .from('ventas')
-          .update({ estado: nuevoEstado, total_final: isNaN(nuevoTotal) ? venta.total_final : nuevoTotal })
-          .eq('id', id);
+          .select('*, clientes(*), venta_vuelos(*, vuelo_segmentos(*)), venta_hoteles(*), venta_traslados(*), venta_excursiones(*)')
+          .eq('id', id)
+          .single();
         if (error) throw error;
+        data = venta;
       } else {
-        let ventas = JSON.parse(localStorage.getItem('nts_ventas') || '[]');
-        ventas = ventas.map(v => v.id === Number(id) ? { ...v, estado: nuevoEstado, total_final: isNaN(nuevoTotal) ? v.total_final : nuevoTotal } : v);
-        localStorage.setItem('nts_ventas', JSON.stringify(ventas));
+        const ventas = JSON.parse(localStorage.getItem('nts_ventas') || '[]');
+        data = ventas.find(v => v.id === Number(id));
+        if (!data) throw new Error('Venta no encontrada');
       }
-      venta.estado = nuevoEstado;
-      if (!isNaN(nuevoTotal)) venta.total_final = nuevoTotal;
-      this.renderVentasTable(this.filterVentas());
-      this.updateVentasStats();
-      this.showNotification('Venta actualizada', 'success');
+
+      AppState.currentSale = {
+        client: data.clientes ? {
+          id: data.cliente_id,
+          nombre: data.clientes.nombre,
+          email: data.clientes.email,
+          telefono: data.clientes.telefono,
+          DNI: data.clientes.dni || data.clientes.DNI || '',
+          Pasaporte: data.clientes.Pasaporte || '',
+          dni_expiracion: data.clientes.dni_expiracion || '',
+          pasaporte_expiracion: data.clientes.pasaporte_expiracion || '',
+          vendedor_id: data.vendedor_id
+        } : (data.cliente || {}),
+        trip: {
+          fechaInicio: data.fecha_viaje_inicio || '',
+          fechaFin: data.fecha_viaje_fin || '',
+          observaciones: data.observaciones || ''
+        },
+        services: [],
+        totals: { subtotal: data.total_final || 0, descuentos: 0, total: data.total_final || 0 },
+        fechaVenta: data.fecha_venta || null,
+        numero_venta: data.numero_venta,
+        vendedor_id: data.vendedor_id
+      };
+
+      if (data.venta_vuelos) {
+        const vuelos = Array.isArray(data.venta_vuelos) ? data.venta_vuelos : [data.venta_vuelos];
+        vuelos.forEach(v => {
+          const service = {
+            id: Date.now() + Math.random(),
+            type: 'vuelo',
+            costo: v.precio_costo || 0,
+            precio: v.precio_venta || 0,
+            pasajeros: v.pasajeros || 1,
+            tipo_itinerario: v.tipo_itinerario || 'ida_vuelta',
+            origen: v.origen || '',
+            destino: v.destino || '',
+            descripcion: v.descripcion || '',
+            tieneEscalas: v.tiene_escalas,
+            cantidad_escalas: v.cantidad_escalas || 0,
+            tiempo_total_vuelo: v.tiempo_total_vuelo || null,
+            segmentos: (v.vuelo_segmentos || []).map((seg, idx) => ({
+              numero_segmento: idx + 1,
+              aeropuerto_origen: seg.aeropuerto_origen,
+              aeropuerto_destino: seg.aeropuerto_destino,
+              aerolinea: seg.aerolinea,
+              numero_vuelo: seg.numero_vuelo,
+              fecha_hora_salida_local: seg.fecha_hora_salida_local,
+              fecha_hora_llegada_local: seg.fecha_hora_llegada_local,
+              tiempo_total_tramo: seg.tiempo_vuelo || '',
+              escalas: seg.tiene_escala && seg.aeropuerto_escala ? [{ aeropuerto: seg.aeropuerto_escala, duracion: seg.duracion_escala }] : [],
+              tiene_escala: seg.tiene_escala
+            }))
+          };
+          AppState.currentSale.services.push(service);
+        });
+      }
+      if (data.venta_hoteles) {
+        const hoteles = Array.isArray(data.venta_hoteles) ? data.venta_hoteles : [data.venta_hoteles];
+        hoteles.forEach(h => {
+          AppState.currentSale.services.push({
+            id: Date.now() + Math.random(),
+            type: 'hotel',
+            costo: h.precio_costo || 0,
+            precio: h.precio_venta || 0,
+            nombre: h.hotel_nombre,
+            ciudad: h.hotel_ciudad,
+            checkin: h.fecha_checkin,
+            checkout: h.fecha_checkout,
+            huespedes: h.huespedes || 1
+          });
+        });
+      }
+      if (data.venta_traslados) {
+        const traslados = Array.isArray(data.venta_traslados) ? data.venta_traslados : [data.venta_traslados];
+        traslados.forEach(t => {
+          AppState.currentSale.services.push({
+            id: Date.now() + Math.random(),
+            type: 'traslado',
+            costo: t.precio_costo || 0,
+            precio: t.precio_venta || 0,
+            origen: t.origen,
+            destino: t.destino,
+            fecha: t.fecha_traslado,
+            hora: t.hora_traslado,
+            pasajeros: t.pasajeros || 1
+          });
+        });
+      }
+      if (data.venta_excursiones) {
+        const excursiones = Array.isArray(data.venta_excursiones) ? data.venta_excursiones : [data.venta_excursiones];
+        excursiones.forEach(ex => {
+          AppState.currentSale.services.push({
+            id: Date.now() + Math.random(),
+            type: 'excursion',
+            costo: ex.precio_costo || 0,
+            precio: ex.precio_venta || 0,
+            nombre: ex.nombre_excursion,
+            destino: ex.destino_excursion,
+            fecha: ex.fecha_excursion,
+            duracion: ex.duracion_horas,
+            participantes: ex.participantes || 1
+          });
+        });
+      }
+
+      AppState.editingSaleId = Number(id);
+      this.showTab('nueva-venta');
+      setTimeout(() => {
+        this.fillSaleForm();
+        const createBtn = document.getElementById('create-sale');
+        if (createBtn) {
+          createBtn.innerHTML = '<i data-lucide="check"></i> Guardar Venta';
+          if (window.lucide) window.lucide.createIcons();
+        }
+      });
+      this.showNotification('Editando venta', 'info');
     } catch (err) {
-      console.error('Error actualizando venta:', err);
-      this.showNotification('No se pudo actualizar la venta', 'error');
+      console.error('Error cargando venta:', err);
+      this.showNotification('No se pudo cargar la venta', 'error');
     }
+  }
+
+  fillSaleForm() {
+    const c = AppState.currentSale.client || {};
+    document.getElementById('cliente-nombre').value = c.nombre || '';
+    document.getElementById('cliente-email').value = c.email || '';
+    document.getElementById('cliente-telefono').value = c.telefono || '';
+    const docTipo = document.getElementById('cliente-doc-tipo');
+    if (docTipo) {
+      const tipo = c.Pasaporte ? 'pasaporte' : 'dni';
+      docTipo.value = tipo;
+      this.toggleDocumentoFields(tipo);
+    }
+    document.getElementById('cliente-dni').value = c.DNI || '';
+    document.getElementById('cliente-dni-expiracion').value = c.dni_expiracion || '';
+    document.getElementById('cliente-pasaporte').value = c.Pasaporte || '';
+    document.getElementById('cliente-pasaporte-expiracion').value = c.pasaporte_expiracion || '';
+    document.getElementById('vendedor-select-nts').value = AppState.currentSale.vendedor_id || c.vendedor_id || '';
+
+    document.getElementById('fecha-venta').value = AppState.currentSale.fechaVenta || '';
+    document.getElementById('fecha-viaje-inicio').value = AppState.currentSale.trip.fechaInicio || '';
+    document.getElementById('fecha-viaje-fin').value = AppState.currentSale.trip.fechaFin || '';
+    document.getElementById('observaciones-venta').value = AppState.currentSale.trip.observaciones || '';
+
+    this.updateServicesList();
+    this.updateTotals();
   }
 
   async deleteVenta(id) {
