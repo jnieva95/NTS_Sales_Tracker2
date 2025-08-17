@@ -328,8 +328,38 @@
                                     </div>
                                     
                                     <div class="form-group">
-                                        <label for="cliente-documento">DNI/Pasaporte</label>
-                                        <input type="text" id="cliente-documento" class="form-control" placeholder="12345678">
+                                        <label for="cliente-doc-tipo">Tipo de Documento</label>
+                                        <select id="cliente-doc-tipo" class="form-control">
+                                            <option value="dni">DNI</option>
+                                            <option value="pasaporte">Pasaporte</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group" id="grupo-dni">
+                                        <label for="cliente-dni">DNI</label>
+                                        <input type="text" id="cliente-dni" class="form-control" placeholder="12345678">
+                                    </div>
+
+                                    <div class="form-group" id="grupo-dni-exp">
+                                        <label for="cliente-dni-expiracion">Vencimiento DNI</label>
+                                        <input type="date" id="cliente-dni-expiracion" class="form-control">
+                                    </div>
+
+                                    <div class="form-group hidden" id="grupo-pasaporte">
+                                        <label for="cliente-pasaporte">Pasaporte</label>
+                                        <input type="text" id="cliente-pasaporte" class="form-control" placeholder="AB123456">
+                                    </div>
+
+                                    <div class="form-group hidden" id="grupo-pasaporte-exp">
+                                        <label for="cliente-pasaporte-expiracion">Vencimiento Pasaporte</label>
+                                        <input type="date" id="cliente-pasaporte-expiracion" class="form-control">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="vendedor-select-nts"><strong>Vendedor Responsable *</strong></label>
+                                        <select id="vendedor-select-nts" class="form-control" required>
+                                            <option value="">Seleccionar vendedor...</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
