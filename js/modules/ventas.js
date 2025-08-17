@@ -73,7 +73,7 @@ async function loadVentasData() {
         // Cargar clientes
         const { data: clientes, error: clientesError } = await supabase
             .from('clientes')
-            .select('id, nombre, email, telefono, vendedor_id')
+            .select('id, nombre, email, telefono, vendedor_id, DNI, Pasaporte, dni_expiracion, pasaporte_expiracion')
             .order('nombre');
         
         if (clientesError) throw clientesError;
@@ -315,10 +315,14 @@ window.selectCliente = function(id, nombre, email, telefono, dni, pasaporte, dni
     }
 
     VentasModule.currentVenta.cliente = {
-        id: id,
-        nombre: nombre,
-        email: email,
-        telefono: telefono,
+        id,
+        nombre,
+        email,
+        telefono,
+        dni,
+        pasaporte,
+        dni_expiracion: dniExp || null,
+        pasaporte_expiracion: pasaporteExp || null,
         esExistente: true
     };
 
@@ -757,7 +761,11 @@ function validateServiceData(serviceData, tipo) {
         showNotification('⚠️ Ingrese un precio de venta válido', 'warning');
         return false;
     }
-    
+    if (!serviceData.proveedor_id) {
+        showNotification('⚠️ Seleccione un proveedor', 'warning');
+        return false;
+    }
+
     // Validaciones específicas por tipo
     switch(tipo) {
         case 'vuelo':
