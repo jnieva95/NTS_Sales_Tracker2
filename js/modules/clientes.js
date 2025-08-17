@@ -262,8 +262,12 @@ function getClientesHTML() {
                     <form id="cliente-form">
                         <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
                             <div class="form-group">
-                                <label for="modal-cliente-nombre">Nombre Completo *</label>
+                                <label for="modal-cliente-nombre">Nombre *</label>
                                 <input type="text" id="modal-cliente-nombre" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="modal-cliente-apellido">Apellido *</label>
+                                <input type="text" id="modal-cliente-apellido" class="form-control" required>
                             </div>
                             <div class="form-group">
                                 <label for="modal-cliente-email">Email</label>
@@ -533,8 +537,10 @@ function hideClienteModal() {
 }
 
 function fillClienteForm(cliente) {
+    const [nombre, ...apellidos] = (cliente.nombre || '').split(' ');
     const fields = {
-        'modal-cliente-nombre': cliente.nombre,
+        'modal-cliente-nombre': nombre,
+        'modal-cliente-apellido': apellidos.join(' '),
         'modal-cliente-email': cliente.email,
         'modal-cliente-telefono': cliente.telefono,
         'modal-cliente-vendedor': cliente.vendedor_id,
@@ -566,18 +572,13 @@ async function saveCliente() {
         if (!validateClienteData(clienteData)) return;
         window.app?.showLoader('Guardando cliente...');
         const { supabase, isSupabaseConnected } = window.NTS_CONFIG || {};
-        if (isSupabaseConnected && supabase) {
-            if (ClientesModule.currentCliente) {
-                await updateClienteInDB(clienteData);
-            } else {
-                await createClienteInDB(clienteData);
-            }
+        if (!isSupabaseConnected || !supabase) {
+            throw new Error('Supabase no disponible');
+        }
+        if (ClientesModule.currentCliente) {
+            await updateClienteInDB(clienteData);
         } else {
-            if (ClientesModule.currentCliente) {
-                updateClienteLocally(clienteData);
-            } else {
-                createClienteLocally(clienteData);
-            }
+            await createClienteInDB(clienteData);
         }
         hideClienteModal();
         showNotification('Cliente guardado correctamente', 'success');
@@ -592,9 +593,11 @@ async function saveCliente() {
 }
 
 function getClienteFormData() {
+    const nombre = document.getElementById('modal-cliente-nombre')?.value.trim();
+    const apellido = document.getElementById('modal-cliente-apellido')?.value.trim();
     return {
         id: ClientesModule.currentCliente?.id,
-        nombre: document.getElementById('modal-cliente-nombre')?.value.trim(),
+        nombre: [nombre, apellido].join(' '),
         email: document.getElementById('modal-cliente-email')?.value.trim(),
         telefono: document.getElementById('modal-cliente-telefono')?.value.trim(),
         vendedor_id: document.getElementById('modal-cliente-vendedor')?.value || null,
@@ -609,8 +612,10 @@ function getClienteFormData() {
 }
 
 function validateClienteData(data) {
-    if (!data.nombre) {
-        showNotification('Ingrese el nombre del cliente', 'warning');
+    const nombre = document.getElementById('modal-cliente-nombre')?.value.trim();
+    const apellido = document.getElementById('modal-cliente-apellido')?.value.trim();
+    if (!nombre || !apellido) {
+        showNotification('Ingrese nombre y apellido del cliente', 'warning');
         return false;
     }
     return true;
@@ -618,8 +623,9 @@ function validateClienteData(data) {
 
 async function createClienteInDB(data) {
     const { supabase } = window.NTS_CONFIG || {};
+    if (!supabase) throw new Error('Supabase no disponible');
     const { data: nuevo, error } = await supabase.from('clientes').insert(data).select().single();
-    if (error) throw error;
+    if (error || !nuevo) throw error || new Error('No se pudo crear cliente');
     ClientesModule.clientes.unshift(nuevo);
 }
 

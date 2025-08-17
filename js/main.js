@@ -421,6 +421,7 @@ class NTSApp {
 
   setupClientAutocomplete() {
     const input = document.getElementById('cliente-nombre');
+    const apellidoInput = document.getElementById('cliente-apellido');
     if (!input) return;
 
     let datalist = document.getElementById('clientes-datalist');
@@ -441,6 +442,10 @@ class NTSApp {
         o => o.value.toLowerCase() === this.value.toLowerCase()
       );
       if (option) {
+        const [first, ...rest] = option.value.split(' ');
+        input.value = first;
+        if (apellidoInput) apellidoInput.value = rest.join(' ');
+
         const emailField = document.getElementById('cliente-email');
         const telField = document.getElementById('cliente-telefono');
         const dniField = document.getElementById('cliente-dni');
@@ -717,13 +722,14 @@ class NTSApp {
 
   validateClientStep() {
     const nombre = document.getElementById('cliente-nombre')?.value?.trim();
+    const apellido = document.getElementById('cliente-apellido')?.value?.trim();
     const docTipo = document.getElementById('cliente-doc-tipo')?.value;
     const dni = document.getElementById('cliente-dni')?.value?.trim();
     const pasaporte = document.getElementById('cliente-pasaporte')?.value?.trim();
 
-    if (!nombre) {
-      this.showNotification('Por favor ingrese el nombre del cliente', 'warning');
-      document.getElementById('cliente-nombre')?.focus();
+    if (!nombre || !apellido) {
+      this.showNotification('Por favor ingrese nombre y apellido del cliente', 'warning');
+      document.getElementById(!nombre ? 'cliente-nombre' : 'cliente-apellido')?.focus();
       return false;
     }
 
@@ -2209,7 +2215,9 @@ class NTSApp {
 
   fillSaleForm() {
     const c = AppState.currentSale.client || {};
-    document.getElementById('cliente-nombre').value = c.nombre || '';
+    const [first, ...rest] = (c.nombre || '').split(' ');
+    document.getElementById('cliente-nombre').value = first || '';
+    document.getElementById('cliente-apellido').value = rest.join(' ');
     document.getElementById('cliente-email').value = c.email || '';
     document.getElementById('cliente-telefono').value = c.telefono || '';
     const docTipo = document.getElementById('cliente-doc-tipo');

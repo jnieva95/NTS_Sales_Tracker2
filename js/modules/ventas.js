@@ -167,6 +167,7 @@ function setupDocumentoToggle() {
 
 function setupClienteAutocomplete() {
     const clienteNombre = document.getElementById('cliente-nombre');
+    const clienteApellido = document.getElementById('cliente-apellido');
     if (!clienteNombre) return;
 
     // Crear container de búsqueda
@@ -296,7 +297,9 @@ function setupClienteAutocomplete() {
 
 // NUEVA FUNCIÓN GLOBAL: Seleccionar cliente
 window.selectCliente = function(id, nombre, email, telefono, dni, pasaporte, dniExp, pasaporteExp) {
-    document.getElementById('cliente-nombre').value = nombre;
+    const [first, ...rest] = nombre.split(' ');
+    document.getElementById('cliente-nombre').value = first;
+    document.getElementById('cliente-apellido').value = rest.join(' ');
     document.getElementById('cliente-email').value = email;
     document.getElementById('cliente-telefono').value = telefono;
 
@@ -340,7 +343,9 @@ function showNuevoClienteModal(nombre = '') {
 
     const form = document.getElementById('nuevo-cliente-form');
     form?.reset();
-    document.getElementById('nuevo-cliente-nombre').value = nombre;
+    const [first, ...rest] = nombre.split(' ');
+    document.getElementById('nuevo-cliente-nombre').value = first;
+    document.getElementById('nuevo-cliente-apellido').value = rest.join(' ');
     modal.style.display = 'flex';
     toggleNuevoClienteDocFields(document.getElementById('nuevo-cliente-doc-tipo')?.value);
 
@@ -364,8 +369,9 @@ function toggleNuevoClienteDocFields(tipo) {
 
 async function saveNuevoCliente() {
     const nombre = document.getElementById('nuevo-cliente-nombre')?.value?.trim();
-    if (!nombre) {
-        showNotification('⚠️ Ingrese un nombre válido', 'warning');
+    const apellido = document.getElementById('nuevo-cliente-apellido')?.value?.trim();
+    if (!nombre || !apellido) {
+        showNotification('⚠️ Ingrese nombre y apellido válidos', 'warning');
         return;
     }
 
@@ -378,7 +384,7 @@ async function saveNuevoCliente() {
     const pasaporteExp = document.getElementById('nuevo-cliente-pasaporte-exp')?.value;
 
     const clienteData = {
-        nombre,
+        nombre: [nombre, apellido].join(' '),
         email,
         telefono,
     };
@@ -393,21 +399,18 @@ async function saveNuevoCliente() {
 
     try {
         const { supabase, isSupabaseConnected } = window.NTS_CONFIG || {};
-        let saved;
-        if (isSupabaseConnected && supabase) {
-            const { data, error } = await supabase
-                .from('clientes')
-                .insert(clienteData)
-                .select()
-                .single();
-            if (error) throw error;
-            saved = data;
-        } else {
-            saved = { id: Date.now(), ...clienteData };
+        if (!isSupabaseConnected || !supabase) {
+            throw new Error('Supabase no disponible');
         }
+        const { data, error } = await supabase
+            .from('clientes')
+            .insert(clienteData)
+            .select()
+            .single();
+        if (error || !data) throw error || new Error('No se pudo crear cliente');
 
-        VentasModule.clientesExistentes.push(saved);
-        selectCliente(saved.id, saved.nombre, saved.email || '', saved.telefono || '', saved.DNI || '', saved.Pasaporte || '', saved.dni_expiracion || '', saved.pasaporte_expiracion || '');
+        VentasModule.clientesExistentes.push(data);
+        selectCliente(data.id, data.nombre, data.email || '', data.telefono || '', data.DNI || '', data.Pasaporte || '', data.dni_expiracion || '', data.pasaporte_expiracion || '');
         hideNuevoClienteModal();
         showNotification('✅ Cliente creado correctamente', 'success');
     } catch (err) {
@@ -1140,7 +1143,10 @@ function buildVentaData() {
     
     return {
         cliente: {
-            nombre: document.getElementById('cliente-nombre')?.value?.trim(),
+            nombre: [
+                document.getElementById('cliente-nombre')?.value?.trim() || '',
+                document.getElementById('cliente-apellido')?.value?.trim() || ''
+            ].join(' ').trim(),
             email: document.getElementById('cliente-email')?.value?.trim(),
             telefono: document.getElementById('cliente-telefono')?.value?.trim(),
             dni: docTipo === 'dni' ? dni : null,
@@ -1339,7 +1345,7 @@ async function crearVentaLocal(ventaData) {
 // ===== FUNCIONES DE UTILIDAD =====
 function limpiarFormularioCompleto() {
     // Limpiar campos de cliente
-    ['cliente-nombre', 'cliente-email', 'cliente-telefono', 'cliente-dni', 'cliente-pasaporte', 'cliente-dni-expiracion', 'cliente-pasaporte-expiracion'].forEach(id => {
+    ['cliente-nombre', 'cliente-apellido', 'cliente-email', 'cliente-telefono', 'cliente-dni', 'cliente-pasaporte', 'cliente-dni-expiracion', 'cliente-pasaporte-expiracion'].forEach(id => {
         const field = document.getElementById(id);
         if (field) field.value = '';
     });

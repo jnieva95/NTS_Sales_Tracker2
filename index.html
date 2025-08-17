@@ -312,9 +312,14 @@
                             <div class="card-content">
                                 <div class="form-grid">
                                     <div class="form-group">
-                                        <label for="cliente-nombre">Nombre Completo *</label>
-                                        <input type="text" id="cliente-nombre" class="form-control" placeholder="Ingrese el nombre completo" required>
+                                        <label for="cliente-nombre">Nombre *</label>
+                                        <input type="text" id="cliente-nombre" class="form-control" placeholder="Nombre" required>
                                         <div class="form-help">Escriba para buscar clientes existentes</div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="cliente-apellido">Apellido *</label>
+                                        <input type="text" id="cliente-apellido" class="form-control" placeholder="Apellido" required>
                                     </div>
                                     
                                     <div class="form-group">
@@ -601,7 +606,8 @@
         <div class="modal-body">
           <form id="nuevo-cliente-form">
             <div class="form-grid" style="grid-template-columns:1fr 1fr;">
-              <div class="form-group"><label for="nuevo-cliente-nombre">Nombre Completo *</label><input type="text" id="nuevo-cliente-nombre" class="form-control" required></div>
+              <div class="form-group"><label for="nuevo-cliente-nombre">Nombre *</label><input type="text" id="nuevo-cliente-nombre" class="form-control" required></div>
+              <div class="form-group"><label for="nuevo-cliente-apellido">Apellido *</label><input type="text" id="nuevo-cliente-apellido" class="form-control" required></div>
               <div class="form-group"><label for="nuevo-cliente-email">Email</label><input type="email" id="nuevo-cliente-email" class="form-control"></div>
               <div class="form-group"><label for="nuevo-cliente-telefono">Teléfono</label><input type="tel" id="nuevo-cliente-telefono" class="form-control"></div>
               <div class="form-group"><label for="nuevo-cliente-doc-tipo">Tipo Documento</label><select id="nuevo-cliente-doc-tipo" class="form-control"><option value="dni">DNI</option><option value="pasaporte">Pasaporte</option></select></div>
