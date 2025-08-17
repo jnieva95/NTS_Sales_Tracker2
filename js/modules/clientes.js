@@ -36,7 +36,7 @@ async function initClientesModule() {
 
 // ===== CARGAR DATOS =====
 async function loadClientesData() {
-    const { supabase, isSupabaseConnected } = window.NTS_CONFIG;
+    const { supabase, isSupabaseConnected } = window.NTS_CONFIG || {};
     if (!isSupabaseConnected || !supabase) {
         console.log('⚠️ Supabase no disponible - usando datos demo');
         loadMockClientesData();
@@ -554,7 +554,7 @@ async function saveCliente() {
         const clienteData = getClienteFormData();
         if (!validateClienteData(clienteData)) return;
         showLoader('Guardando cliente...');
-        const { supabase, isSupabaseConnected } = window.NTS_CONFIG;
+        const { supabase, isSupabaseConnected } = window.NTS_CONFIG || {};
         if (isSupabaseConnected && supabase) {
             if (ClientesModule.currentCliente) {
                 await updateClienteInDB(clienteData);
@@ -606,14 +606,14 @@ function validateClienteData(data) {
 }
 
 async function createClienteInDB(data) {
-    const { supabase } = window.NTS_CONFIG;
+    const { supabase } = window.NTS_CONFIG || {};
     const { data: nuevo, error } = await supabase.from('clientes').insert(data).select().single();
     if (error) throw error;
     ClientesModule.clientes.unshift(nuevo);
 }
 
 async function updateClienteInDB(data) {
-    const { supabase } = window.NTS_CONFIG;
+    const { supabase } = window.NTS_CONFIG || {};
     const { error } = await supabase.from('clientes').update(data).eq('id', data.id);
     if (error) throw error;
     const idx = ClientesModule.clientes.findIndex(c => c.id === data.id);
