@@ -24,6 +24,7 @@ const AppState = {
   notifications: [],
   clientes: [],
   vendedores: [],
+  proveedores: [],
   ventas: [],
 
   // Datos de la venta actual
@@ -290,6 +291,7 @@ class NTSApp {
         await this.loadDashboardData();
         await this.loadClientes();
         await this.loadVendedores();
+        await this.loadProveedores();
       } else {
         this.loadMockData();
       }
@@ -468,6 +470,21 @@ class NTSApp {
       option.textContent = `${v.nombre} (${v.codigo_vendedor}) - ${v.rol}`;
       select.appendChild(option);
     });
+  }
+
+  async loadProveedores() {
+    try {
+      if (!AppState.isConnected) return;
+      const { data, error } = await AppState.supabase
+        .from('proveedores')
+        .select('id, nombre, tipo')
+        .order('nombre');
+      if (error) throw error;
+      AppState.proveedores = data || [];
+    } catch (error) {
+      console.error('Error cargando proveedores:', error);
+      AppState.proveedores = [];
+    }
   }
 
   loadMockActivity() {
@@ -788,6 +805,12 @@ class NTSApp {
               </select>
             </div>
             <div class="form-group">
+              <label for="vuelo-proveedor">Proveedor *</label>
+              <select id="vuelo-proveedor" class="form-control">
+                <option value="">Seleccionar...</option>
+              </select>
+            </div>
+            <div class="form-group">
               <label for="vuelo-pasajeros">Pasajeros</label>
               <input type="number" id="vuelo-pasajeros" class="form-control" value="1" min="1">
             </div>
@@ -846,6 +869,16 @@ class NTSApp {
               <input type="date" id="hotel-checkout" class="form-control" required>
             </div>
             <div class="form-group">
+              <label for="hotel-proveedor">Proveedor *</label>
+              <select id="hotel-proveedor" class="form-control">
+                <option value="">Seleccionar...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="hotel-costo">Costo</label>
+              <input type="number" id="hotel-costo" class="form-control" step="0.01" min="0">
+            </div>
+            <div class="form-group">
               <label for="hotel-precio">Precio Total *</label>
               <input type="number" id="hotel-precio" class="form-control" placeholder="800" step="0.01" min="0" required>
             </div>
@@ -888,6 +921,16 @@ class NTSApp {
             <div class="form-group">
               <label for="traslado-hora">Hora</label>
               <input type="time" id="traslado-hora" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="traslado-proveedor">Proveedor *</label>
+              <select id="traslado-proveedor" class="form-control">
+                <option value="">Seleccionar...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="traslado-costo">Costo</label>
+              <input type="number" id="traslado-costo" class="form-control" step="0.01" min="0">
             </div>
             <div class="form-group">
               <label for="traslado-precio">Precio *</label>
@@ -934,6 +977,16 @@ class NTSApp {
               <input type="number" id="excursion-duracion" class="form-control" placeholder="8" min="1">
             </div>
             <div class="form-group">
+              <label for="excursion-proveedor">Proveedor *</label>
+              <select id="excursion-proveedor" class="form-control">
+                <option value="">Seleccionar...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="excursion-costo">Costo</label>
+              <input type="number" id="excursion-costo" class="form-control" step="0.01" min="0">
+            </div>
+            <div class="form-group">
               <label for="excursion-precio">Precio *</label>
               <input type="number" id="excursion-precio" class="form-control" placeholder="470" step="0.01" min="0" required>
             </div>
@@ -956,12 +1009,34 @@ class NTSApp {
   setupServiceFormEvents(serviceType) {
     // Eventos específicos por tipo de servicio
     console.log(`Configurando eventos para servicio: ${serviceType}`);
+    this.populateProveedorSelect(serviceType);
     if (serviceType === 'vuelo') {
       const container = document.getElementById('segments-container');
       if (container && !container.children.length) {
         addSegmentRow();
       }
     }
+  }
+
+  populateProveedorSelect(serviceType) {
+    const select = document.getElementById(`${serviceType}-proveedor`);
+    if (!select) return;
+    select.innerHTML = '<option value="">Seleccionar proveedor...</option>';
+    const typeMap = {
+      vuelo: 'vuelos',
+      hotel: 'hoteles',
+      traslado: 'traslados',
+      excursion: 'excursiones'
+    };
+    const list = AppState.proveedores.filter(
+      p => p.tipo === typeMap[serviceType] || p.tipo === 'mixto'
+    );
+    list.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = p.nombre;
+      select.appendChild(opt);
+    });
   }
 
   addService(serviceType) {
@@ -1007,7 +1082,8 @@ class NTSApp {
   getServiceData(serviceType) {
     const baseData = {
       costo: parseFloat(document.getElementById(`${serviceType}-costo`)?.value) || 0,
-      precio: parseFloat(document.getElementById(`${serviceType}-precio`)?.value) || 0
+      precio: parseFloat(document.getElementById(`${serviceType}-precio`)?.value) || 0,
+      proveedor_id: parseInt(document.getElementById(`${serviceType}-proveedor`)?.value) || null
     };
     
     switch (serviceType) {
@@ -1089,6 +1165,11 @@ class NTSApp {
   validateServiceData(serviceData, serviceType) {
     if (!serviceData.precio || serviceData.precio <= 0) {
       this.showNotification('Por favor ingrese un precio válido', 'warning');
+      return false;
+    }
+
+    if (!serviceData.proveedor_id) {
+      this.showNotification('Seleccione un proveedor', 'warning');
       return false;
     }
     
@@ -1230,6 +1311,8 @@ class NTSApp {
         document.getElementById('vuelo-pasajeros').value = service.pasajeros || 1;
         document.getElementById('vuelo-costo').value = service.costo || '';
         document.getElementById('vuelo-precio').value = service.precio || '';
+        const vProv = document.getElementById('vuelo-proveedor');
+        if (vProv) vProv.value = service.proveedor_id || '';
         const container = document.getElementById('segments-container');
         if (container) {
           container.innerHTML = '';
@@ -1269,6 +1352,8 @@ class NTSApp {
         document.getElementById('hotel-huespedes').value = service.huespedes || 1;
         const hCosto = document.getElementById('hotel-costo');
         if (hCosto) hCosto.value = service.costo || '';
+        const hProv = document.getElementById('hotel-proveedor');
+        if (hProv) hProv.value = service.proveedor_id || '';
         document.getElementById('hotel-precio').value = service.precio || '';
         break;
       case 'traslado':
@@ -1279,6 +1364,8 @@ class NTSApp {
         document.getElementById('traslado-pasajeros').value = service.pasajeros || 1;
         const tCosto = document.getElementById('traslado-costo');
         if (tCosto) tCosto.value = service.costo || '';
+        const tProv = document.getElementById('traslado-proveedor');
+        if (tProv) tProv.value = service.proveedor_id || '';
         document.getElementById('traslado-precio').value = service.precio || '';
         break;
       case 'excursion':
@@ -1289,6 +1376,8 @@ class NTSApp {
         document.getElementById('excursion-participantes').value = service.participantes || 1;
         const eCosto = document.getElementById('excursion-costo');
         if (eCosto) eCosto.value = service.costo || '';
+        const eProv = document.getElementById('excursion-proveedor');
+        if (eProv) eProv.value = service.proveedor_id || '';
         document.getElementById('excursion-precio').value = service.precio || '';
         break;
     }
@@ -1330,6 +1419,10 @@ class NTSApp {
       } else {
         input.value = '';
       }
+    });
+
+    form.querySelectorAll('select').forEach(sel => {
+      sel.selectedIndex = 0;
     });
 
     if (serviceType === 'vuelo') {
@@ -1443,11 +1536,47 @@ class NTSApp {
   async createSaleInDB(saleData) {
     if (!AppState.supabase) return;
     console.log('Creando venta en DB:', saleData);
+
+    let clienteId = saleData.cliente.id || null;
+    if (clienteId) {
+      const { error: clienteError } = await AppState.supabase
+        .from('clientes')
+        .update({
+          nombre: saleData.cliente.nombre,
+          email: saleData.cliente.email,
+          telefono: saleData.cliente.telefono,
+          DNI: saleData.cliente.dni || null,
+          Pasaporte: saleData.cliente.pasaporte || null,
+          dni_expiracion: saleData.cliente.dni_expiracion || null,
+          pasaporte_expiracion: saleData.cliente.pasaporte_expiracion || null,
+          vendedor_id: saleData.vendedor_id
+        })
+        .eq('id', clienteId);
+      if (clienteError) throw clienteError;
+    } else {
+      const { data: nuevoCliente, error: clienteError } = await AppState.supabase
+        .from('clientes')
+        .insert({
+          nombre: saleData.cliente.nombre,
+          email: saleData.cliente.email,
+          telefono: saleData.cliente.telefono,
+          DNI: saleData.cliente.dni || null,
+          Pasaporte: saleData.cliente.pasaporte || null,
+          dni_expiracion: saleData.cliente.dni_expiracion || null,
+          pasaporte_expiracion: saleData.cliente.pasaporte_expiracion || null,
+          vendedor_id: saleData.vendedor_id
+        })
+        .select()
+        .single();
+      if (clienteError) throw clienteError;
+      clienteId = nuevoCliente.id;
+    }
+
     const { data: venta, error: ventaError } = await AppState.supabase
       .from('ventas')
       .insert({
         numero_venta: saleData.numero_venta,
-        cliente_id: saleData.cliente.id || null,
+        cliente_id: clienteId,
         vendedor_id: saleData.vendedor_id,
         fecha_venta: saleData.fecha_venta,
         fecha_viaje_inicio: saleData.viaje.fechaInicio || null,
@@ -1482,7 +1611,8 @@ class NTSApp {
             estado_pago_servicio: 'no_pagado',
             tiempo_total_vuelo: servicio.tiempo_total_vuelo || null,
             cantidad_escalas: servicio.cantidad_escalas || 0,
-            tiene_escalas: servicio.tieneEscalas
+            tiene_escalas: servicio.tieneEscalas,
+            proveedor_id: servicio.proveedor_id || null
           })
           .select()
           .single();
@@ -1515,12 +1645,70 @@ class NTSApp {
           }
         }
       }
+      if (servicio.type === 'hotel') {
+        await AppState.supabase.from('venta_hoteles').insert({
+          venta_id: venta.id,
+          proveedor_id: servicio.proveedor_id || null,
+          hotel_nombre: servicio.nombre,
+          hotel_ciudad: servicio.ciudad,
+          fecha_checkin: servicio.checkin || null,
+          fecha_checkout: servicio.checkout || null,
+          huespedes: servicio.huespedes || 1,
+          precio_costo: servicio.costo,
+          precio_venta: servicio.precio,
+          margen_ganancia: servicio.precio - servicio.costo
+        });
+      }
+      if (servicio.type === 'traslado') {
+        await AppState.supabase.from('venta_traslados').insert({
+          venta_id: venta.id,
+          proveedor_id: servicio.proveedor_id || null,
+          origen: servicio.origen,
+          destino: servicio.destino,
+          fecha_traslado: servicio.fecha || null,
+          hora_traslado: servicio.hora || null,
+          pasajeros: servicio.pasajeros || 1,
+          precio_costo: servicio.costo,
+          precio_venta: servicio.precio,
+          margen_ganancia: servicio.precio - servicio.costo
+        });
+      }
+      if (servicio.type === 'excursion') {
+        await AppState.supabase.from('venta_excursiones').insert({
+          venta_id: venta.id,
+          proveedor_id: servicio.proveedor_id || null,
+          nombre_excursion: servicio.nombre,
+          destino_excursion: servicio.destino,
+          fecha_excursion: servicio.fecha || null,
+          duracion_horas: servicio.duracion || null,
+          participantes: servicio.participantes || 1,
+          precio_costo: servicio.costo,
+          precio_venta: servicio.precio,
+          margen_ganancia: servicio.precio - servicio.costo
+        });
+      }
     }
   }
 
   async updateSaleInDB(saleData) {
     if (!AppState.supabase || !AppState.editingSaleId) return;
     const id = AppState.editingSaleId;
+
+    if (saleData.cliente.id) {
+      await AppState.supabase
+        .from('clientes')
+        .update({
+          nombre: saleData.cliente.nombre,
+          email: saleData.cliente.email,
+          telefono: saleData.cliente.telefono,
+          DNI: saleData.cliente.dni || null,
+          Pasaporte: saleData.cliente.pasaporte || null,
+          dni_expiracion: saleData.cliente.dni_expiracion || null,
+          pasaporte_expiracion: saleData.cliente.pasaporte_expiracion || null,
+          vendedor_id: saleData.vendedor_id
+        })
+        .eq('id', saleData.cliente.id);
+    }
 
     const { error: ventaError } = await AppState.supabase
       .from('ventas')
@@ -1573,7 +1761,8 @@ class NTSApp {
             estado_pago_servicio: 'no_pagado',
             tiempo_total_vuelo: servicio.tiempo_total_vuelo || null,
             cantidad_escalas: servicio.cantidad_escalas || 0,
-            tiene_escalas: servicio.tieneEscalas
+            tiene_escalas: servicio.tieneEscalas,
+            proveedor_id: servicio.proveedor_id || null
           })
           .select()
           .single();
@@ -1600,6 +1789,7 @@ class NTSApp {
       } else if (servicio.type === 'hotel') {
         await AppState.supabase.from('venta_hoteles').insert({
           venta_id: id,
+          proveedor_id: servicio.proveedor_id || null,
           hotel_nombre: servicio.nombre,
           hotel_ciudad: servicio.ciudad,
           fecha_checkin: servicio.checkin,
@@ -1612,6 +1802,7 @@ class NTSApp {
       } else if (servicio.type === 'traslado') {
         await AppState.supabase.from('venta_traslados').insert({
           venta_id: id,
+          proveedor_id: servicio.proveedor_id || null,
           origen: servicio.origen,
           destino: servicio.destino,
           fecha_traslado: servicio.fecha,
@@ -1624,6 +1815,7 @@ class NTSApp {
       } else if (servicio.type === 'excursion') {
         await AppState.supabase.from('venta_excursiones').insert({
           venta_id: id,
+          proveedor_id: servicio.proveedor_id || null,
           nombre_excursion: servicio.nombre,
           destino_excursion: servicio.destino,
           fecha_excursion: servicio.fecha,
@@ -1704,6 +1896,9 @@ class NTSApp {
     const searchInput = document.getElementById('ventas-search');
     const filterSelect = document.getElementById('ventas-filter');
     const clientInput = document.getElementById('ventas-cliente');
+    const desdeInput = document.getElementById('ventas-fecha-desde');
+    const hastaInput = document.getElementById('ventas-fecha-hasta');
+    const relativaSelect = document.getElementById('ventas-fecha-relativa');
     const table = document.getElementById('ventas-table');
 
     if (!this.ventasListenersSetup) {
@@ -1711,6 +1906,9 @@ class NTSApp {
       searchInput?.addEventListener('input', rerender);
       filterSelect?.addEventListener('change', rerender);
       clientInput?.addEventListener('input', rerender);
+       desdeInput?.addEventListener('change', () => { if (relativaSelect) relativaSelect.value = ''; rerender(); });
+       hastaInput?.addEventListener('change', () => { if (relativaSelect) relativaSelect.value = ''; rerender(); });
+       relativaSelect?.addEventListener('change', () => { if (relativaSelect.value) { if (desdeInput) desdeInput.value=''; if (hastaInput) hastaInput.value=''; } rerender(); });
       table?.addEventListener('click', (e) => {
         const editBtn = e.target.closest('[data-action="edit"]');
         const deleteBtn = e.target.closest('[data-action="delete"]');
@@ -1767,12 +1965,26 @@ class NTSApp {
     const term = document.getElementById('ventas-search')?.value.toLowerCase() || '';
     const estado = document.getElementById('ventas-filter')?.value || '';
     const cliente = document.getElementById('ventas-cliente')?.value.toLowerCase() || '';
+    const desde = document.getElementById('ventas-fecha-desde')?.value;
+    const hasta = document.getElementById('ventas-fecha-hasta')?.value;
+    const relativa = document.getElementById('ventas-fecha-relativa')?.value;
+
+    let desdeDate = desde ? new Date(desde) : null;
+    let hastaDate = hasta ? new Date(hasta) : null;
+    if (relativa) {
+      const days = parseInt(relativa, 10);
+      hastaDate = new Date();
+      desdeDate = new Date();
+      desdeDate.setDate(hastaDate.getDate() - days);
+    }
     return AppState.ventas.filter(v => {
       const matchesTerm = v.numero_venta?.toLowerCase().includes(term) ||
         v.cliente_nombre?.toLowerCase().includes(term);
       const matchesEstado = !estado || v.estado === estado;
       const matchesCliente = !cliente || v.cliente_nombre?.toLowerCase().includes(cliente);
-      return matchesTerm && matchesEstado && matchesCliente;
+      const fecha = new Date(v.fecha_venta);
+      const matchesFecha = (!desdeDate || fecha >= desdeDate) && (!hastaDate || fecha <= hastaDate);
+      return matchesTerm && matchesEstado && matchesCliente && matchesFecha;
     });
   }
 

@@ -509,6 +509,14 @@
                     <input type="text" id="ventas-search" class="form-control" placeholder="Buscar ventas...">
                     <input list="ventas-clientes" id="ventas-cliente" class="form-control" placeholder="Filtrar por cliente">
                     <datalist id="ventas-clientes"></datalist>
+                    <input type="date" id="ventas-fecha-desde" class="form-control" placeholder="Desde">
+                    <input type="date" id="ventas-fecha-hasta" class="form-control" placeholder="Hasta">
+                    <select id="ventas-fecha-relativa" class="form-control">
+                        <option value="">Todas las fechas</option>
+                        <option value="7">Últimos 7 días</option>
+                        <option value="30">Últimos 30 días</option>
+                        <option value="90">Últimos 90 días</option>
+                    </select>
                     <select id="ventas-filter" class="form-control">
                         <option value="">Todos los estados</option>
                         <option value="pendiente">Pendiente</option>
