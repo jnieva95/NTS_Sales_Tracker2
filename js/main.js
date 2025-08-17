@@ -873,7 +873,7 @@ class NTSApp {
       if (!container || !addBtn) return;
 
       const addSegment = () => {
-        container.appendChild(this.createSegmentRow());
+        container.appendChild(this.addSegmentRow());
       };
 
       addBtn.addEventListener('click', addSegment);
@@ -883,25 +883,118 @@ class NTSApp {
         if (e.target.classList.contains('remove-segment')) {
           e.target.closest('.segment-row')?.remove();
         }
+        if (e.target.classList.contains('remove-escala')) {
+          e.target.closest('.escala-row')?.remove();
+          const row = e.target.closest('.segment-row');
+          if (row) this.updateSegmentTiempoTotal(row);
+        }
       });
     }
   }
 
-  createSegmentRow() {
+  addSegmentRow() {
     const row = document.createElement('div');
     row.className = 'segment-row';
-    row.style.display = 'grid';
-    row.style.gridTemplateColumns = 'repeat(4, 1fr) auto';
+    row.style.display = 'flex';
+    row.style.flexDirection = 'column';
     row.style.gap = 'var(--spacing-sm)';
     row.style.marginBottom = 'var(--spacing-sm)';
-    row.innerHTML = `
+
+    const mainRow = document.createElement('div');
+    mainRow.style.display = 'grid';
+    mainRow.style.gridTemplateColumns = 'repeat(4, 1fr) 80px';
+    mainRow.style.gap = 'var(--spacing-sm)';
+    mainRow.innerHTML = `
       <input type="text" class="form-control segment-origen" placeholder="Origen">
       <input type="text" class="form-control segment-destino" placeholder="Destino">
       <input type="datetime-local" class="form-control segment-salida">
       <input type="datetime-local" class="form-control segment-llegada">
       <button type="button" class="btn btn-danger remove-segment">&times;</button>
     `;
+    row.appendChild(mainRow);
+
+    const escalasContainer = document.createElement('div');
+    escalasContainer.className = 'escalas-container';
+    escalasContainer.style.display = 'none';
+    escalasContainer.style.flexDirection = 'column';
+    escalasContainer.style.gap = 'var(--spacing-sm)';
+    row.appendChild(escalasContainer);
+
+    const addEscalaBtn = document.createElement('button');
+    addEscalaBtn.type = 'button';
+    addEscalaBtn.className = 'btn btn-secondary add-escala';
+    addEscalaBtn.textContent = 'Agregar escala';
+    addEscalaBtn.style.display = 'none';
+    row.appendChild(addEscalaBtn);
+
+    const escalaToggleWrapper = document.createElement('div');
+    escalaToggleWrapper.className = 'form-check';
+    const toggleId = `escala-toggle-${Date.now()}`;
+    escalaToggleWrapper.innerHTML = `
+      <input type="checkbox" class="form-check-input segment-escala-toggle" id="${toggleId}">
+      <label class="form-check-label" for="${toggleId}">Escalas</label>
+    `;
+    row.appendChild(escalaToggleWrapper);
+
+    const toggle = escalaToggleWrapper.querySelector('.segment-escala-toggle');
+    toggle.addEventListener('change', () => {
+      const show = toggle.checked;
+      escalasContainer.style.display = show ? 'flex' : 'none';
+      addEscalaBtn.style.display = show ? 'inline-block' : 'none';
+      if (!show) {
+        escalasContainer.innerHTML = '';
+      }
+      this.updateSegmentTiempoTotal(row);
+    });
+
+    const addEscala = () => {
+      const escala = document.createElement('div');
+      escala.className = 'escala-row';
+      escala.style.display = 'grid';
+      escala.style.gridTemplateColumns = 'repeat(4, 1fr) 80px';
+      escala.style.gap = 'var(--spacing-sm)';
+      escala.innerHTML = `
+        <input type="text" class="form-control segment-escala-aeropuerto" placeholder="Aeropuerto">
+        <input type="datetime-local" class="form-control segment-escala-arribo">
+        <input type="datetime-local" class="form-control segment-escala-salida">
+        <input type="number" class="form-control segment-duracion-escala" placeholder="Duración (min)" min="0">
+        <button type="button" class="btn btn-danger remove-escala">&times;</button>
+      `;
+      escala.querySelector('.segment-duracion-escala').addEventListener('input', () => this.updateSegmentTiempoTotal(row));
+      escalasContainer.appendChild(escala);
+    };
+
+    addEscalaBtn.addEventListener('click', addEscala);
+
+    const updateHandler = () => this.updateSegmentTiempoTotal(row);
+    mainRow.querySelector('.segment-salida').addEventListener('change', updateHandler);
+    mainRow.querySelector('.segment-llegada').addEventListener('change', updateHandler);
+
     return row;
+  }
+
+  updateSegmentTiempoTotal(row) {
+    if (!row) return;
+    const salida = row.querySelector('.segment-salida')?.value;
+    const llegada = row.querySelector('.segment-llegada')?.value;
+    let total = 0;
+
+    if (salida && llegada) {
+      const diff = new Date(llegada) - new Date(salida);
+      if (diff > 0) {
+        total += diff / 60000; // minutos
+      }
+    }
+
+    row.querySelectorAll('.escalas-container .segment-duracion-escala').forEach(input => {
+      const val = parseFloat(input.value);
+      if (!isNaN(val)) total += val;
+    });
+
+    const totalInput = row.querySelector('.segment-tiempo-total');
+    if (totalInput) {
+      totalInput.value = Math.round(total);
+    }
   }
 
   addService(serviceType) {
@@ -932,13 +1025,23 @@ class NTSApp {
     switch (serviceType) {
       case 'vuelo':
         const segmentRows = document.querySelectorAll('#segments-container .segment-row');
-        const segmentos = Array.from(segmentRows).map((row, index) => ({
-          numero_segmento: index + 1,
-          aeropuerto_origen: row.querySelector('.segment-origen')?.value?.trim(),
-          aeropuerto_destino: row.querySelector('.segment-destino')?.value?.trim(),
-          fecha_hora_salida_local: row.querySelector('.segment-salida')?.value || null,
-          fecha_hora_llegada_local: row.querySelector('.segment-llegada')?.value || null
-        }));
+        const segmentos = Array.from(segmentRows).map((row, index) => {
+          const escalas = Array.from(row.querySelectorAll('.escala-row')).map(escala => ({
+            aeropuerto: escala.querySelector('.segment-escala-aeropuerto')?.value?.trim(),
+            llegada: escala.querySelector('.segment-escala-arribo')?.value || null,
+            salida: escala.querySelector('.segment-escala-salida')?.value || null,
+            duracion: parseFloat(escala.querySelector('.segment-duracion-escala')?.value) || 0
+          }));
+          return {
+            numero_segmento: index + 1,
+            aeropuerto_origen: row.querySelector('.segment-origen')?.value?.trim(),
+            aeropuerto_destino: row.querySelector('.segment-destino')?.value?.trim(),
+            fecha_hora_salida_local: row.querySelector('.segment-salida')?.value || null,
+            fecha_hora_llegada_local: row.querySelector('.segment-llegada')?.value || null,
+            escalas,
+            tieneEscalas: escalas.length > 0
+          };
+        });
         return {
           ...baseData,
           origen: document.getElementById('vuelo-origen')?.value?.trim(),
@@ -1001,6 +1104,26 @@ class NTSApp {
         if (invalid) {
           this.showNotification('Complete origen y destino en todos los tramos', 'warning');
           return false;
+        }
+        const segmentRowsDom = document.querySelectorAll('#segments-container .segment-row');
+        for (const [idx, row] of Array.from(segmentRowsDom).entries()) {
+          const toggle = row.querySelector('.segment-escala-toggle');
+          if (toggle?.checked) {
+            const escalaRows = row.querySelectorAll('.escala-row');
+            if (escalaRows.length === 0) {
+              this.showNotification(`Agregue al menos una escala en el segmento ${idx + 1}`, 'warning');
+              return false;
+            }
+            const escalaInvalid = Array.from(escalaRows).some(er => {
+              const airport = er.querySelector('.segment-escala-aeropuerto')?.value?.trim();
+              const dur = er.querySelector('.segment-duracion-escala')?.value;
+              return !airport || !dur;
+            });
+            if (escalaInvalid) {
+              this.showNotification(`Complete aeropuerto y duración en las escalas del segmento ${idx + 1}`, 'warning');
+              return false;
+            }
+          }
         }
         break;
       case 'hotel':
@@ -1137,7 +1260,7 @@ class NTSApp {
       const container = document.getElementById('segments-container');
       if (container) {
         container.innerHTML = '';
-        container.appendChild(this.createSegmentRow());
+        container.appendChild(this.addSegmentRow());
       }
     }
   }
