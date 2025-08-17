@@ -162,3 +162,5 @@ window.NTS_CONFIG = {
 
 console.log('✅ Config.js cargado correctamente');
 console.log('🔗 Supabase:', isSupabaseConnected ? 'Conectado' : 'Desconectado');
+
+export { supabase, isSupabaseConnected, ENUMS, APP_CONFIG, getEnumData, getEnumLabel, createEnumBadge };

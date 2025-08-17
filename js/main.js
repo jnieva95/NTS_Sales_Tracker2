@@ -1,4 +1,4 @@
-import './config.js';
+import { supabase, isSupabaseConnected } from './config.js';
 
 // ===== MAIN.JS - APLICACIÓN PRINCIPAL NTS V2.0 =====
 
@@ -78,17 +78,10 @@ class NTSApp {
 
   async initSupabase() {
     try {
-      const { supabase, isSupabaseConnected } = window.NTS_CONFIG || {};
-
-      if (supabase) {
-        AppState.supabase = supabase;
-        AppState.isConnected = !!isSupabaseConnected;
-        console.log(AppState.isConnected ? '✅ Supabase conectado' : '⚠️ Supabase no disponible');
-        this.updateConnectionStatus(AppState.isConnected);
-      } else {
-        console.log('⚠️ Supabase no disponible');
-        this.updateConnectionStatus(false);
-      }
+      AppState.supabase = supabase;
+      AppState.isConnected = !!isSupabaseConnected;
+      console.log(AppState.isConnected ? '✅ Supabase conectado' : '⚠️ Supabase no disponible');
+      this.updateConnectionStatus(AppState.isConnected);
     } catch (error) {
       console.error('❌ Error conectando Supabase:', error);
       this.updateConnectionStatus(false);
