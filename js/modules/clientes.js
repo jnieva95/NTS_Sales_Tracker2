@@ -584,6 +584,7 @@ async function saveCliente() {
             } else {
                 await createClienteInDB(clienteData);
             }
+        }
         hideClienteModal();
         showNotification('Cliente guardado correctamente', 'success');
         await renderClientesTable();
