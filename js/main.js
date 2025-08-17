@@ -51,6 +51,14 @@ class NTSApp {
     this.init();
   }
 
+  get supabase() {
+    return AppState.supabase;
+  }
+
+  get isSupabaseConnected() {
+    return AppState.isConnected;
+  }
+
   async init() {
     try {
       console.log('🔧 Inicializando aplicación...');
