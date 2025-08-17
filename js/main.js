@@ -642,6 +642,11 @@ class NTSApp {
       case 'ventas':
         this.loadVentasList();
         break;
+      case 'clientes':
+        if (typeof initClientesModule === 'function') {
+          initClientesModule();
+        }
+        break;
       default:
         console.log(`Pestaña ${tabName} no implementada aún`);
     }
