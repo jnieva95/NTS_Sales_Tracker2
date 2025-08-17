@@ -1066,41 +1066,44 @@ async function crearVentaEnDB(ventaData) {
                     .insert({
                         venta_id: nuevaVenta.id,
                         descripcion: servicio.descripcion,
-                        origen: servicio.origen,
-                        destino: servicio.destino,
                         tipo_itinerario: servicio.tipo_itinerario,
-                        aerolinea: servicio.aerolinea,
-                        clase_vuelo: servicio.clase_vuelo,
                         pasajeros: servicio.pasajeros,
-                        fecha_hora_salida: servicio.fecha_hora_salida,
-                        fecha_hora_llegada: servicio.fecha_hora_llegada,
-                        fecha_hora_regreso: servicio.fecha_hora_regreso,
-                        fecha_hora_llegada_regreso: servicio.fecha_hora_llegada_regreso,
-                        precio_venta: servicio.precio_venta,
                         precio_costo: servicio.precio_costo,
-                        proveedor_id: servicio.proveedor_id,
-                        itinerario_observaciones: servicio.itinerario_observaciones
+                        precio_venta: servicio.precio_venta,
+                        margen_ganancia: servicio.precio_venta - servicio.precio_costo,
+                        monto_pagado: 0,
+                        saldo_pendiente_servicio: servicio.precio_costo,
+                        estado_pago_servicio: 'no_pagado',
+                        tiempo_total_vuelo: servicio.tiempo_total_vuelo || null,
+                        cantidad_escalas: servicio.cantidad_escalas || 0,
+                        tiene_escalas: servicio.tiene_escalas || false,
+                        proveedor_id: servicio.proveedor_id || null
                     })
                     .select()
                     .single();
 
                 if (servicioError) {
-                    console.error(`Error creando vuelo:`, servicioError);
-                } else if (servicio.escalas && servicio.escalas.length) {
-                    const segmentos = servicio.escalas.map(seg => ({
+                    console.error(`Error creando vuelo:`, servicioError.message, servicioError.details);
+                } else if (servicio.segmentos && servicio.segmentos.length) {
+                    const segmentos = servicio.segmentos.map(seg => ({
                         venta_vuelo_id: vuelo.id,
                         numero_segmento: seg.numero_segmento,
                         aeropuerto_origen: seg.aeropuerto_origen,
                         aeropuerto_destino: seg.aeropuerto_destino,
-                        fecha_hora_salida_local: seg.fecha_hora_salida,
-                        fecha_hora_llegada_local: seg.fecha_hora_llegada
+                        fecha_hora_salida_local: seg.fecha_hora_salida_local,
+                        fecha_hora_llegada_local: seg.fecha_hora_llegada_local,
+                        aerolinea: seg.aerolinea || null,
+                        numero_vuelo: seg.numero_vuelo || null,
+                        tiene_escala: seg.tiene_escala,
+                        aeropuerto_escala: seg.escalas[0]?.aeropuerto || null,
+                        duracion_escala: seg.escalas[0]?.duracion || null
                     }));
 
                     const { error: segError } = await supabase
-                        .from('venta_vuelo_segmentos')
+                        .from('vuelo_segmentos')
                         .insert(segmentos);
                     if (segError) {
-                        console.error('Error creando segmentos:', segError);
+                        console.error('Error creando segmentos:', segError.message, segError.details);
                     }
                 }
             }

@@ -916,6 +916,10 @@ class NTSApp {
         const origen = segmentos[0]?.aeropuerto_origen || '';
         const destino = segmentos[segmentos.length - 1]?.aeropuerto_destino || '';
         const tieneEscalas = segmentos.some(s => s.tiene_escala);
+        const cantidad_escalas = segmentos.reduce(
+          (sum, s) => sum + (s.escalas ? s.escalas.length : 0),
+          0
+        );
         const descripcion = origen && destino ? `Vuelo ${origen} → ${destino}` : 'Vuelo';
 
         let tipo_itinerario = 'ida_vuelta';
@@ -933,6 +937,8 @@ class NTSApp {
           destino,
           descripcion,
           tieneEscalas,
+          cantidad_escalas,
+          tiempo_total_vuelo: null,
           segmentos
         };
       case 'hotel':
@@ -1220,7 +1226,7 @@ class NTSApp {
       .single();
 
     if (ventaError) {
-      console.error('Error creando venta:', ventaError);
+      console.error('Error creando venta:', ventaError.message, ventaError.details);
       throw ventaError;
     }
 
@@ -1230,18 +1236,24 @@ class NTSApp {
           .from('venta_vuelos')
           .insert({
             venta_id: venta.id,
-            origen: servicio.origen,
-            destino: servicio.destino,
-            fecha: servicio.fecha,
+            descripcion: servicio.descripcion,
+            tipo_itinerario: servicio.tipo_itinerario,
             pasajeros: servicio.pasajeros,
-            aerolinea: servicio.aerolinea,
-            precio: servicio.precio
+            precio_costo: servicio.costo,
+            precio_venta: servicio.precio,
+            margen_ganancia: servicio.precio - servicio.costo,
+            monto_pagado: 0,
+            saldo_pendiente_servicio: servicio.costo,
+            estado_pago_servicio: 'no_pagado',
+            tiempo_total_vuelo: servicio.tiempo_total_vuelo || null,
+            cantidad_escalas: servicio.cantidad_escalas || 0,
+            tiene_escalas: servicio.tieneEscalas
           })
           .select()
           .single();
 
         if (vueloError) {
-          console.error('Error creando vuelo:', vueloError);
+          console.error('Error creando vuelo:', vueloError.message, vueloError.details);
           throw vueloError;
         }
 
@@ -1252,13 +1264,18 @@ class NTSApp {
             aeropuerto_origen: seg.aeropuerto_origen,
             aeropuerto_destino: seg.aeropuerto_destino,
             fecha_hora_salida_local: seg.fecha_hora_salida_local,
-            fecha_hora_llegada_local: seg.fecha_hora_llegada_local
+            fecha_hora_llegada_local: seg.fecha_hora_llegada_local,
+            aerolinea: seg.aerolinea || null,
+            numero_vuelo: seg.numero_vuelo || null,
+            tiene_escala: seg.tiene_escala,
+            aeropuerto_escala: seg.escalas[0]?.aeropuerto || null,
+            duracion_escala: seg.escalas[0]?.duracion || null
           }));
           const { error: segError } = await AppState.supabase
-            .from('venta_vuelo_segmentos')
+            .from('vuelo_segmentos')
             .insert(segmentos);
           if (segError) {
-            console.error('Error creando segmentos:', segError);
+            console.error('Error creando segmentos:', segError.message, segError.details);
             throw segError;
           }
         }
