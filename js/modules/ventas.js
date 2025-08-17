@@ -1131,7 +1131,7 @@ async function crearVentaEnDB(ventaData) {
                         estado_pago_servicio: 'no_pagado',
                         tiempo_total_vuelo: servicio.tiempo_total_vuelo || null,
                         cantidad_escalas: servicio.cantidad_escalas || 0,
-                        tiene_escalas: servicio.tiene_escalas || false,
+                        tiene_escalas: servicio.tieneEscalas || false,
                         proveedor_id: servicio.proveedor_id || null
                     })
                     .select()
