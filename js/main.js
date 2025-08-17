@@ -1262,11 +1262,18 @@ class NTSApp {
             numero_segmento: seg.numero_segmento,
             aeropuerto_origen: seg.aeropuerto_origen,
             aeropuerto_destino: seg.aeropuerto_destino,
-            fecha_hora_salida_local: seg.fecha_hora_salida_local,
-            fecha_hora_llegada_local: seg.fecha_hora_llegada_local
+            fecha_hora_salida_local: seg.fecha_hora_salida_local || null,
+            fecha_hora_llegada_local: seg.fecha_hora_llegada_local || null,
+            tiene_escala: seg.tiene_escala ?? false,
+            aerolinea: seg.aerolinea || servicio.aerolinea || '',
+            escala_aeropuerto: seg.escala_aeropuerto || null,
+            escala_duracion: seg.escala_duracion || null,
+            numero_vuelo: seg.numero_vuelo || null,
+            clase_vuelo: seg.clase_vuelo || null,
+            equipaje_incluido: seg.equipaje_incluido ?? false
           }));
           const { error: segError } = await AppState.supabase
-            .from('venta_vuelo_segmentos')
+            .from('vuelo_segmentos')
             .insert(segmentos);
           if (segError) {
             console.error('Error creando segmentos:', segError);

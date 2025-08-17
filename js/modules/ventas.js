@@ -946,7 +946,7 @@ async function crearVentaEnDB(ventaData) {
         // 4. Crear servicios (solo para vuelos, puedes expandir para otros)
         for (const servicio of ventaData.servicios) {
             if (servicio.tipo === 'vuelo') {
-                const { error: servicioError } = await supabase
+                const { data: vuelo, error: servicioError } = await supabase
                     .from('venta_vuelos')
                     .insert({
                         venta_id: nuevaVenta.id,
@@ -965,10 +965,40 @@ async function crearVentaEnDB(ventaData) {
                         precio_costo: servicio.precio_costo,
                         proveedor_id: servicio.proveedor_id,
                         itinerario_observaciones: servicio.itinerario_observaciones
-                    });
-                
+                    })
+                    .select()
+                    .single();
+
                 if (servicioError) {
                     console.error(`Error creando vuelo:`, servicioError);
+                    continue;
+                }
+
+                if (servicio.segmentos && servicio.segmentos.length) {
+                    const segmentos = servicio.segmentos.map(seg => ({
+                        venta_vuelo_id: vuelo.id,
+                        numero_segmento: seg.numero_segmento,
+                        aeropuerto_origen: seg.aeropuerto_origen,
+                        aeropuerto_destino: seg.aeropuerto_destino,
+                        fecha_hora_salida_local: seg.fecha_hora_salida_local || null,
+                        fecha_hora_llegada_local: seg.fecha_hora_llegada_local || null,
+                        tiene_escala: seg.tiene_escala ?? false,
+                        aerolinea: seg.aerolinea || servicio.aerolinea || '',
+                        escala_aeropuerto: seg.escala_aeropuerto || null,
+                        escala_duracion: seg.escala_duracion || null,
+                        numero_vuelo: seg.numero_vuelo || null,
+                        clase_vuelo: seg.clase_vuelo || null,
+                        equipaje_incluido: seg.equipaje_incluido ?? false
+                    }));
+
+                    const { error: segError } = await supabase
+                        .from('vuelo_segmentos')
+                        .insert(segmentos);
+
+                    if (segError) {
+                        console.error('Error creando segmentos:', segError);
+                        throw segError;
+                    }
                 }
             }
         }
