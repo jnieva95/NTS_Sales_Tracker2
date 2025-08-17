@@ -505,10 +505,30 @@
                         <p>Administrar todas las ventas</p>
                     </div>
                 </div>
-                <div class="coming-soon">
-                    <i data-lucide="construction"></i>
-                    <h3>Próximamente</h3>
-                    <p>Esta sección está en desarrollo</p>
+                <div class="table-actions">
+                    <input type="text" id="ventas-search" class="form-control" placeholder="Buscar ventas...">
+                    <select id="ventas-filter" class="form-control">
+                        <option value="">Todos los estados</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="confirmada">Confirmada</option>
+                        <option value="cancelada">Cancelada</option>
+                        <option value="finalizada">Finalizada</option>
+                    </select>
+                </div>
+                <div class="table-container">
+                    <table id="ventas-table" class="table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Cliente</th>
+                                <th>Fecha</th>
+                                <th>Total</th>
+                                <th>Estado</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
                 </div>
             </section>
 

@@ -24,7 +24,8 @@ const AppState = {
   notifications: [],
   clientes: [],
   vendedores: [],
-  
+  ventas: [],
+
   // Datos de la venta actual
   currentSale: {
     client: {},
@@ -42,6 +43,7 @@ const AppState = {
 // ===== INICIALIZACIÓN =====
 class NTSApp {
   constructor() {
+    this.ventasListenersSetup = false;
     this.init();
   }
 
@@ -583,6 +585,9 @@ class NTSApp {
         break;
       case 'nueva-venta':
         this.initNewSaleForm();
+        break;
+      case 'ventas':
+        this.loadVentasList();
         break;
       default:
         console.log(`Pestaña ${tabName} no implementada aún`);
@@ -1428,9 +1433,135 @@ class NTSApp {
       isDraft: true,
       lastModified: new Date().toISOString()
     };
-    
+
     localStorage.setItem('nts_draft', JSON.stringify(draftData));
     this.showNotification('Borrador guardado', 'success');
+  }
+
+  async loadVentasList() {
+    const searchInput = document.getElementById('ventas-search');
+    const filterSelect = document.getElementById('ventas-filter');
+    const table = document.getElementById('ventas-table');
+
+    if (!this.ventasListenersSetup) {
+      searchInput?.addEventListener('input', () => {
+        this.renderVentasTable(this.filterVentas());
+      });
+      filterSelect?.addEventListener('change', () => {
+        this.renderVentasTable(this.filterVentas());
+      });
+      table?.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('[data-action="edit"]');
+        const deleteBtn = e.target.closest('[data-action="delete"]');
+        const id = editBtn?.dataset.id || deleteBtn?.dataset.id;
+        if (editBtn) this.editVenta(id);
+        if (deleteBtn) this.deleteVenta(id);
+      });
+      this.ventasListenersSetup = true;
+    }
+
+    try {
+      if (AppState.isConnected && AppState.supabase) {
+        const { data, error } = await AppState.supabase
+          .from('ventas')
+          .select('id, numero_venta, fecha_venta, total_final, estado, clientes (nombre)')
+          .order('fecha_venta', { ascending: false });
+        if (error) throw error;
+        AppState.ventas = (data || []).map(v => ({
+          id: v.id,
+          numero_venta: v.numero_venta,
+          fecha_venta: v.fecha_venta,
+          total_final: v.total_final,
+          estado: v.estado,
+          cliente_nombre: v.clientes?.nombre || ''
+        }));
+      } else {
+        const ventas = JSON.parse(localStorage.getItem('nts_ventas') || '[]');
+        AppState.ventas = ventas.map(v => ({
+          id: v.id,
+          numero_venta: v.numero_venta,
+          fecha_venta: v.fecha_venta || v.created_at,
+          total_final: v.total_final || v.total,
+          estado: v.estado || 'pendiente',
+          cliente_nombre: v.cliente?.nombre || ''
+        }));
+      }
+    } catch (err) {
+      console.error('Error cargando ventas:', err);
+      this.showNotification('Error cargando ventas', 'error');
+      AppState.ventas = [];
+    }
+
+    this.renderVentasTable(this.filterVentas());
+  }
+
+  filterVentas() {
+    const term = document.getElementById('ventas-search')?.value.toLowerCase() || '';
+    const estado = document.getElementById('ventas-filter')?.value || '';
+    return AppState.ventas.filter(v => {
+      const matchesTerm = v.numero_venta?.toLowerCase().includes(term) ||
+        v.cliente_nombre?.toLowerCase().includes(term);
+      const matchesEstado = !estado || v.estado === estado;
+      return matchesTerm && matchesEstado;
+    });
+  }
+
+  renderVentasTable(ventas) {
+    const tbody = document.querySelector('#ventas-table tbody');
+    if (!tbody) return;
+    if (!ventas.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Sin ventas registradas</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = ventas.map(v => `
+      <tr>
+        <td>${v.numero_venta || ''}</td>
+        <td>${v.cliente_nombre || ''}</td>
+        <td>${this.formatDate(v.fecha_venta)}</td>
+        <td>${this.formatCurrency(v.total_final || 0)}</td>
+        <td>${v.estado || ''}</td>
+        <td class="table-row-actions">
+          <button class="btn-icon" data-action="edit" data-id="${v.id}" title="Editar"><i data-lucide="edit"></i></button>
+          <button class="btn-icon btn-danger" data-action="delete" data-id="${v.id}" title="Eliminar"><i data-lucide="trash-2"></i></button>
+        </td>
+      </tr>
+    `).join('');
+
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  editVenta(id) {
+    this.showNotification(`Editar venta ${id} en desarrollo`, 'info');
+  }
+
+  async deleteVenta(id) {
+    if (!confirm('¿Eliminar esta venta?')) return;
+    try {
+      if (AppState.isConnected && AppState.supabase) {
+        const { error } = await AppState.supabase.from('ventas').delete().eq('id', id);
+        if (error) throw error;
+      } else {
+        let ventas = JSON.parse(localStorage.getItem('nts_ventas') || '[]');
+        ventas = ventas.filter(v => v.id !== Number(id));
+        localStorage.setItem('nts_ventas', JSON.stringify(ventas));
+      }
+      AppState.ventas = AppState.ventas.filter(v => v.id !== Number(id));
+      this.renderVentasTable(this.filterVentas());
+      this.showNotification('Venta eliminada', 'success');
+    } catch (err) {
+      console.error('Error eliminando venta:', err);
+      this.showNotification('No se pudo eliminar la venta', 'error');
+    }
+  }
+
+  formatDate(dateStr) {
+    if (!dateStr) return '';
+    try {
+      return new Date(dateStr).toLocaleDateString('es-AR');
+    } catch {
+      return dateStr;
+    }
   }
 
   // ===== OTRAS FUNCIONES =====
