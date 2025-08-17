@@ -328,8 +328,38 @@
                                     </div>
                                     
                                     <div class="form-group">
-                                        <label for="cliente-documento">DNI/Pasaporte</label>
-                                        <input type="text" id="cliente-documento" class="form-control" placeholder="12345678">
+                                        <label for="cliente-doc-tipo">Tipo de Documento</label>
+                                        <select id="cliente-doc-tipo" class="form-control">
+                                            <option value="dni">DNI</option>
+                                            <option value="pasaporte">Pasaporte</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group" id="grupo-dni">
+                                        <label for="cliente-dni">DNI</label>
+                                        <input type="text" id="cliente-dni" class="form-control" placeholder="12345678">
+                                    </div>
+
+                                    <div class="form-group" id="grupo-dni-exp">
+                                        <label for="cliente-dni-expiracion">Vencimiento DNI</label>
+                                        <input type="date" id="cliente-dni-expiracion" class="form-control">
+                                    </div>
+
+                                    <div class="form-group hidden" id="grupo-pasaporte">
+                                        <label for="cliente-pasaporte">Pasaporte</label>
+                                        <input type="text" id="cliente-pasaporte" class="form-control" placeholder="AB123456">
+                                    </div>
+
+                                    <div class="form-group hidden" id="grupo-pasaporte-exp">
+                                        <label for="cliente-pasaporte-expiracion">Vencimiento Pasaporte</label>
+                                        <input type="date" id="cliente-pasaporte-expiracion" class="form-control">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="vendedor-select-nts"><strong>Vendedor Responsable *</strong></label>
+                                        <select id="vendedor-select-nts" class="form-control" required>
+                                            <option value="">Seleccionar vendedor...</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -348,15 +378,20 @@
                             <div class="card-content">
                                 <div class="form-grid">
                                     <div class="form-group">
+                                        <label for="fecha-venta">Fecha de Venta *</label>
+                                        <input type="date" id="fecha-venta" class="form-control" required>
+                                    </div>
+
+                                    <div class="form-group">
                                         <label for="fecha-viaje-inicio">Fecha de Inicio *</label>
                                         <input type="date" id="fecha-viaje-inicio" class="form-control" required>
                                     </div>
-                                    
+
                                     <div class="form-group">
                                         <label for="fecha-viaje-fin">Fecha de Fin</label>
                                         <input type="date" id="fecha-viaje-fin" class="form-control">
                                     </div>
-                                    
+
                                     <div class="form-group full-width">
                                         <label for="observaciones-venta">Observaciones del Viaje</label>
                                         <textarea id="observaciones-venta" class="form-control" rows="4" placeholder="Detalles especiales, notas importantes, comentarios del cliente..."></textarea>
@@ -470,10 +505,40 @@
                         <p>Administrar todas las ventas</p>
                     </div>
                 </div>
-                <div class="coming-soon">
-                    <i data-lucide="construction"></i>
-                    <h3>Próximamente</h3>
-                    <p>Esta sección está en desarrollo</p>
+                <div class="table-actions">
+                    <input type="text" id="ventas-search" class="form-control" placeholder="Buscar ventas...">
+                    <input list="ventas-clientes" id="ventas-cliente" class="form-control" placeholder="Filtrar por cliente">
+                    <datalist id="ventas-clientes"></datalist>
+                    <input type="date" id="ventas-fecha-desde" class="form-control" placeholder="Desde">
+                    <input type="date" id="ventas-fecha-hasta" class="form-control" placeholder="Hasta">
+                    <select id="ventas-fecha-relativa" class="form-control">
+                        <option value="">Todas las fechas</option>
+                        <option value="7">Últimos 7 días</option>
+                        <option value="30">Últimos 30 días</option>
+                        <option value="90">Últimos 90 días</option>
+                    </select>
+                    <select id="ventas-filter" class="form-control">
+                        <option value="">Todos los estados</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="confirmada">Confirmada</option>
+                        <option value="cancelada">Cancelada</option>
+                        <option value="finalizada">Finalizada</option>
+                    </select>
+                </div>
+                <div class="table-container">
+                    <table id="ventas-table" class="table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Cliente</th>
+                                <th>Fecha</th>
+                                <th>Total</th>
+                                <th>Estado</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
                 </div>
             </section>
 
