@@ -1372,8 +1372,8 @@ class NTSApp {
       this.resetSaleForm();
       this.showTab('ventas');
     } catch (error) {
-      console.error('Error creando venta:', error);
-      this.showNotification('Error al crear la venta', 'error');
+      console.error('Error creando venta:', error.message, error.details || error);
+      this.showNotification('Error al crear la venta: ' + (error.message || 'Error'), 'error');
     } finally {
       this.hideLoader();
     }

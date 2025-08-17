@@ -1164,7 +1164,7 @@ async function crearVentaEnDB(ventaData) {
         console.log('✅ Venta creada en DB:', numeroVenta);
         
     } catch (error) {
-        console.error('Error en crearVentaEnDB:', error);
+        console.error('Error en crearVentaEnDB:', error.message, error.details || error);
         throw error;
     }
 }
