@@ -155,10 +155,13 @@ async function loadTabData(tabName) {
                 await setupNuevaVenta();
                 break;
             case 'ventas':
-                await loadVentasTab();
+                await loadVentasModule();
                 break;
             case 'clientes':
-                await loadClientesTab();
+                await loadClientesModule();
+                break;
+            case 'proveedores':
+                await loadProveedoresModule();
                 break;
             case 'reportes':
                 await loadReportesTab();
@@ -405,14 +408,34 @@ function showServiceTab(serviceType) {
 }
 
 // ===== OTRAS PESTAÑAS (PLACEHOLDER) =====
-async function loadVentasTab() {
+async function loadVentasModule() {
     console.log('📋 Cargando pestaña de ventas...');
-    showNotification('🚧 Módulo de gestión de ventas en desarrollo', 'info');
+    
+    if (typeof window.initVentasModule === 'function') {
+        await window.initVentasModule();
+    } else {
+        showNotification('🚧 Módulo de gestión de ventas no disponible', 'warning');
+    }
 }
 
-async function loadClientesTab() {
+async function loadClientesModule() {
     console.log('👥 Cargando pestaña de clientes...');
-    showNotification('🚧 Módulo de gestión de clientes en desarrollo', 'info');
+    
+    if (typeof window.initClientesModule === 'function') {
+        await window.initClientesModule();
+    } else {
+        showNotification('🚧 Módulo de gestión de clientes no disponible', 'warning');
+    }
+}
+
+async function loadProveedoresModule() {
+    console.log('🏢 Cargando pestaña de proveedores...');
+    
+    if (typeof window.initProveedoresModule === 'function') {
+        await window.initProveedoresModule();
+    } else {
+        showNotification('🚧 Módulo de gestión de proveedores no disponible', 'warning');
+    }
 }
 
 async function loadReportesTab() {

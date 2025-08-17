@@ -47,7 +47,7 @@ async function initClientesModule() {
 
 // ===== CARGAR DATOS =====
 async function loadClientesData() {
-    const { supabase, isSupabaseConnected } = window.app || {};
+    const { supabase, isSupabaseConnected } = window.NTS_CONFIG || {};
     if (!isSupabaseConnected || !supabase) {
         console.log('⚠️ Supabase no disponible - usando datos demo');
         loadMockClientesData();
@@ -570,16 +570,20 @@ async function saveCliente() {
     try {
         const clienteData = getClienteFormData();
         if (!validateClienteData(clienteData)) return;
-        window.app?.showLoader('Guardando cliente...');
-        const { supabase, isSupabaseConnected } = window.app || {};
+        window.NTS_UTILS?.showLoader('Guardando cliente...');
+        const { supabase, isSupabaseConnected } = window.NTS_CONFIG || {};
         if (!isSupabaseConnected || !supabase) {
-            throw new Error('Supabase no disponible');
-        }
-        if (ClientesModule.currentCliente) {
-            await updateClienteInDB(clienteData);
+            if (ClientesModule.currentCliente) {
+                updateClienteLocally(clienteData);
+            } else {
+                createClienteLocally(clienteData);
+            }
         } else {
-            await createClienteInDB(clienteData);
-        }
+            if (ClientesModule.currentCliente) {
+                await updateClienteInDB(clienteData);
+            } else {
+                await createClienteInDB(clienteData);
+            }
         hideClienteModal();
         showNotification('Cliente guardado correctamente', 'success');
         await renderClientesTable();
@@ -588,7 +592,7 @@ async function saveCliente() {
         console.error('❌ Error guardando cliente:', error);
         showNotification('Error guardando cliente', 'error');
     } finally {
-        window.app?.hideLoader();
+        window.NTS_UTILS?.hideLoader();
     }
 }
 
@@ -622,7 +626,7 @@ function validateClienteData(data) {
 }
 
 async function createClienteInDB(data) {
-    const { supabase } = window.app || {};
+    const { supabase } = window.NTS_CONFIG || {};
     if (!supabase) throw new Error('Supabase no disponible');
     const { data: nuevo, error } = await supabase.from('clientes').insert(data).select().single();
     if (error || !nuevo) throw error || new Error('No se pudo crear cliente');
@@ -630,7 +634,7 @@ async function createClienteInDB(data) {
 }
 
 async function updateClienteInDB(data) {
-    const { supabase } = window.app || {};
+    const { supabase } = window.NTS_CONFIG || {};
     const { error } = await supabase.from('clientes').update(data).eq('id', data.id);
     if (error) throw error;
     const idx = ClientesModule.clientes.findIndex(c => c.id === data.id);
