@@ -1143,8 +1143,8 @@ mark {
   border-radius: 2px;
 }
 
-/* Estilos para escalas */
-.escala-row {
+/* Estilos para segmentos de vuelo */
+.segment-row {
   animation: slideIn 0.3s ease;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -1154,6 +1154,13 @@ mark {
   border: 1px solid var(--gray-200);
   border-radius: 0.5rem;
   background: var(--gray-50);
+}
+
+.segment-row .escala-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.5rem;
 }
 
 @keyframes slideIn {
