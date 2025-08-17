@@ -993,14 +993,54 @@ class NTSApp {
           this.showNotification('Por favor complete origen y destino del vuelo', 'warning');
           return false;
         }
+
         if (!serviceData.segmentos || serviceData.segmentos.length === 0) {
           this.showNotification('Agregue al menos un tramo de vuelo', 'warning');
           return false;
         }
-        const invalid = serviceData.segmentos.some(s => !s.aeropuerto_origen || !s.aeropuerto_destino);
-        if (invalid) {
-          this.showNotification('Complete origen y destino en todos los tramos', 'warning');
-          return false;
+
+        for (let i = 0; i < serviceData.segmentos.length; i++) {
+          const seg = serviceData.segmentos[i];
+          const segNum = i + 1;
+
+          if (!seg.aeropuerto_origen || !seg.aeropuerto_destino) {
+            this.showNotification(`Segmento ${segNum}: complete aeropuerto de origen y destino`, 'warning');
+            return false;
+          }
+
+          if (!seg.fecha_hora_salida_local || !seg.fecha_hora_llegada_local) {
+            this.showNotification(`Segmento ${segNum}: complete fecha y hora de salida y llegada`, 'warning');
+            return false;
+          }
+
+          const salida = new Date(seg.fecha_hora_salida_local);
+          const llegada = new Date(seg.fecha_hora_llegada_local);
+          if (salida >= llegada) {
+            this.showNotification(`Segmento ${segNum}: la salida debe ser anterior a la llegada`, 'warning');
+            return false;
+          }
+
+          if (i < serviceData.segmentos.length - 1) {
+            const next = serviceData.segmentos[i + 1];
+            const nextSalida = new Date(next.fecha_hora_salida_local);
+            if (llegada > nextSalida) {
+              this.showNotification(`Segmento ${segNum}: la llegada debe ser anterior o igual a la salida del siguiente segmento`, 'warning');
+              return false;
+            }
+
+            if (seg.duracion_escala !== undefined && seg.duracion_escala !== null && seg.duracion_escala !== '') {
+              const duracion = Number(seg.duracion_escala);
+              const gapMin = (nextSalida - llegada) / 60000;
+              if (isNaN(duracion) || duracion <= 0) {
+                this.showNotification(`Segmento ${segNum}: la duración de la escala debe ser positiva`, 'warning');
+                return false;
+              }
+              if (duracion >= gapMin) {
+                this.showNotification(`Segmento ${segNum}: la duración de la escala excede el tiempo entre vuelos`, 'warning');
+                return false;
+              }
+            }
+          }
         }
         break;
       case 'hotel':
