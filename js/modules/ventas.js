@@ -1,6 +1,8 @@
 // 💰 MÓDULO DE VENTAS - VERSIÓN COMPLETA SIN DUPLICADOS
 // Archivo: js/modules/ventas.js
 
+import '../config.js';
+
 console.log('💰 Cargando módulo de ventas (versión sin duplicados)...');
 
 // ===== ESTADO DEL MÓDULO =====
