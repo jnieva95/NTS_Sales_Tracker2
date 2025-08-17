@@ -88,20 +88,12 @@ class NTSApp {
 
   async initSupabase() {
     try {
-      if (typeof window.supabase !== 'undefined') {
-        AppState.supabase = window.supabase.createClient(
-          APP_CONFIG.supabase.url,
-          APP_CONFIG.supabase.key
-        );
-        
-        // Test connection
-        const { data, error } = await AppState.supabase.auth.getSession();
-        
-        if (!error || error.message.includes('session_not_found')) {
-          AppState.isConnected = true;
-          console.log('✅ Supabase conectado');
-          this.updateConnectionStatus(true);
-        }
+      const { supabase, isSupabaseConnected } = window.NTS_CONFIG || {};
+      if (supabase && isSupabaseConnected) {
+        AppState.supabase = supabase;
+        AppState.isConnected = true;
+        console.log('✅ Supabase conectado');
+        this.updateConnectionStatus(true);
       } else {
         console.log('⚠️ Supabase no disponible');
         this.updateConnectionStatus(false);
