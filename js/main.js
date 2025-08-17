@@ -1,3 +1,5 @@
+import { supabase, isSupabaseConnected } from './config.js';
+
 // ===== MAIN.JS - APLICACIÓN PRINCIPAL NTS V2.0 =====
 
 console.log('🚀 Iniciando NTS Sistema v2.0...');
@@ -6,11 +8,7 @@ console.log('🚀 Iniciando NTS Sistema v2.0...');
 const APP_CONFIG = {
   name: 'NTS Sistema',
   version: '2.0.0',
-  debug: true,
-  supabase: {
-    url: 'https://fmvozdsvpxitoyhtdmcv.supabase.co',
-    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtdm96ZHN2cHhpdG95aHRkbWN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyMjc1MzEsImV4cCI6MjA3MDgwMzUzMX0.EqK3pND6Zz48OpnVDCF_0KJUcV3TzkRUz9qTMWL3NNE'
-  }
+  debug: true
 };
 
 // ===== ESTADO GLOBAL =====
@@ -88,24 +86,10 @@ class NTSApp {
 
   async initSupabase() {
     try {
-      if (typeof window.supabase !== 'undefined') {
-        AppState.supabase = window.supabase.createClient(
-          APP_CONFIG.supabase.url,
-          APP_CONFIG.supabase.key
-        );
-        
-        // Test connection
-        const { data, error } = await AppState.supabase.auth.getSession();
-        
-        if (!error || error.message.includes('session_not_found')) {
-          AppState.isConnected = true;
-          console.log('✅ Supabase conectado');
-          this.updateConnectionStatus(true);
-        }
-      } else {
-        console.log('⚠️ Supabase no disponible');
-        this.updateConnectionStatus(false);
-      }
+      AppState.supabase = supabase;
+      AppState.isConnected = !!isSupabaseConnected;
+      console.log(AppState.isConnected ? '✅ Supabase conectado' : '⚠️ Supabase no disponible');
+      this.updateConnectionStatus(AppState.isConnected);
     } catch (error) {
       console.error('❌ Error conectando Supabase:', error);
       this.updateConnectionStatus(false);

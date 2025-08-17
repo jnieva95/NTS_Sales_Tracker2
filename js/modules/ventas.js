@@ -1,6 +1,8 @@
 // 💰 MÓDULO DE VENTAS - VERSIÓN COMPLETA SIN DUPLICADOS
 // Archivo: js/modules/ventas.js
 
+import { supabase, isSupabaseConnected } from '../config.js';
+
 console.log('💰 Cargando módulo de ventas (versión sin duplicados)...');
 
 // ===== ESTADO DEL MÓDULO =====
@@ -41,8 +43,6 @@ async function initVentasModule() {
 
 // ===== CARGAR DATOS =====
 async function loadVentasData() {
-    const { supabase, isSupabaseConnected } = window.NTS_CONFIG;
-    
     if (!isSupabaseConnected || !supabase) {
         console.log('⚠️ Supabase no disponible - usando datos demo');
         loadMockData();
@@ -1070,8 +1070,6 @@ async function crearVentaCompleta() {
         
         const ventaData = buildVentaData();
         
-        const { isSupabaseConnected } = window.NTS_CONFIG;
-        
         if (isSupabaseConnected) {
             await crearVentaEnDB(ventaData);
         } else {
@@ -1172,8 +1170,6 @@ function buildVentaData() {
 }
 
 async function crearVentaEnDB(ventaData) {
-    const { supabase } = window.NTS_CONFIG;
-    
     try {
         // 1. Crear o actualizar cliente
         let clienteId;
