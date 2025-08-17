@@ -143,8 +143,8 @@ const APP_CONFIG = {
 // ===== EXPORT GLOBAL =====
 window.NTS_CONFIG = {
     // Core
-    supabase,
-    isSupabaseConnected,
+    get supabase() { return supabase; },
+    get isSupabaseConnected() { return isSupabaseConnected; },
     ENUMS,
     APP_CONFIG,
     
