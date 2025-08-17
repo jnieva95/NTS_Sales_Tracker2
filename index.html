@@ -312,9 +312,14 @@
                             <div class="card-content">
                                 <div class="form-grid">
                                     <div class="form-group">
-                                        <label for="cliente-nombre">Nombre Completo *</label>
-                                        <input type="text" id="cliente-nombre" class="form-control" placeholder="Ingrese el nombre completo" required>
+                                        <label for="cliente-nombre">Nombre *</label>
+                                        <input type="text" id="cliente-nombre" class="form-control" placeholder="Nombre" required>
                                         <div class="form-help">Escriba para buscar clientes existentes</div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="cliente-apellido">Apellido *</label>
+                                        <input type="text" id="cliente-apellido" class="form-control" placeholder="Apellido" required>
                                     </div>
                                     
                                     <div class="form-group">
@@ -328,8 +333,38 @@
                                     </div>
                                     
                                     <div class="form-group">
-                                        <label for="cliente-documento">DNI/Pasaporte</label>
-                                        <input type="text" id="cliente-documento" class="form-control" placeholder="12345678">
+                                        <label for="cliente-doc-tipo">Tipo de Documento</label>
+                                        <select id="cliente-doc-tipo" class="form-control">
+                                            <option value="dni">DNI</option>
+                                            <option value="pasaporte">Pasaporte</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group" id="grupo-dni">
+                                        <label for="cliente-dni">DNI</label>
+                                        <input type="text" id="cliente-dni" class="form-control" placeholder="12345678">
+                                    </div>
+
+                                    <div class="form-group" id="grupo-dni-exp">
+                                        <label for="cliente-dni-expiracion">Vencimiento DNI</label>
+                                        <input type="date" id="cliente-dni-expiracion" class="form-control">
+                                    </div>
+
+                                    <div class="form-group hidden" id="grupo-pasaporte">
+                                        <label for="cliente-pasaporte">Pasaporte</label>
+                                        <input type="text" id="cliente-pasaporte" class="form-control" placeholder="AB123456">
+                                    </div>
+
+                                    <div class="form-group hidden" id="grupo-pasaporte-exp">
+                                        <label for="cliente-pasaporte-expiracion">Vencimiento Pasaporte</label>
+                                        <input type="date" id="cliente-pasaporte-expiracion" class="form-control">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="vendedor-select-nts"><strong>Vendedor Responsable *</strong></label>
+                                        <select id="vendedor-select-nts" class="form-control" required>
+                                            <option value="">Seleccionar vendedor...</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -348,15 +383,20 @@
                             <div class="card-content">
                                 <div class="form-grid">
                                     <div class="form-group">
+                                        <label for="fecha-venta">Fecha de Venta *</label>
+                                        <input type="date" id="fecha-venta" class="form-control" required>
+                                    </div>
+
+                                    <div class="form-group">
                                         <label for="fecha-viaje-inicio">Fecha de Inicio *</label>
                                         <input type="date" id="fecha-viaje-inicio" class="form-control" required>
                                     </div>
-                                    
+
                                     <div class="form-group">
                                         <label for="fecha-viaje-fin">Fecha de Fin</label>
                                         <input type="date" id="fecha-viaje-fin" class="form-control">
                                     </div>
-                                    
+
                                     <div class="form-group full-width">
                                         <label for="observaciones-venta">Observaciones del Viaje</label>
                                         <textarea id="observaciones-venta" class="form-control" rows="4" placeholder="Detalles especiales, notas importantes, comentarios del cliente..."></textarea>
@@ -470,26 +510,44 @@
                         <p>Administrar todas las ventas</p>
                     </div>
                 </div>
-                <div class="coming-soon">
-                    <i data-lucide="construction"></i>
-                    <h3>Próximamente</h3>
-                    <p>Esta sección está en desarrollo</p>
+                <div class="table-actions">
+                    <input type="text" id="ventas-search" class="form-control" placeholder="Buscar ventas...">
+                    <input list="ventas-clientes" id="ventas-cliente" class="form-control" placeholder="Filtrar por cliente">
+                    <datalist id="ventas-clientes"></datalist>
+                    <input type="date" id="ventas-fecha-desde" class="form-control" placeholder="Desde">
+                    <input type="date" id="ventas-fecha-hasta" class="form-control" placeholder="Hasta">
+                    <select id="ventas-fecha-relativa" class="form-control">
+                        <option value="">Todas las fechas</option>
+                        <option value="7">Últimos 7 días</option>
+                        <option value="30">Últimos 30 días</option>
+                        <option value="90">Últimos 90 días</option>
+                    </select>
+                    <select id="ventas-filter" class="form-control">
+                        <option value="">Todos los estados</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="confirmada">Confirmada</option>
+                        <option value="cancelada">Cancelada</option>
+                        <option value="finalizada">Finalizada</option>
+                    </select>
+                </div>
+                <div class="table-container">
+                    <table id="ventas-table" class="table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Cliente</th>
+                                <th>Fecha</th>
+                                <th>Total</th>
+                                <th>Estado</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
                 </div>
             </section>
 
-            <section id="clientes" class="tab-content">
-                <div class="page-header">
-                    <div class="page-title">
-                        <h2>Gestión de Clientes</h2>
-                        <p>Administrar base de clientes</p>
-                    </div>
-                </div>
-                <div class="coming-soon">
-                    <i data-lucide="construction"></i>
-                    <h3>Próximamente</h3>
-                    <p>Esta sección está en desarrollo</p>
-                </div>
-            </section>
+            <section id="clientes" class="tab-content"></section>
 
             <section id="proveedores" class="tab-content">
                 <div class="page-header">
@@ -538,6 +596,35 @@
     <!-- Notification Container -->
     <div id="notifications-container" class="notifications-container"></div>
 
+    <!-- Nuevo Cliente Modal -->
+    <div id="nuevo-cliente-modal" class="modal-overlay" style="display:none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Nuevo Cliente</h3>
+          <button class="btn-icon" id="close-nuevo-cliente-modal"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body">
+          <form id="nuevo-cliente-form">
+            <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+              <div class="form-group"><label for="nuevo-cliente-nombre">Nombre *</label><input type="text" id="nuevo-cliente-nombre" class="form-control" required></div>
+              <div class="form-group"><label for="nuevo-cliente-apellido">Apellido *</label><input type="text" id="nuevo-cliente-apellido" class="form-control" required></div>
+              <div class="form-group"><label for="nuevo-cliente-email">Email</label><input type="email" id="nuevo-cliente-email" class="form-control"></div>
+              <div class="form-group"><label for="nuevo-cliente-telefono">Teléfono</label><input type="tel" id="nuevo-cliente-telefono" class="form-control"></div>
+              <div class="form-group"><label for="nuevo-cliente-doc-tipo">Tipo Documento</label><select id="nuevo-cliente-doc-tipo" class="form-control"><option value="dni">DNI</option><option value="pasaporte">Pasaporte</option></select></div>
+              <div class="form-group" id="nuevo-grupo-dni"><label for="nuevo-cliente-dni">DNI</label><input type="text" id="nuevo-cliente-dni" class="form-control"></div>
+              <div class="form-group" id="nuevo-grupo-dni-exp"><label for="nuevo-cliente-dni-exp">DNI Vencimiento</label><input type="date" id="nuevo-cliente-dni-exp" class="form-control"></div>
+              <div class="form-group" id="nuevo-grupo-pasaporte" style="display:none;"><label for="nuevo-cliente-pasaporte">Pasaporte</label><input type="text" id="nuevo-cliente-pasaporte" class="form-control"></div>
+              <div class="form-group" id="nuevo-grupo-pasaporte-exp" style="display:none;"><label for="nuevo-cliente-pasaporte-exp">Pasaporte Vencimiento</label><input type="date" id="nuevo-cliente-pasaporte-exp" class="form-control"></div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancel-nuevo-cliente">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="save-nuevo-cliente"><i data-lucide="save"></i> Guardar Cliente</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal Container -->
     <div id="modal-container" class="modal-container"></div>
 
@@ -547,8 +634,12 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    
+
+    <!-- Configuración de la app -->
+    <script src="/js/config.js"></script>
+
     <!-- App Scripts -->
+    <script type="module" src="/js/modules/clientes.js"></script>
     <script type="module" src="/js/main.js"></script>
-</body>
+  </body>
 </html>
