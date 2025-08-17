@@ -433,7 +433,7 @@ function setupFlatpickrFields() {
     createDateFieldsForType('ida_vuelta'); // Por defecto ida y vuelta
     
     // Configurar listener para cambio de tipo
-    const tipoSelect = document.getElementById('vuelo-tipo');
+    const tipoSelect = document.getElementById('vuelo-itinerario');
     if (tipoSelect) {
         tipoSelect.addEventListener('change', function() {
             console.log(`🔄 Cambiando tipo de vuelo a: ${this.value}`);
@@ -706,12 +706,7 @@ function getServiceFormData(tipo) {
             const destino = segmentos[segmentos.length - 1]?.aeropuerto_destino || '';
             const tieneEscalas = segmentos.some(s => s.tiene_escala);
             const descripcion = origen && destino ? `Vuelo ${origen} → ${destino}` : 'Vuelo';
-            let tipo_itinerario = 'ida_vuelta';
-            if (segmentos.length <= 1) {
-                tipo_itinerario = 'solo_ida';
-            } else if (origen && destino && origen !== destino) {
-                tipo_itinerario = 'multi_ciudad';
-            }
+            const tipo_itinerario = document.getElementById('vuelo-itinerario')?.value || 'ida_vuelta';
 
             return {
                 ...baseData,
