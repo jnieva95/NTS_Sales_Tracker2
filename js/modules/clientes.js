@@ -553,7 +553,7 @@ async function saveCliente() {
     try {
         const clienteData = getClienteFormData();
         if (!validateClienteData(clienteData)) return;
-        showLoader('Guardando cliente...');
+        window.app?.showLoader('Guardando cliente...');
         const { supabase, isSupabaseConnected } = window.NTS_CONFIG || {};
         if (isSupabaseConnected && supabase) {
             if (ClientesModule.currentCliente) {
@@ -576,7 +576,7 @@ async function saveCliente() {
         console.error('❌ Error guardando cliente:', error);
         showNotification('Error guardando cliente', 'error');
     } finally {
-        hideLoader();
+        window.app?.hideLoader();
     }
 }
 
