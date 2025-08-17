@@ -904,7 +904,10 @@ class NTSApp {
       case 'vuelo':
         const segmentRows = document.querySelectorAll('#segments-container .segment-row');
         const segmentos = Array.from(segmentRows).map((row, index) => {
-          const hasEscala = row.querySelector('.segment-has-escala')?.checked;
+          const escalas = Array.from(row.querySelectorAll('.escala-row')).map(er => ({
+            aeropuerto: er.querySelector('.segment-aeropuerto-escala')?.value?.trim(),
+            duracion: er.querySelector('.segment-duracion-escala')?.value?.trim()
+          }));
           return {
             numero_segmento: index + 1,
             aeropuerto_origen: row.querySelector('.segment-origen')?.value?.trim(),
@@ -913,10 +916,9 @@ class NTSApp {
             numero_vuelo: row.querySelector('.segment-numero')?.value?.trim(),
             fecha_hora_salida_local: row.querySelector('.segment-salida')?.value || null,
             fecha_hora_llegada_local: row.querySelector('.segment-llegada')?.value || null,
-            tiene_escala: hasEscala,
-            aeropuerto_escala: hasEscala ? row.querySelector('.segment-aeropuerto-escala')?.value?.trim() : '',
-            duracion_escala: hasEscala ? row.querySelector('.segment-duracion-escala')?.value?.trim() : '',
-            tiempo_total_tramo: row.querySelector('.segment-tiempo-total')?.value?.trim() || ''
+            tiempo_total_tramo: row.querySelector('.segment-tiempo-total')?.value?.trim() || '',
+            escalas,
+            tiene_escala: escalas.length > 0
           };
         });
         const origen = segmentos[0]?.aeropuerto_origen || '';
@@ -984,9 +986,9 @@ class NTSApp {
           this.showNotification('Complete origen, destino, aerolínea y número de vuelo en todos los tramos', 'warning');
           return false;
         }
-        const escalaInvalid = serviceData.segmentos.some(s => s.tiene_escala && (!s.aeropuerto_escala || !s.duracion_escala || !s.tiempo_total_tramo));
+        const escalaInvalid = serviceData.segmentos.some(s => s.tiene_escala && (s.escalas.length === 0 || s.escalas.some(e => !e.aeropuerto || !e.duracion)));
         if (escalaInvalid) {
-          this.showNotification('Complete los datos de escala en los tramos con escala', 'warning');
+          this.showNotification('Complete los datos de todas las escalas', 'warning');
           return false;
         }
         break;
@@ -1488,23 +1490,18 @@ function addSegmentRow() {
       <label class="checkbox-container" style="margin-top: 1.5rem;">
         <input type="checkbox" class="segment-has-escala">
         <span class="checkmark"></span>
-        ¿El tramo tiene escala?
+        ¿El tramo tiene escalas?
       </label>
     </div>
     <div class="form-group" style="display: flex; align-items: end;">
       ${index > 1 ? `<button type="button" class="btn btn-danger remove-segment" onclick="removeSegmentRow(this)" title="Eliminar tramo"><i data-lucide="trash-2"></i></button>` : ''}
     </div>
-    <div class="escala-extra" style="display: none;">
-      <div class="escala-grid">
-        <div class="form-group">
-          <label>Aeropuerto de escala</label>
-          <input type="text" class="form-control segment-aeropuerto-escala" placeholder="Aeropuerto de escala">
-        </div>
-        <div class="form-group">
-          <label>Duración de la escala</label>
-          <input type="text" class="form-control segment-duracion-escala" placeholder="01:30">
-        </div>
-      </div>
+    <div class="escalas-section" style="display: none;">
+      <div class="escalas-container"></div>
+      <button type="button" class="btn btn-secondary add-escala-btn" style="margin-top:0.5rem;">
+        <i data-lucide="plus"></i>
+        Agregar escala
+      </button>
     </div>
   `;
 
@@ -1513,44 +1510,97 @@ function addSegmentRow() {
   const updateTotal = () => updateSegmentTiempoTotal(row);
   row.querySelector('.segment-salida').addEventListener('change', updateTotal);
   row.querySelector('.segment-llegada').addEventListener('change', updateTotal);
-  row.querySelector('.segment-duracion-escala').addEventListener('input', updateTotal);
 
   const escalaToggle = row.querySelector('.segment-has-escala');
-  const escalaExtra = row.querySelector('.escala-extra');
-  if (escalaToggle && escalaExtra) {
+  const escalaSection = row.querySelector('.escalas-section');
+  const addEscalaBtn = row.querySelector('.add-escala-btn');
+
+  if (escalaToggle && escalaSection) {
     escalaToggle.addEventListener('change', () => {
-      escalaExtra.style.display = escalaToggle.checked ? 'block' : 'none';
-      if (!escalaToggle.checked) {
-        row.querySelector('.segment-aeropuerto-escala').value = '';
-        row.querySelector('.segment-duracion-escala').value = '';
+      escalaSection.style.display = escalaToggle.checked ? 'block' : 'none';
+      if (escalaToggle.checked && !escalaSection.querySelector('.escala-row')) {
+        addEscalaRowToSegment(row);
       }
-      updateTotal();
+      if (!escalaToggle.checked) {
+        escalaSection.querySelector('.escalas-container').innerHTML = '';
+        updateTotal();
+      }
     });
   }
+
+  addEscalaBtn.addEventListener('click', () => {
+    addEscalaRowToSegment(row);
+  });
 
   if (window.lucide) {
     window.lucide.createIcons();
   }
 }
 
+function addEscalaRowToSegment(segmentRow) {
+  const container = segmentRow.querySelector('.escalas-container');
+  const index = container.children.length + 1;
+  const escalaRow = document.createElement('div');
+  escalaRow.className = 'escala-row';
+  escalaRow.innerHTML = `
+    <div class="form-group">
+      <label>Escala ${index}</label>
+      <input type="text" class="form-control segment-aeropuerto-escala" placeholder="Aeropuerto de escala">
+    </div>
+    <div class="form-group">
+      <label>Duración</label>
+      <input type="text" class="form-control segment-duracion-escala" placeholder="01:30">
+    </div>
+    <div class="form-group" style="display:flex; align-items:end;">
+      <button type="button" class="btn btn-danger remove-escala" title="Eliminar escala"><i data-lucide="trash-2"></i></button>
+    </div>
+  `;
+  container.appendChild(escalaRow);
+
+  escalaRow.querySelector('.segment-duracion-escala').addEventListener('input', () => updateSegmentTiempoTotal(segmentRow));
+  escalaRow.querySelector('.remove-escala').addEventListener('click', () => removeEscalaRow(escalaRow, segmentRow));
+
+  renumberEscalas(segmentRow);
+
+  if (window.lucide) {
+    window.lucide.createIcons();
+  }
+}
+
+function removeEscalaRow(escalaRow, segmentRow) {
+  escalaRow.remove();
+  renumberEscalas(segmentRow);
+  updateSegmentTiempoTotal(segmentRow);
+  app?.showNotification('🗑️ Escala eliminada', 'info');
+}
+
+function renumberEscalas(segmentRow) {
+  const container = segmentRow.querySelector('.escalas-container');
+  Array.from(container.children).forEach((row, idx) => {
+    const label = row.querySelector('label');
+    if (label) label.textContent = `Escala ${idx + 1}`;
+  });
+}
+
 function updateSegmentTiempoTotal(row) {
   const salida = row.querySelector('.segment-salida')?.value;
   const llegada = row.querySelector('.segment-llegada')?.value;
-  const hasEscala = row.querySelector('.segment-has-escala')?.checked;
-  const escala = hasEscala ? row.querySelector('.segment-duracion-escala')?.value : '';
+  const escalaDuraciones = Array.from(row.querySelectorAll('.segment-duracion-escala'))
+    .map(i => i.value)
+    .reduce((acc, val) => {
+      const [h, m] = val.split(':').map(Number);
+      if (!isNaN(h) && !isNaN(m)) {
+        return acc + (h * 60 + m);
+      }
+      return acc;
+    }, 0);
 
   if (salida && llegada) {
     const start = new Date(salida);
     const end = new Date(llegada);
     let diff = end - start;
-    if (hasEscala && escala) {
-      const [h, m] = escala.split(':').map(Number);
-      if (!isNaN(h) && !isNaN(m)) {
-        diff += (h * 60 + m) * 60 * 1000;
-      }
-    }
     if (!isNaN(diff) && diff >= 0) {
-      const totalMins = Math.floor(diff / 60000);
+      const totalMins = Math.floor(diff / 60000) + escalaDuraciones;
       const hours = String(Math.floor(totalMins / 60)).padStart(2, '0');
       const minutes = String(totalMins % 60).padStart(2, '0');
       row.querySelector('.segment-tiempo-total').value = `${hours}:${minutes}`;
