@@ -1036,6 +1036,9 @@ function validateVentaForm() {
 }
 
 function buildVentaData() {
+    const docTipo = document.getElementById('cliente-doc-tipo')?.value;
+    const dni = document.getElementById('cliente-dni')?.value?.trim();
+    const pasaporte = document.getElementById('cliente-pasaporte')?.value?.trim();
     const total = VentasModule.currentVenta.servicios.reduce((sum, s) => sum + s.precio_venta, 0);
     
     return {
@@ -1157,6 +1160,60 @@ async function crearVentaEnDB(ventaData) {
                     if (segError) {
                         console.error('Error creando segmentos:', segError.message, segError.details);
                     }
+                }
+            } else if (servicio.tipo === 'hotel') {
+                const { error: hotelError } = await supabase
+                    .from('venta_hoteles')
+                    .insert({
+                        venta_id: nuevaVenta.id,
+                        proveedor_id: servicio.proveedor_id || null,
+                        hotel_nombre: servicio.hotel_nombre,
+                        hotel_ciudad: servicio.hotel_ciudad,
+                        fecha_checkin: servicio.fecha_checkin || null,
+                        fecha_checkout: servicio.fecha_checkout || null,
+                        huespedes: servicio.huespedes || 1,
+                        precio_costo: servicio.precio_costo,
+                        precio_venta: servicio.precio_venta,
+                        margen_ganancia: servicio.precio_venta - servicio.precio_costo
+                    });
+                if (hotelError) {
+                    console.error('Error creando hotel:', hotelError.message, hotelError.details);
+                }
+            } else if (servicio.tipo === 'traslado') {
+                const { error: trasladoError } = await supabase
+                    .from('venta_traslados')
+                    .insert({
+                        venta_id: nuevaVenta.id,
+                        proveedor_id: servicio.proveedor_id || null,
+                        origen: servicio.origen,
+                        destino: servicio.destino,
+                        fecha_traslado: servicio.fecha_traslado || null,
+                        hora_traslado: servicio.hora || null,
+                        pasajeros: servicio.pasajeros || 1,
+                        precio_costo: servicio.precio_costo,
+                        precio_venta: servicio.precio_venta,
+                        margen_ganancia: servicio.precio_venta - servicio.precio_costo
+                    });
+                if (trasladoError) {
+                    console.error('Error creando traslado:', trasladoError.message, trasladoError.details);
+                }
+            } else if (servicio.tipo === 'excursion') {
+                const { error: excursionError } = await supabase
+                    .from('venta_excursiones')
+                    .insert({
+                        venta_id: nuevaVenta.id,
+                        proveedor_id: servicio.proveedor_id || null,
+                        nombre_excursion: servicio.nombre_excursion,
+                        destino_excursion: servicio.destino,
+                        fecha_excursion: servicio.fecha_excursion || null,
+                        duracion_horas: servicio.duracion || null,
+                        participantes: servicio.participantes || 1,
+                        precio_costo: servicio.precio_costo,
+                        precio_venta: servicio.precio_venta,
+                        margen_ganancia: servicio.precio_venta - servicio.precio_costo
+                    });
+                if (excursionError) {
+                    console.error('Error creando excursión:', excursionError.message, excursionError.details);
                 }
             }
         }
