@@ -690,14 +690,6 @@ class NTSApp {
         <div class="card-content">
           <div class="form-grid">
             <div class="form-group">
-              <label for="vuelo-tipo">Tipo de itinerario</label>
-              <select id="vuelo-tipo" class="form-control">
-                <option value="ida">Solo ida</option>
-                <option value="ida_vuelta" selected>Ida y vuelta</option>
-                <option value="multitramo">Multitramo</option>
-              </select>
-            </div>
-            <div class="form-group">
               <label for="vuelo-pasajeros">Pasajeros</label>
               <input type="number" id="vuelo-pasajeros" class="form-control" value="1" min="1">
             </div>
@@ -925,10 +917,18 @@ class NTSApp {
         const destino = segmentos[segmentos.length - 1]?.aeropuerto_destino || '';
         const tieneEscalas = segmentos.some(s => s.tiene_escala);
         const descripcion = origen && destino ? `Vuelo ${origen} → ${destino}` : 'Vuelo';
+
+        let tipo_itinerario = 'ida_vuelta';
+        if (segmentos.length <= 1) {
+          tipo_itinerario = 'solo_ida';
+        } else if (origen && destino && origen !== destino) {
+          tipo_itinerario = 'multi_ciudad';
+        }
+
         return {
           ...baseData,
           pasajeros: parseInt(document.getElementById('vuelo-pasajeros')?.value) || 1,
-          tipo_itinerario: document.getElementById('vuelo-tipo')?.value || 'ida_vuelta',
+          tipo_itinerario,
           origen,
           destino,
           descripcion,

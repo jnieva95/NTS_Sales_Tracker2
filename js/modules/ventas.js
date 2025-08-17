@@ -126,8 +126,7 @@ function setupVentasUI() {
     // Crear selects de proveedores
     createProveedorSelects();
 
-    // Configurar Flatpickr
-    setupFlatpickrFields();
+    // Configuración adicional puede agregarse aquí
 }
 
 function createVendedorSelect() {
@@ -162,91 +161,6 @@ function createVendedorSelect() {
     console.log('✅ Select de vendedores creado');
 }
 
-// ===== MANEJO DE ESCALAS EN VUELOS =====
-function toggleEscalasSection() {
-    const checkbox = document.getElementById('vuelo-tiene-escalas');
-    const escalasSection = document.getElementById('escalas-section');
-    const segmentsContainer = document.getElementById('segments-container');
-
-    if (checkbox?.checked) {
-        escalasSection.style.display = 'block';
-        if (!segmentsContainer.children.length) {
-            addEscalaRow();
-        }
-        showNotification('✈️ Sección de escalas habilitada', 'info');
-    } else {
-        escalasSection.style.display = 'none';
-        segmentsContainer.innerHTML = '';
-        showNotification('✈️ Sección de escalas ocultada', 'info');
-    }
-}
-
-function addEscalaRow() {
-    const container = document.getElementById('segments-container');
-    const escalaIndex = container.children.length + 1;
-
-    const escalaRow = document.createElement('div');
-    escalaRow.className = 'escala-row';
-    escalaRow.style.cssText = `
-        display: grid;
-        grid-template-columns: repeat(4, 1fr) auto;
-        gap: 0.5rem;
-        margin-bottom: 0.5rem;
-        padding: 1rem;
-        border: 1px solid var(--gray-200);
-        border-radius: 0.5rem;
-        background: var(--gray-50);
-    `;
-
-    escalaRow.innerHTML = `
-        <div class="form-group">
-            <label>Origen Escala ${escalaIndex}</label>
-            <input type="text" class="form-control segment-origen" placeholder="Origen">
-        </div>
-        <div class="form-group">
-            <label>Destino Escala ${escalaIndex}</label>
-            <input type="text" class="form-control segment-destino" placeholder="Destino">
-        </div>
-        <div class="form-group">
-            <label>Salida</label>
-            <input type="datetime-local" class="form-control segment-salida">
-        </div>
-        <div class="form-group">
-            <label>Llegada</label>
-            <input type="datetime-local" class="form-control segment-llegada">
-        </div>
-        <div class="form-group" style="display: flex; align-items: end;">
-            <button type="button" class="btn btn-danger remove-segment" onclick="removeEscalaRow(this)" title="Eliminar escala">
-                <i data-lucide="trash-2"></i>
-            </button>
-        </div>
-    `;
-
-    container.appendChild(escalaRow);
-
-    if (window.lucide) {
-        window.lucide.createIcons();
-    }
-}
-
-function removeEscalaRow(button) {
-    const escalaRow = button.closest('.escala-row');
-    escalaRow.remove();
-
-    const container = document.getElementById('segments-container');
-    Array.from(container.children).forEach((row, index) => {
-        const labels = row.querySelectorAll('label');
-        labels[0].textContent = `Origen Escala ${index + 1}`;
-        labels[1].textContent = `Destino Escala ${index + 1}`;
-    });
-
-    showNotification('🗑️ Escala eliminada', 'info');
-}
-
-// Exportar funciones globalmente
-window.toggleEscalasSection = toggleEscalasSection;
-window.addEscalaRow = addEscalaRow;
-window.removeEscalaRow = removeEscalaRow;
 
 function setupClienteAutocomplete() {
     const clienteNombre = document.getElementById('cliente-nombre');
@@ -671,11 +585,13 @@ function setupVentasEvents() {
         }
     });
 
-    // Event listener para botón de agregar escala
+    // Event listener para botón de agregar tramo
     document.addEventListener('click', function(e) {
         if (e.target.matches('#add-segment-btn')) {
             e.preventDefault();
-            addEscalaRow();
+            if (typeof addSegmentRow === 'function') {
+                addSegmentRow();
+            }
         }
     });
 }
@@ -745,28 +661,46 @@ function getServiceFormData(tipo) {
     
     switch(tipo) {
         case 'vuelo':
-            const origen = document.getElementById('vuelo-origen')?.value?.trim() || '';
-            const destino = document.getElementById('vuelo-destino')?.value?.trim() || '';
-            const tieneEscalas = document.getElementById('vuelo-tiene-escalas')?.checked || false;
+            const segmentRows = document.querySelectorAll('#segments-container .segment-row');
+            const segmentos = Array.from(segmentRows).map((row, index) => {
+                const escalas = Array.from(row.querySelectorAll('.escala-row')).map(er => ({
+                    aeropuerto: er.querySelector('.segment-aeropuerto-escala')?.value?.trim(),
+                    duracion: er.querySelector('.segment-duracion-escala')?.value?.trim()
+                }));
+                return {
+                    numero_segmento: index + 1,
+                    aeropuerto_origen: row.querySelector('.segment-origen')?.value?.trim(),
+                    aeropuerto_destino: row.querySelector('.segment-destino')?.value?.trim(),
+                    aerolinea: row.querySelector('.segment-aerolinea')?.value?.trim(),
+                    numero_vuelo: row.querySelector('.segment-numero')?.value?.trim(),
+                    fecha_hora_salida_local: row.querySelector('.segment-salida')?.value || null,
+                    fecha_hora_llegada_local: row.querySelector('.segment-llegada')?.value || null,
+                    tiempo_total_tramo: row.querySelector('.segment-tiempo-total')?.value?.trim() || '',
+                    escalas,
+                    tiene_escala: escalas.length > 0
+                };
+            });
 
-            const escalaRows = document.querySelectorAll('#segments-container .escala-row');
-            const escalas = Array.from(escalaRows).map((row, index) => ({
-                numero_segmento: index + 1,
-                aeropuerto_origen: row.querySelector('.segment-origen')?.value?.trim(),
-                aeropuerto_destino: row.querySelector('.segment-destino')?.value?.trim(),
-                fecha_hora_salida: row.querySelector('.segment-salida')?.value || null,
-                fecha_hora_llegada: row.querySelector('.segment-llegada')?.value || null
-            }));
+            const origen = segmentos[0]?.aeropuerto_origen || '';
+            const destino = segmentos[segmentos.length - 1]?.aeropuerto_destino || '';
+            const tieneEscalas = segmentos.some(s => s.tiene_escala);
+            const descripcion = origen && destino ? `Vuelo ${origen} → ${destino}` : 'Vuelo';
+            let tipo_itinerario = 'ida_vuelta';
+            if (segmentos.length <= 1) {
+                tipo_itinerario = 'solo_ida';
+            } else if (origen && destino && origen !== destino) {
+                tipo_itinerario = 'multi_ciudad';
+            }
 
             return {
                 ...baseData,
+                pasajeros: parseInt(document.getElementById('vuelo-pasajeros')?.value) || 1,
+                tipo_itinerario,
                 origen,
                 destino,
-                fecha_salida: document.getElementById('vuelo-fecha')?.value || '',
-                aerolinea: document.getElementById('vuelo-aerolinea')?.value?.trim() || '',
-                pasajeros: parseInt(document.getElementById('vuelo-pasajeros')?.value) || 1,
+                descripcion,
                 tieneEscalas,
-                escalas
+                segmentos
             };
         case 'hotel':
             return {
@@ -811,31 +745,21 @@ function validateServiceData(serviceData, tipo) {
     // Validaciones específicas por tipo
     switch(tipo) {
         case 'vuelo':
-            if (!serviceData.origen || !serviceData.destino) {
-                showNotification('⚠️ Complete origen y destino del vuelo', 'warning');
+            if (!serviceData.segmentos || serviceData.segmentos.length === 0) {
+                showNotification('⚠️ Agregue al menos un tramo', 'warning');
                 return false;
             }
 
-            const tieneEscalas = document.getElementById('vuelo-tiene-escalas')?.checked;
-            if (tieneEscalas) {
-                const escalaRows = document.querySelectorAll('#segments-container .escala-row');
-                if (escalaRows.length === 0) {
-                    showNotification('⚠️ Agregue al menos una escala o desactive la opción', 'warning');
-                    return false;
-                }
+            const invalid = serviceData.segmentos.some(s => !s.aeropuerto_origen || !s.aeropuerto_destino || !s.aerolinea || !s.numero_vuelo);
+            if (invalid) {
+                showNotification('⚠️ Complete origen, destino, aerolínea y número de vuelo en todos los tramos', 'warning');
+                return false;
+            }
 
-                let escalaIncompleta = false;
-                escalaRows.forEach((row, index) => {
-                    const origenEsc = row.querySelector('.segment-origen')?.value?.trim();
-                    const destinoEsc = row.querySelector('.segment-destino')?.value?.trim();
-
-                    if (!origenEsc || !destinoEsc) {
-                        showNotification(`⚠️ Complete origen y destino en la escala ${index + 1}`, 'warning');
-                        escalaIncompleta = true;
-                    }
-                });
-
-                if (escalaIncompleta) return false;
+            const escalaInvalid = serviceData.segmentos.some(s => s.tiene_escala && (s.escalas.length === 0 || s.escalas.some(e => !e.aeropuerto || !e.duracion)));
+            if (escalaInvalid) {
+                showNotification('⚠️ Complete los datos de todas las escalas', 'warning');
+                return false;
             }
             break;
         case 'hotel':
@@ -898,12 +822,13 @@ function clearServiceForm(tipo) {
     }
 
     if (tipo === 'vuelo') {
-        const checkbox = document.getElementById('vuelo-tiene-escalas');
-        const escalasSection = document.getElementById('escalas-section');
         const segmentsContainer = document.getElementById('segments-container');
-        if (checkbox) checkbox.checked = false;
-        if (escalasSection) escalasSection.style.display = 'none';
-        if (segmentsContainer) segmentsContainer.innerHTML = '';
+        if (segmentsContainer) {
+            segmentsContainer.innerHTML = '';
+            if (typeof addSegmentRow === 'function') {
+                addSegmentRow();
+            }
+        }
     }
 }
 
