@@ -125,12 +125,8 @@ function setupVentasUI() {
     
     // Crear selects de proveedores
     createProveedorSelects();
-    
-    // Actualizar descripción de vuelos automáticamente
-    setupVueloDescriptionUpdate();
-    
-    // Configurar Flatpickr
-    setupFlatpickrFields();
+
+    // Configuración adicional puede agregarse aquí
 }
 
 function createVendedorSelect() {
@@ -165,53 +161,150 @@ function createVendedorSelect() {
     console.log('✅ Select de vendedores creado');
 }
 
+
 function setupClienteAutocomplete() {
     const clienteNombre = document.getElementById('cliente-nombre');
     if (!clienteNombre) return;
+
+    // Crear container de búsqueda
+    const searchContainer = document.createElement('div');
+    searchContainer.className = 'cliente-search-container';
+    searchContainer.style.cssText = `
+        position: relative;
+        width: 100%;
+    `;
+
+    // Envolver el input original
+    const originalParent = clienteNombre.parentNode;
+    originalParent.insertBefore(searchContainer, clienteNombre);
+    searchContainer.appendChild(clienteNombre);
+
+    // Crear dropdown de resultados
+    const dropdown = document.createElement('div');
+    dropdown.id = 'cliente-search-dropdown';
+    dropdown.style.cssText = `
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid var(--gray-300);
+        border-top: none;
+        border-radius: 0 0 0.5rem 0.5rem;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    `;
+    searchContainer.appendChild(dropdown);
+
+    // Agregar icono de búsqueda
+    clienteNombre.placeholder = "🔍 Buscar cliente existente o crear nuevo...";
     
-    // Crear datalist si no existe
-    let datalist = document.getElementById('clientes-datalist-nts');
-    if (!datalist) {
-        datalist = document.createElement('datalist');
-        datalist.id = 'clientes-datalist-nts';
-        document.body.appendChild(datalist);
-    }
+    let searchTimeout;
     
-    // Llenar datalist
-    datalist.innerHTML = '';
-    VentasModule.clientesExistentes.forEach(cliente => {
-        const option = document.createElement('option');
-        option.value = cliente.nombre;
-        option.setAttribute('data-email', cliente.email || '');
-        option.setAttribute('data-telefono', cliente.telefono || '');
-        option.setAttribute('data-id', cliente.id);
-        datalist.appendChild(option);
-    });
-    
-    clienteNombre.setAttribute('list', 'clientes-datalist-nts');
-    
-    // Event listener para autocompletar
+    // Event listener para búsqueda en tiempo real
     clienteNombre.addEventListener('input', function() {
-        const selectedOption = [...datalist.options].find(option => option.value === this.value);
+        clearTimeout(searchTimeout);
+        const searchTerm = this.value.trim().toLowerCase();
         
-        if (selectedOption) {
-            const emailField = document.getElementById('cliente-email');
-            const telefonoField = document.getElementById('cliente-telefono');
-            
-            if (emailField) emailField.value = selectedOption.getAttribute('data-email');
-            if (telefonoField) telefonoField.value = selectedOption.getAttribute('data-telefono');
-            
-            VentasModule.currentVenta.cliente.id = selectedOption.getAttribute('data-id');
-            VentasModule.currentVenta.cliente.esExistente = true;
-            
-            showNotification('✅ Cliente encontrado - datos autocompletados', 'success');
-        } else {
-            VentasModule.currentVenta.cliente.esExistente = false;
+        if (searchTerm.length < 2) {
+            hideDropdown();
+            return;
+        }
+        
+        searchTimeout = setTimeout(() => {
+            searchClientes(searchTerm);
+        }, 300); // Debounce de 300ms
+    });
+
+    // Ocultar dropdown al hacer clic fuera
+    document.addEventListener('click', function(e) {
+        if (!searchContainer.contains(e.target)) {
+            hideDropdown();
         }
     });
-    
-    console.log('✅ Autocompletado de clientes configurado');
+
+    function searchClientes(searchTerm) {
+        // Filtrar clientes que coincidan con el término de búsqueda
+        const clientesFiltrados = VentasModule.clientesExistentes.filter(cliente => {
+            return cliente.nombre.toLowerCase().includes(searchTerm) ||
+                   (cliente.email && cliente.email.toLowerCase().includes(searchTerm)) ||
+                   (cliente.telefono && cliente.telefono.includes(searchTerm)) ||
+                   (cliente.documento && cliente.documento.includes(searchTerm));
+        });
+
+        showSearchResults(clientesFiltrados, searchTerm);
+    }
+
+    function showSearchResults(clientes, searchTerm) {
+        const dropdown = document.getElementById('cliente-search-dropdown');
+        
+        if (clientes.length === 0) {
+            dropdown.innerHTML = `
+                <div class="search-result-item no-results">
+                    <div class="no-results-content">
+                        <i data-lucide="user-plus"></i>
+                        <span>No se encontraron clientes</span>
+                        <small>Se creará un cliente nuevo: "${searchTerm}"</small>
+                    </div>
+                </div>
+            `;
+        } else {
+            dropdown.innerHTML = clientes.map(cliente => `
+                <div class="search-result-item" onclick="selectCliente(${cliente.id}, '${cliente.nombre}', '${cliente.email || ''}', '${cliente.telefono || ''}')">
+                    <div class="cliente-info">
+                        <div class="cliente-nombre">${highlightMatch(cliente.nombre, searchTerm)}</div>
+                        <div class="cliente-detalles">
+                            ${cliente.email ? `📧 ${cliente.email}` : ''} 
+                            ${cliente.telefono ? `📱 ${cliente.telefono}` : ''}
+                        </div>
+                    </div>
+                    <div class="cliente-status">
+                        <span class="status-badge existing">Existente</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        dropdown.style.display = 'block';
+        
+        // Re-inicializar iconos
+        if (window.lucide) {
+            window.lucide.createIcons();
+        }
+    }
+
+    function hideDropdown() {
+        const dropdown = document.getElementById('cliente-search-dropdown');
+        dropdown.style.display = 'none';
+    }
+
+    function highlightMatch(text, searchTerm) {
+        const regex = new RegExp(`(${searchTerm})`, 'gi');
+        return text.replace(regex, '<mark>$1</mark>');
+    }
 }
+
+// NUEVA FUNCIÓN GLOBAL: Seleccionar cliente
+window.selectCliente = function(id, nombre, email, telefono) {
+    document.getElementById('cliente-nombre').value = nombre;
+    document.getElementById('cliente-email').value = email;
+    document.getElementById('cliente-telefono').value = telefono;
+
+    VentasModule.currentVenta.cliente = {
+        id: id,
+        nombre: nombre,
+        email: email,
+        telefono: telefono,
+        esExistente: true
+    };
+
+    document.getElementById('cliente-search-dropdown').style.display = 'none';
+    showNotification(`✅ Cliente seleccionado: ${nombre}`, 'success');
+    document.getElementById('cliente-email')?.focus();
+};
 
 function createProveedorSelects() {
     const serviceForms = ['vuelo', 'hotel', 'traslado', 'excursion'];
@@ -272,26 +365,6 @@ function createProveedorSelects() {
     });
     
     console.log('✅ Selects de proveedores creados');
-}
-
-function setupVueloDescriptionUpdate() {
-    const origenInput = document.getElementById('vuelo-origen');
-    const destinoInput = document.getElementById('vuelo-destino');
-    const descripcionInput = document.getElementById('vuelo-descripcion');
-    
-    if (!origenInput || !destinoInput || !descripcionInput) return;
-    
-    function updateDescription() {
-        const origen = origenInput.value.trim();
-        const destino = destinoInput.value.trim();
-        
-        if (origen && destino) {
-            descripcionInput.value = `Vuelo ${origen} → ${destino}`;
-        }
-    }
-    
-    origenInput.addEventListener('input', updateDescription);
-    destinoInput.addEventListener('input', updateDescription);
 }
 
 // ===== CONFIGURAR FLATPICKR - VERSIÓN SIN DUPLICADOS =====
@@ -511,6 +584,16 @@ function setupVentasEvents() {
             calculateMargin(e.target);
         }
     });
+
+    // Event listener para botón de agregar tramo
+    document.addEventListener('click', function(e) {
+        if (e.target.matches('#add-segment-btn')) {
+            e.preventDefault();
+            if (typeof addSegmentRow === 'function') {
+                addSegmentRow();
+            }
+        }
+    });
 }
 
 function calculateMargin(element) {
@@ -578,32 +661,46 @@ function getServiceFormData(tipo) {
     
     switch(tipo) {
         case 'vuelo':
-            const origen = document.getElementById('vuelo-origen')?.value?.trim() || '';
-            const destino = document.getElementById('vuelo-destino')?.value?.trim() || '';
-            const descripcionManual = document.getElementById('vuelo-descripcion')?.value?.trim();
-            
-            // Generar descripción automática
-            let descripcion = descripcionManual;
-            if (!descripcion && origen && destino) {
-                descripcion = `Vuelo ${origen} → ${destino}`;
+            const segmentRows = document.querySelectorAll('#segments-container .segment-row');
+            const segmentos = Array.from(segmentRows).map((row, index) => {
+                const escalas = Array.from(row.querySelectorAll('.escala-row')).map(er => ({
+                    aeropuerto: er.querySelector('.segment-aeropuerto-escala')?.value?.trim(),
+                    duracion: er.querySelector('.segment-duracion-escala')?.value?.trim()
+                }));
+                return {
+                    numero_segmento: index + 1,
+                    aeropuerto_origen: row.querySelector('.segment-origen')?.value?.trim(),
+                    aeropuerto_destino: row.querySelector('.segment-destino')?.value?.trim(),
+                    aerolinea: row.querySelector('.segment-aerolinea')?.value?.trim(),
+                    numero_vuelo: row.querySelector('.segment-numero')?.value?.trim(),
+                    fecha_hora_salida_local: row.querySelector('.segment-salida')?.value || null,
+                    fecha_hora_llegada_local: row.querySelector('.segment-llegada')?.value || null,
+                    tiempo_total_tramo: row.querySelector('.segment-tiempo-total')?.value?.trim() || '',
+                    escalas,
+                    tiene_escala: escalas.length > 0
+                };
+            });
+
+            const origen = segmentos[0]?.aeropuerto_origen || '';
+            const destino = segmentos[segmentos.length - 1]?.aeropuerto_destino || '';
+            const tieneEscalas = segmentos.some(s => s.tiene_escala);
+            const descripcion = origen && destino ? `Vuelo ${origen} → ${destino}` : 'Vuelo';
+            let tipo_itinerario = 'ida_vuelta';
+            if (segmentos.length <= 1) {
+                tipo_itinerario = 'solo_ida';
+            } else if (origen && destino && origen !== destino) {
+                tipo_itinerario = 'multi_ciudad';
             }
-            
+
             return {
                 ...baseData,
-                descripcion: descripcion || `Vuelo ${origen} → ${destino}`,
-                origen: origen,
-                destino: destino,
-                tipo_itinerario: document.getElementById('vuelo-tipo')?.value || 'ida_vuelta',
-                aerolinea: document.getElementById('vuelo-aerolinea')?.value?.trim() || '',
-                clase_vuelo: document.getElementById('vuelo-clase')?.value || 'economica',
                 pasajeros: parseInt(document.getElementById('vuelo-pasajeros')?.value) || 1,
-                
-                // Fechas y horas de Flatpickr
-                fecha_hora_salida: document.getElementById('vuelo-fecha-salida-flat')?.value || null,
-                fecha_hora_llegada: document.getElementById('vuelo-fecha-llegada-flat')?.value || null,
-                fecha_hora_regreso: document.getElementById('vuelo-fecha-regreso-flat')?.value || null,
-                fecha_hora_llegada_regreso: document.getElementById('vuelo-fecha-llegada-regreso-flat')?.value || null,
-                itinerario_observaciones: document.getElementById('vuelo-itinerario-observaciones')?.value?.trim() || ''
+                tipo_itinerario,
+                origen,
+                destino,
+                descripcion,
+                tieneEscalas,
+                segmentos
             };
         case 'hotel':
             return {
@@ -648,12 +745,20 @@ function validateServiceData(serviceData, tipo) {
     // Validaciones específicas por tipo
     switch(tipo) {
         case 'vuelo':
-            if (!serviceData.origen || !serviceData.destino) {
-                showNotification('⚠️ Complete origen y destino del vuelo', 'warning');
+            if (!serviceData.segmentos || serviceData.segmentos.length === 0) {
+                showNotification('⚠️ Agregue al menos un tramo', 'warning');
                 return false;
             }
-            if (serviceData.origen.trim() === '' || serviceData.destino.trim() === '') {
-                showNotification('⚠️ Origen y destino no pueden estar vacíos', 'warning');
+
+            const invalid = serviceData.segmentos.some(s => !s.aeropuerto_origen || !s.aeropuerto_destino || !s.aerolinea || !s.numero_vuelo);
+            if (invalid) {
+                showNotification('⚠️ Complete origen, destino, aerolínea y número de vuelo en todos los tramos', 'warning');
+                return false;
+            }
+
+            const escalaInvalid = serviceData.segmentos.some(s => s.tiene_escala && (s.escalas.length === 0 || s.escalas.some(e => !e.aeropuerto || !e.duracion)));
+            if (escalaInvalid) {
+                showNotification('⚠️ Complete los datos de todas las escalas', 'warning');
                 return false;
             }
             break;
@@ -709,11 +814,21 @@ function clearServiceForm(tipo) {
     serviceForm.querySelectorAll('textarea').forEach(textarea => {
         textarea.value = '';
     });
-    
+
     // Remover display de margen
     const margenDisplay = serviceForm.querySelector('.margen-display-nts');
     if (margenDisplay) {
         margenDisplay.remove();
+    }
+
+    if (tipo === 'vuelo') {
+        const segmentsContainer = document.getElementById('segments-container');
+        if (segmentsContainer) {
+            segmentsContainer.innerHTML = '';
+            if (typeof addSegmentRow === 'function') {
+                addSegmentRow();
+            }
+        }
     }
 }
 
@@ -946,7 +1061,7 @@ async function crearVentaEnDB(ventaData) {
         // 4. Crear servicios (solo para vuelos, puedes expandir para otros)
         for (const servicio of ventaData.servicios) {
             if (servicio.tipo === 'vuelo') {
-                const { error: servicioError } = await supabase
+                const { data: vuelo, error: servicioError } = await supabase
                     .from('venta_vuelos')
                     .insert({
                         venta_id: nuevaVenta.id,
@@ -965,10 +1080,28 @@ async function crearVentaEnDB(ventaData) {
                         precio_costo: servicio.precio_costo,
                         proveedor_id: servicio.proveedor_id,
                         itinerario_observaciones: servicio.itinerario_observaciones
-                    });
-                
+                    })
+                    .select()
+                    .single();
+
                 if (servicioError) {
                     console.error(`Error creando vuelo:`, servicioError);
+                } else if (servicio.escalas && servicio.escalas.length) {
+                    const segmentos = servicio.escalas.map(seg => ({
+                        venta_vuelo_id: vuelo.id,
+                        numero_segmento: seg.numero_segmento,
+                        aeropuerto_origen: seg.aeropuerto_origen,
+                        aeropuerto_destino: seg.aeropuerto_destino,
+                        fecha_hora_salida_local: seg.fecha_hora_salida,
+                        fecha_hora_llegada_local: seg.fecha_hora_llegada
+                    }));
+
+                    const { error: segError } = await supabase
+                        .from('venta_vuelo_segmentos')
+                        .insert(segmentos);
+                    if (segError) {
+                        console.error('Error creando segmentos:', segError);
+                    }
                 }
             }
         }
@@ -1081,3 +1214,4 @@ window.limpiarFormulario = limpiarFormularioCompleto;
 window.eliminarServicio = eliminarServicio;
 
 console.log('✅ Módulo de ventas completo sin duplicados cargado correctamente');
+console.log('✅ Correcciones para escalas y búsqueda de clientes implementadas');
