@@ -125,10 +125,7 @@ function setupVentasUI() {
     
     // Crear selects de proveedores
     createProveedorSelects();
-    
-    // Actualizar descripción de vuelos automáticamente
-    setupVueloDescriptionUpdate();
-    
+
     // Configurar Flatpickr
     setupFlatpickrFields();
 }
@@ -167,37 +164,48 @@ function createVendedorSelect() {
 
 // ===== MANEJO DE ESCALAS EN VUELOS =====
 function toggleEscalasSection() {
-    const show = document.getElementById('vuelo-tiene-escalas')?.checked;
-    document.querySelectorAll('.escala-extra').forEach(div => {
-        div.style.display = show ? 'block' : 'none';
-    });
-    showNotification(show ? '✈️ Campos de escala visibles' : '✈️ Campos de escala ocultos', 'info');
+    const checkbox = document.getElementById('vuelo-tiene-escalas');
+    const escalasSection = document.getElementById('escalas-section');
+    const segmentsContainer = document.getElementById('segments-container');
+
+    if (checkbox?.checked) {
+        escalasSection.style.display = 'block';
+        if (!segmentsContainer.children.length) {
+            addEscalaRow();
+        }
+        showNotification('✈️ Sección de escalas habilitada', 'info');
+    } else {
+        escalasSection.style.display = 'none';
+        segmentsContainer.innerHTML = '';
+        showNotification('✈️ Sección de escalas ocultada', 'info');
+    }
 }
 
-function addSegmentRow() {
+function addEscalaRow() {
     const container = document.getElementById('segments-container');
-    if (!container) return;
-    const index = container.children.length + 1;
+    const escalaIndex = container.children.length + 1;
 
-    const row = document.createElement('div');
-    row.className = 'segment-row';
+    const escalaRow = document.createElement('div');
+    escalaRow.className = 'escala-row';
+    escalaRow.style.cssText = `
+        display: grid;
+        grid-template-columns: repeat(4, 1fr) auto;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+        padding: 1rem;
+        border: 1px solid var(--gray-200);
+        border-radius: 0.5rem;
+        background: var(--gray-50);
+    `;
 
-    row.innerHTML = `
+    escalaRow.innerHTML = `
         <div class="form-group">
-            <label>Origen Tramo ${index}</label>
+            <label>Origen Escala ${escalaIndex}</label>
             <input type="text" class="form-control segment-origen" placeholder="Origen">
         </div>
         <div class="form-group">
-            <label>Destino Tramo ${index}</label>
+            <label>Destino Escala ${escalaIndex}</label>
             <input type="text" class="form-control segment-destino" placeholder="Destino">
-        </div>
-        <div class="form-group">
-            <label>Aerolínea</label>
-            <input type="text" class="form-control segment-aerolinea" placeholder="Aerolínea">
-        </div>
-        <div class="form-group">
-            <label>Número de vuelo</label>
-            <input type="text" class="form-control segment-numero" placeholder="AB123">
         </div>
         <div class="form-group">
             <label>Salida</label>
@@ -207,91 +215,38 @@ function addSegmentRow() {
             <label>Llegada</label>
             <input type="datetime-local" class="form-control segment-llegada">
         </div>
-        <div class="form-group">
-            <label>Tiempo total de vuelo</label>
-            <input type="text" class="form-control segment-tiempo-total" placeholder="00:00" readonly>
-        </div>
         <div class="form-group" style="display: flex; align-items: end;">
-            ${index > 1 ? `<button type="button" class="btn btn-danger remove-segment" onclick="removeSegmentRow(this)" title="Eliminar tramo"><i data-lucide="trash-2"></i></button>` : ''}
-        </div>
-        <div class="escala-extra">
-            <div class="escala-grid">
-                <div class="form-group">
-                    <label>Aeropuerto de escala</label>
-                    <input type="text" class="form-control segment-aeropuerto-escala" placeholder="Aeropuerto de escala">
-                </div>
-                <div class="form-group">
-                    <label>Duración de la escala</label>
-                    <input type="text" class="form-control segment-duracion-escala" placeholder="01:30">
-                </div>
-            </div>
+            <button type="button" class="btn btn-danger remove-segment" onclick="removeEscalaRow(this)" title="Eliminar escala">
+                <i data-lucide="trash-2"></i>
+            </button>
         </div>
     `;
 
-    container.appendChild(row);
-
-    const updateTotal = () => updateSegmentTiempoTotal(row);
-    row.querySelector('.segment-salida').addEventListener('change', updateTotal);
-    row.querySelector('.segment-llegada').addEventListener('change', updateTotal);
-    row.querySelector('.segment-duracion-escala').addEventListener('input', updateTotal);
-
-    toggleEscalasSection();
+    container.appendChild(escalaRow);
 
     if (window.lucide) {
         window.lucide.createIcons();
     }
 }
 
-function updateSegmentTiempoTotal(row) {
-    const salida = row.querySelector('.segment-salida')?.value;
-    const llegada = row.querySelector('.segment-llegada')?.value;
-    const escala = row.querySelector('.segment-duracion-escala')?.value;
+function removeEscalaRow(button) {
+    const escalaRow = button.closest('.escala-row');
+    escalaRow.remove();
 
-    if (salida && llegada) {
-        const start = new Date(salida);
-        const end = new Date(llegada);
-        let diff = end - start;
-        if (escala) {
-            const [h, m] = escala.split(':').map(Number);
-            if (!isNaN(h) && !isNaN(m)) {
-                diff += (h * 60 + m) * 60 * 1000;
-            }
-        }
-        if (!isNaN(diff) && diff >= 0) {
-            const totalMins = Math.floor(diff / 60000);
-            const hours = String(Math.floor(totalMins / 60)).padStart(2, '0');
-            const minutes = String(totalMins % 60).padStart(2, '0');
-            row.querySelector('.segment-tiempo-total').value = `${hours}:${minutes}`;
-            return;
-        }
-    }
-    row.querySelector('.segment-tiempo-total').value = '';
-}
-
-function removeSegmentRow(button) {
-    const row = button.closest('.segment-row');
-    row.remove();
-    renumberSegments();
-    showNotification('🗑️ Tramo eliminado', 'info');
-}
-
-function renumberSegments() {
     const container = document.getElementById('segments-container');
     Array.from(container.children).forEach((row, index) => {
         const labels = row.querySelectorAll('label');
-        labels[0].textContent = `Origen Tramo ${index + 1}`;
-        labels[1].textContent = `Destino Tramo ${index + 1}`;
-        const removeBtn = row.querySelector('.remove-segment');
-        if (removeBtn) {
-            removeBtn.style.display = index === 0 ? 'none' : 'inline-flex';
-        }
+        labels[0].textContent = `Origen Escala ${index + 1}`;
+        labels[1].textContent = `Destino Escala ${index + 1}`;
     });
+
+    showNotification('🗑️ Escala eliminada', 'info');
 }
 
 // Exportar funciones globalmente
 window.toggleEscalasSection = toggleEscalasSection;
-window.addSegmentRow = addSegmentRow;
-window.removeSegmentRow = removeSegmentRow;
+window.addEscalaRow = addEscalaRow;
+window.removeEscalaRow = removeEscalaRow;
 
 function setupClienteAutocomplete() {
     const clienteNombre = document.getElementById('cliente-nombre');
@@ -496,26 +451,6 @@ function createProveedorSelects() {
     });
     
     console.log('✅ Selects de proveedores creados');
-}
-
-function setupVueloDescriptionUpdate() {
-    const origenInput = document.getElementById('vuelo-origen');
-    const destinoInput = document.getElementById('vuelo-destino');
-    const descripcionInput = document.getElementById('vuelo-descripcion');
-    
-    if (!origenInput || !destinoInput || !descripcionInput) return;
-    
-    function updateDescription() {
-        const origen = origenInput.value.trim();
-        const destino = destinoInput.value.trim();
-        
-        if (origen && destino) {
-            descripcionInput.value = `Vuelo ${origen} → ${destino}`;
-        }
-    }
-    
-    origenInput.addEventListener('input', updateDescription);
-    destinoInput.addEventListener('input', updateDescription);
 }
 
 // ===== CONFIGURAR FLATPICKR - VERSIÓN SIN DUPLICADOS =====
@@ -740,7 +675,7 @@ function setupVentasEvents() {
     document.addEventListener('click', function(e) {
         if (e.target.matches('#add-segment-btn')) {
             e.preventDefault();
-            addSegmentRow();
+            addEscalaRow();
         }
     });
 }
@@ -812,47 +747,26 @@ function getServiceFormData(tipo) {
         case 'vuelo':
             const origen = document.getElementById('vuelo-origen')?.value?.trim() || '';
             const destino = document.getElementById('vuelo-destino')?.value?.trim() || '';
-            const descripcionManual = document.getElementById('vuelo-descripcion')?.value?.trim();
-
-            // Generar descripción automática
-            let descripcion = descripcionManual;
-            if (!descripcion && origen && destino) {
-                descripcion = `Vuelo ${origen} → ${destino}`;
-            }
-
             const tieneEscalas = document.getElementById('vuelo-tiene-escalas')?.checked || false;
-            const segmentRows = document.querySelectorAll('#segments-container .segment-row');
-            const segmentos = Array.from(segmentRows).map((row, index) => ({
+
+            const escalaRows = document.querySelectorAll('#segments-container .escala-row');
+            const escalas = Array.from(escalaRows).map((row, index) => ({
                 numero_segmento: index + 1,
                 aeropuerto_origen: row.querySelector('.segment-origen')?.value?.trim(),
                 aeropuerto_destino: row.querySelector('.segment-destino')?.value?.trim(),
-                aerolinea: row.querySelector('.segment-aerolinea')?.value?.trim(),
-                numero_vuelo: row.querySelector('.segment-numero')?.value?.trim(),
-                fecha_hora_salida_local: row.querySelector('.segment-salida')?.value || null,
-                fecha_hora_llegada_local: row.querySelector('.segment-llegada')?.value || null,
-                aeropuerto_escala: tieneEscalas ? row.querySelector('.segment-aeropuerto-escala')?.value?.trim() : '',
-                duracion_escala: tieneEscalas ? row.querySelector('.segment-duracion-escala')?.value?.trim() : '',
-                tiempo_total_tramo: row.querySelector('.segment-tiempo-total')?.value?.trim() || ''
+                fecha_hora_salida: row.querySelector('.segment-salida')?.value || null,
+                fecha_hora_llegada: row.querySelector('.segment-llegada')?.value || null
             }));
 
             return {
                 ...baseData,
-                descripcion: descripcion || `Vuelo ${origen} → ${destino}`,
-                origen: origen,
-                destino: destino,
-                tipo_itinerario: document.getElementById('vuelo-tipo')?.value || 'ida_vuelta',
+                origen,
+                destino,
+                fecha_salida: document.getElementById('vuelo-fecha')?.value || '',
                 aerolinea: document.getElementById('vuelo-aerolinea')?.value?.trim() || '',
-                clase_vuelo: document.getElementById('vuelo-clase')?.value || 'economica',
                 pasajeros: parseInt(document.getElementById('vuelo-pasajeros')?.value) || 1,
-
-                // Fechas y horas de Flatpickr
-                fecha_hora_salida: document.getElementById('vuelo-fecha-salida-flat')?.value || null,
-                fecha_hora_llegada: document.getElementById('vuelo-fecha-llegada-flat')?.value || null,
-                fecha_hora_regreso: document.getElementById('vuelo-fecha-regreso-flat')?.value || null,
-                fecha_hora_llegada_regreso: document.getElementById('vuelo-fecha-llegada-regreso-flat')?.value || null,
-                itinerario_observaciones: document.getElementById('vuelo-itinerario-observaciones')?.value?.trim() || '',
                 tieneEscalas,
-                segmentos
+                escalas
             };
         case 'hotel':
             return {
@@ -902,23 +816,26 @@ function validateServiceData(serviceData, tipo) {
                 return false;
             }
 
-            if (!serviceData.segmentos || serviceData.segmentos.length === 0) {
-                showNotification('⚠️ Agregue al menos un tramo', 'warning');
-                return false;
-            }
-
-            const tramoIncompleto = serviceData.segmentos.some(seg => !seg.aeropuerto_origen || !seg.aeropuerto_destino);
-            if (tramoIncompleto) {
-                showNotification('⚠️ Complete origen y destino en todos los tramos', 'warning');
-                return false;
-            }
-
-            if (serviceData.tieneEscalas) {
-                const escalaIncompleta = serviceData.segmentos.some(seg => !seg.aeropuerto_escala || !seg.duracion_escala);
-                if (escalaIncompleta) {
-                    showNotification('⚠️ Complete los datos de escala en todos los tramos', 'warning');
+            const tieneEscalas = document.getElementById('vuelo-tiene-escalas')?.checked;
+            if (tieneEscalas) {
+                const escalaRows = document.querySelectorAll('#segments-container .escala-row');
+                if (escalaRows.length === 0) {
+                    showNotification('⚠️ Agregue al menos una escala o desactive la opción', 'warning');
                     return false;
                 }
+
+                let escalaIncompleta = false;
+                escalaRows.forEach((row, index) => {
+                    const origenEsc = row.querySelector('.segment-origen')?.value?.trim();
+                    const destinoEsc = row.querySelector('.segment-destino')?.value?.trim();
+
+                    if (!origenEsc || !destinoEsc) {
+                        showNotification(`⚠️ Complete origen y destino en la escala ${index + 1}`, 'warning');
+                        escalaIncompleta = true;
+                    }
+                });
+
+                if (escalaIncompleta) return false;
             }
             break;
         case 'hotel':
@@ -1244,14 +1161,14 @@ async function crearVentaEnDB(ventaData) {
 
                 if (servicioError) {
                     console.error(`Error creando vuelo:`, servicioError);
-                } else if (servicio.segmentos && servicio.segmentos.length) {
-                    const segmentos = servicio.segmentos.map(seg => ({
+                } else if (servicio.escalas && servicio.escalas.length) {
+                    const segmentos = servicio.escalas.map(seg => ({
                         venta_vuelo_id: vuelo.id,
                         numero_segmento: seg.numero_segmento,
                         aeropuerto_origen: seg.aeropuerto_origen,
                         aeropuerto_destino: seg.aeropuerto_destino,
-                        fecha_hora_salida_local: seg.fecha_hora_salida_local,
-                        fecha_hora_llegada_local: seg.fecha_hora_llegada_local
+                        fecha_hora_salida_local: seg.fecha_hora_salida,
+                        fecha_hora_llegada_local: seg.fecha_hora_llegada
                     }));
 
                     const { error: segError } = await supabase

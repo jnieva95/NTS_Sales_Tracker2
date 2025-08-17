@@ -690,11 +690,19 @@ class NTSApp {
         <div class="card-content">
           <div class="form-grid">
             <div class="form-group">
-              <label for="vuelo-costo">Costo *</label>
-              <input type="number" id="vuelo-costo" class="form-control" placeholder="1000" step="0.01" min="0" required>
+              <label for="vuelo-origen">Origen *</label>
+              <input type="text" id="vuelo-origen" class="form-control" placeholder="Buenos Aires (BUE)" required>
             </div>
             <div class="form-group">
-              <label for="vuelo-precio">Precio de Venta *</label>
+              <label for="vuelo-destino">Destino *</label>
+              <input type="text" id="vuelo-destino" class="form-control" placeholder="Miami (MIA)" required>
+            </div>
+            <div class="form-group">
+              <label for="vuelo-fecha">Fecha de Salida *</label>
+              <input type="date" id="vuelo-fecha" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label for="vuelo-precio">Precio *</label>
               <input type="number" id="vuelo-precio" class="form-control" placeholder="1500" step="0.01" min="0" required>
             </div>
             <div class="form-group">
@@ -702,24 +710,27 @@ class NTSApp {
               <input type="number" id="vuelo-pasajeros" class="form-control" value="1" min="1">
             </div>
             <div class="form-group">
-              <label for="vuelo-tipo">Tipo de Itinerario</label>
-              <select id="vuelo-tipo" class="form-control">
-                <option value="ida_vuelta">Ida y vuelta</option>
-                <option value="solo_ida">Solo ida</option>
-                <option value="multidestino">Multidestino</option>
-              </select>
+              <label for="vuelo-aerolinea">Aerolínea</label>
+              <input type="text" id="vuelo-aerolinea" class="form-control" placeholder="American Airlines">
+            </div>
+
+            <div class="form-group full-width">
+              <label class="checkbox-container">
+                <input type="checkbox" id="vuelo-tiene-escalas" onchange="toggleEscalasSection()">
+                <span class="checkmark"></span>
+                ¿El vuelo tiene escalas?
+              </label>
+            </div>
+
+            <div id="escalas-section" class="form-group full-width" style="display: none;">
+              <label><strong>Información de Escalas</strong></label>
+              <div id="segments-container"></div>
+              <button type="button" class="btn btn-secondary" id="add-segment-btn" style="margin-top: 0.5rem;">
+                <i data-lucide="plus"></i>
+                Agregar escala
+              </button>
             </div>
           </div>
-
-          <div class="form-group full-width" style="margin-top: 1rem;">
-            <label><strong>Itinerario de Vuelo</strong></label>
-            <div id="segments-container"></div>
-            <button type="button" class="btn btn-secondary" id="add-segment-btn" style="margin-top: 0.5rem;">
-              <i data-lucide="plus"></i>
-              Agregar tramo
-            </button>
-          </div>
-
           <div class="form-actions" style="margin-top: 1.5rem;">
             <button type="button" class="btn btn-primary" onclick="app.addService('vuelo')">
               <i data-lucide="plus"></i>
