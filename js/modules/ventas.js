@@ -247,14 +247,17 @@ function setupClienteAutocomplete() {
         
         if (clientes.length === 0) {
             dropdown.innerHTML = `
-                <div class="search-result-item no-results">
+                <div class="search-result-item no-results" id="crear-cliente-item">
                     <div class="no-results-content">
                         <i data-lucide="user-plus"></i>
-                        <span>No se encontraron clientes</span>
-                        <small>Se creará un cliente nuevo: "${searchTerm}"</small>
+                        <span>Crear cliente: "${searchTerm}"</span>
                     </div>
                 </div>
             `;
+            const crearItem = dropdown.querySelector('#crear-cliente-item');
+            if (crearItem) {
+                crearItem.addEventListener('click', () => showNuevoClienteModal(searchTerm));
+            }
         } else {
             dropdown.innerHTML = clientes.map(cliente => `
                 <div class="search-result-item" onclick="selectCliente(${cliente.id}, '${cliente.nombre}', '${cliente.email || ''}', '${cliente.telefono || ''}', '${cliente.DNI || ''}', '${cliente.Pasaporte || ''}', '${cliente.dni_expiracion || ''}', '${cliente.pasaporte_expiracion || ''}')">
@@ -330,6 +333,88 @@ window.selectCliente = function(id, nombre, email, telefono, dni, pasaporte, dni
     showNotification(`✅ Cliente seleccionado: ${nombre}`, 'success');
     document.getElementById('cliente-email')?.focus();
 };
+
+function showNuevoClienteModal(nombre = '') {
+    const modal = document.getElementById('nuevo-cliente-modal');
+    if (!modal) return;
+
+    const form = document.getElementById('nuevo-cliente-form');
+    form?.reset();
+    document.getElementById('nuevo-cliente-nombre').value = nombre;
+    modal.style.display = 'flex';
+    toggleNuevoClienteDocFields(document.getElementById('nuevo-cliente-doc-tipo')?.value);
+
+    setTimeout(() => {
+        document.getElementById('nuevo-cliente-nombre')?.focus();
+    }, 100);
+}
+
+function hideNuevoClienteModal() {
+    const modal = document.getElementById('nuevo-cliente-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+function toggleNuevoClienteDocFields(tipo) {
+    const isDNI = (tipo || 'dni') === 'dni';
+    document.getElementById('nuevo-grupo-dni')?.classList.toggle('hidden', !isDNI);
+    document.getElementById('nuevo-grupo-dni-exp')?.classList.toggle('hidden', !isDNI);
+    document.getElementById('nuevo-grupo-pasaporte')?.classList.toggle('hidden', isDNI);
+    document.getElementById('nuevo-grupo-pasaporte-exp')?.classList.toggle('hidden', isDNI);
+}
+
+async function saveNuevoCliente() {
+    const nombre = document.getElementById('nuevo-cliente-nombre')?.value?.trim();
+    if (!nombre) {
+        showNotification('⚠️ Ingrese un nombre válido', 'warning');
+        return;
+    }
+
+    const email = document.getElementById('nuevo-cliente-email')?.value?.trim();
+    const telefono = document.getElementById('nuevo-cliente-telefono')?.value?.trim();
+    const docTipo = document.getElementById('nuevo-cliente-doc-tipo')?.value;
+    const dni = document.getElementById('nuevo-cliente-dni')?.value?.trim();
+    const dniExp = document.getElementById('nuevo-cliente-dni-exp')?.value;
+    const pasaporte = document.getElementById('nuevo-cliente-pasaporte')?.value?.trim();
+    const pasaporteExp = document.getElementById('nuevo-cliente-pasaporte-exp')?.value;
+
+    const clienteData = {
+        nombre,
+        email,
+        telefono,
+    };
+
+    if (docTipo === 'dni') {
+        clienteData.DNI = dni || null;
+        clienteData.dni_expiracion = dniExp || null;
+    } else {
+        clienteData.Pasaporte = pasaporte || null;
+        clienteData.pasaporte_expiracion = pasaporteExp || null;
+    }
+
+    try {
+        const { supabase, isSupabaseConnected } = window.NTS_CONFIG || {};
+        let saved;
+        if (isSupabaseConnected && supabase) {
+            const { data, error } = await supabase
+                .from('clientes')
+                .insert(clienteData)
+                .select()
+                .single();
+            if (error) throw error;
+            saved = data;
+        } else {
+            saved = { id: Date.now(), ...clienteData };
+        }
+
+        VentasModule.clientesExistentes.push(saved);
+        selectCliente(saved.id, saved.nombre, saved.email || '', saved.telefono || '', saved.DNI || '', saved.Pasaporte || '', saved.dni_expiracion || '', saved.pasaporte_expiracion || '');
+        hideNuevoClienteModal();
+        showNotification('✅ Cliente creado correctamente', 'success');
+    } catch (err) {
+        console.error('Error creando cliente:', err);
+        showNotification('❌ Error creando cliente', 'error');
+    }
+}
 
 function createProveedorSelects() {
     const serviceForms = ['vuelo', 'hotel', 'traslado', 'excursion'];
@@ -619,6 +704,18 @@ function setupVentasEvents() {
             }
         }
     });
+
+    // Eventos del modal de nuevo cliente
+    const closeBtn = document.getElementById('close-nuevo-cliente-modal');
+    const cancelBtn = document.getElementById('cancel-nuevo-cliente');
+    const saveBtn = document.getElementById('save-nuevo-cliente');
+    const tipoSelect = document.getElementById('nuevo-cliente-doc-tipo');
+
+    closeBtn?.addEventListener('click', hideNuevoClienteModal);
+    cancelBtn?.addEventListener('click', hideNuevoClienteModal);
+    saveBtn?.addEventListener('click', saveNuevoCliente);
+    tipoSelect?.addEventListener('change', (e) => toggleNuevoClienteDocFields(e.target.value));
+    toggleNuevoClienteDocFields(tipoSelect?.value);
 }
 
 function calculateMargin(element) {
