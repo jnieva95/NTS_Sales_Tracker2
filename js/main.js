@@ -719,6 +719,7 @@ class NTSApp {
             <button type="button" class="btn btn-secondary" id="add-segment-btn" style="margin-top: var(--spacing-sm);">
               Agregar tramo
             </button>
+            <div id="flight-summary-panel" class="flight-summary-panel" style="margin-top: var(--spacing-sm);"></div>
           </div>
         </div>
         <div class="form-actions" style="margin-top: var(--spacing-lg);">
@@ -872,8 +873,15 @@ class NTSApp {
       const addBtn = document.getElementById('add-segment-btn');
       if (!container || !addBtn) return;
 
+      const updateSummary = this.updateFlightSummary.bind(this);
+
       const addSegment = () => {
-        container.appendChild(this.createSegmentRow());
+        const row = this.createSegmentRow();
+        container.appendChild(row);
+        row.querySelectorAll('input').forEach(input => {
+          input.addEventListener('input', updateSummary);
+        });
+        updateSummary();
       };
 
       addBtn.addEventListener('click', addSegment);
@@ -882,6 +890,7 @@ class NTSApp {
       container.addEventListener('click', (e) => {
         if (e.target.classList.contains('remove-segment')) {
           e.target.closest('.segment-row')?.remove();
+          updateSummary();
         }
       });
     }
@@ -902,6 +911,99 @@ class NTSApp {
       <button type="button" class="btn btn-danger remove-segment">&times;</button>
     `;
     return row;
+  }
+
+  updateFlightSummary() {
+    const container = document.getElementById('segments-container');
+    const summaryPanel = document.getElementById('flight-summary-panel');
+    if (!container || !summaryPanel) return;
+
+    const rows = container.querySelectorAll('.segment-row');
+    const segmentos = Array.from(rows).map((row, index) => ({
+      numero_segmento: index + 1,
+      aeropuerto_origen: row.querySelector('.segment-origen')?.value?.trim(),
+      aeropuerto_destino: row.querySelector('.segment-destino')?.value?.trim(),
+      fecha_hora_salida_local: row.querySelector('.segment-salida')?.value || null,
+      fecha_hora_llegada_local: row.querySelector('.segment-llegada')?.value || null
+    }));
+
+    if (segmentos.length === 0) {
+      summaryPanel.innerHTML = '';
+      return;
+    }
+
+    // Actualizar campos de formulario principales
+    const origenField = document.getElementById('vuelo-origen');
+    const destinoField = document.getElementById('vuelo-destino');
+    const fechaField = document.getElementById('vuelo-fecha');
+
+    if (segmentos[0]) {
+      if (origenField) origenField.value = segmentos[0].aeropuerto_origen || '';
+      if (fechaField && segmentos[0].fecha_hora_salida_local) {
+        fechaField.value = segmentos[0].fecha_hora_salida_local.split('T')[0];
+      }
+    }
+    if (segmentos[segmentos.length - 1] && destinoField) {
+      destinoField.value = segmentos[segmentos.length - 1].aeropuerto_destino || '';
+    }
+
+    summaryPanel.innerHTML = this.getFlightSummary(segmentos);
+
+    // Configurar toggle de detalles
+    const toggleBtn = summaryPanel.querySelector('.toggle-segments');
+    const details = summaryPanel.querySelector('.segment-details');
+    if (toggleBtn && details) {
+      toggleBtn.addEventListener('click', () => {
+        const hidden = details.style.display === 'none' || details.classList.contains('hidden');
+        if (hidden) {
+          details.style.display = 'block';
+          details.classList.remove('hidden');
+          toggleBtn.textContent = 'Ocultar tramos';
+        } else {
+          details.style.display = 'none';
+          details.classList.add('hidden');
+          toggleBtn.textContent = 'Ver tramos';
+        }
+      });
+    }
+  }
+
+  getFlightSummary(segmentos) {
+    if (!segmentos || segmentos.length === 0) return '';
+    const origen = segmentos[0].aeropuerto_origen || '';
+    const destino = segmentos[segmentos.length - 1].aeropuerto_destino || '';
+    const duracion = this.calculateTotalDuration(segmentos);
+    const escalas = Math.max(segmentos.length - 1, 0);
+
+    const detalles = segmentos
+      .map(s => `<li>${s.aeropuerto_origen} → ${s.aeropuerto_destino}</li>`)
+      .join('');
+
+    return `
+      <div class="flight-summary-header">
+        <strong>${origen} → ${destino}</strong>
+        <span>${duracion}</span>
+        <span>${escalas} ${escalas === 1 ? 'escala' : 'escalas'}</span>
+        <button type="button" class="btn btn-link toggle-segments">Ver tramos</button>
+      </div>
+      <ul class="segment-details hidden" style="display:none; margin-top: var(--spacing-sm);">
+        ${detalles}
+      </ul>
+    `;
+  }
+
+  calculateTotalDuration(segmentos) {
+    const first = segmentos[0]?.fecha_hora_salida_local ? new Date(segmentos[0].fecha_hora_salida_local) : null;
+    const last = segmentos[segmentos.length - 1]?.fecha_hora_llegada_local
+      ? new Date(segmentos[segmentos.length - 1].fecha_hora_llegada_local)
+      : null;
+
+    if (!first || !last || isNaN(first) || isNaN(last)) return '';
+
+    const diff = last - first;
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    return `${hours}h ${minutes}m`;
   }
 
   addService(serviceType) {
