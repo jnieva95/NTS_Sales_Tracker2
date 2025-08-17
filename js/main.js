@@ -926,9 +926,10 @@ class NTSApp {
 
   getServiceData(serviceType) {
     const baseData = {
-      precio: parseFloat(document.getElementById(`${serviceType}-precio`)?.value) || 0
+      precio_costo: parseFloat(document.getElementById(`${serviceType}-precio-costo`)?.value) || 0,
+      precio_venta: parseFloat(document.getElementById(`${serviceType}-precio`)?.value) || 0
     };
-    
+
     switch (serviceType) {
       case 'vuelo':
         const segmentRows = document.querySelectorAll('#segments-container .segment-row');
@@ -939,49 +940,71 @@ class NTSApp {
           fecha_hora_salida_local: row.querySelector('.segment-salida')?.value || null,
           fecha_hora_llegada_local: row.querySelector('.segment-llegada')?.value || null
         }));
-        return {
+        const origen = document.getElementById('vuelo-origen')?.value?.trim();
+        const destino = document.getElementById('vuelo-destino')?.value?.trim();
+        const dataVuelo = {
           ...baseData,
-          origen: document.getElementById('vuelo-origen')?.value?.trim(),
-          destino: document.getElementById('vuelo-destino')?.value?.trim(),
-          fecha: document.getElementById('vuelo-fecha')?.value,
+          descripcion: `Vuelo ${origen} → ${destino}`,
+          origen,
+          destino,
+          tipo_itinerario: document.getElementById('vuelo-tipo')?.value || 'ida_vuelta',
+          aerolinea: document.getElementById('vuelo-aerolinea')?.value?.trim() || null,
+          clase: document.getElementById('vuelo-clase')?.value?.trim() || null,
+          fecha_salida: document.getElementById('vuelo-fecha')?.value || null,
+          fecha_regreso: document.getElementById('vuelo-fecha-regreso')?.value || null,
           pasajeros: parseInt(document.getElementById('vuelo-pasajeros')?.value) || 1,
-          aerolinea: document.getElementById('vuelo-aerolinea')?.value?.trim(),
           segmentos
         };
+        dataVuelo.margen_ganancia = dataVuelo.precio_venta - dataVuelo.precio_costo;
+        return dataVuelo;
       case 'hotel':
-        return {
+        const dataHotel = {
           ...baseData,
+          descripcion: `Hotel ${document.getElementById('hotel-nombre')?.value?.trim() || ''}`,
           nombre: document.getElementById('hotel-nombre')?.value?.trim(),
           ciudad: document.getElementById('hotel-ciudad')?.value?.trim(),
           checkin: document.getElementById('hotel-checkin')?.value,
           checkout: document.getElementById('hotel-checkout')?.value,
-          huespedes: parseInt(document.getElementById('hotel-huespedes')?.value) || 2
+          huespedes: parseInt(document.getElementById('hotel-huespedes')?.value) || 2,
+          tipo_itinerario: null
         };
+        dataHotel.margen_ganancia = dataHotel.precio_venta - dataHotel.precio_costo;
+        return dataHotel;
       case 'traslado':
-        return {
+        const dataTraslado = {
           ...baseData,
+          descripcion: `Traslado ${document.getElementById('traslado-origen')?.value?.trim() || ''} → ${document.getElementById('traslado-destino')?.value?.trim() || ''}`,
           origen: document.getElementById('traslado-origen')?.value?.trim(),
           destino: document.getElementById('traslado-destino')?.value?.trim(),
-          fecha: document.getElementById('traslado-fecha')?.value,
+          fecha_salida: document.getElementById('traslado-fecha')?.value || null,
           hora: document.getElementById('traslado-hora')?.value,
-          pasajeros: parseInt(document.getElementById('traslado-pasajeros')?.value) || 2
+          pasajeros: parseInt(document.getElementById('traslado-pasajeros')?.value) || 2,
+          tipo_itinerario: null
         };
+        dataTraslado.margen_ganancia = dataTraslado.precio_venta - dataTraslado.precio_costo;
+        return dataTraslado;
       case 'excursion':
-        return {
+        const dataExcursion = {
           ...baseData,
+          descripcion: `Excursión ${document.getElementById('excursion-nombre')?.value?.trim() || ''}`,
           nombre: document.getElementById('excursion-nombre')?.value?.trim(),
           destino: document.getElementById('excursion-destino')?.value?.trim(),
-          fecha: document.getElementById('excursion-fecha')?.value,
+          fecha_salida: document.getElementById('excursion-fecha')?.value || null,
           duracion: parseInt(document.getElementById('excursion-duracion')?.value) || 0,
-          participantes: parseInt(document.getElementById('excursion-participantes')?.value) || 2
+          participantes: parseInt(document.getElementById('excursion-participantes')?.value) || 2,
+          tipo_itinerario: null
         };
+        dataExcursion.margen_ganancia = dataExcursion.precio_venta - dataExcursion.precio_costo;
+        return dataExcursion;
       default:
-        return baseData;
+        const dataDefault = { ...baseData, tipo_itinerario: null };
+        dataDefault.margen_ganancia = dataDefault.precio_venta - dataDefault.precio_costo;
+        return dataDefault;
     }
   }
 
   validateServiceData(serviceData, serviceType) {
-    if (!serviceData.precio || serviceData.precio <= 0) {
+    if (!serviceData.precio_venta || serviceData.precio_venta <= 0) {
       this.showNotification('Por favor ingrese un precio válido', 'warning');
       return false;
     }
@@ -1046,7 +1069,7 @@ class NTSApp {
           <div class="service-item" data-id="${service.id}">
             <div class="service-content">
               <div class="service-title">${description}</div>
-              <div class="service-price">${this.formatCurrency(service.precio)}</div>
+              <div class="service-price">${this.formatCurrency(service.precio_venta)}</div>
             </div>
             <button type="button" class="btn-icon" onclick="app.removeService(${service.id})" title="Eliminar servicio">
               <i data-lucide="trash-2"></i>
@@ -1096,7 +1119,7 @@ class NTSApp {
   }
 
   updateTotals() {
-    const subtotal = AppState.currentSale.services.reduce((sum, s) => sum + s.precio, 0);
+    const subtotal = AppState.currentSale.services.reduce((sum, s) => sum + s.precio_venta, 0);
     const descuentos = 0; // Por ahora sin descuentos
     const total = subtotal - descuentos;
     
@@ -1241,12 +1264,18 @@ class NTSApp {
           .from('venta_vuelos')
           .insert({
             venta_id: venta.id,
+            descripcion: servicio.descripcion,
             origen: servicio.origen,
             destino: servicio.destino,
-            fecha: servicio.fecha,
+            tipo_itinerario: servicio.tipo_itinerario,
+            aerolinea: servicio.aerolinea || null,
+            clase: servicio.clase || null,
+            fecha_salida: servicio.fecha_salida || null,
+            fecha_regreso: servicio.fecha_regreso || null,
             pasajeros: servicio.pasajeros,
-            aerolinea: servicio.aerolinea,
-            precio: servicio.precio
+            precio_costo: servicio.precio_costo,
+            precio_venta: servicio.precio_venta,
+            margen_ganancia: servicio.margen_ganancia
           })
           .select()
           .single();
