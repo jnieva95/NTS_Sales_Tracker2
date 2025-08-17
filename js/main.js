@@ -932,21 +932,86 @@ class NTSApp {
     switch (serviceType) {
       case 'vuelo':
         const segmentRows = document.querySelectorAll('#segments-container .segment-row');
-        const segmentos = Array.from(segmentRows).map((row, index) => ({
-          numero_segmento: index + 1,
-          aeropuerto_origen: row.querySelector('.segment-origen')?.value?.trim(),
-          aeropuerto_destino: row.querySelector('.segment-destino')?.value?.trim(),
-          fecha_hora_salida_local: row.querySelector('.segment-salida')?.value || null,
-          fecha_hora_llegada_local: row.querySelector('.segment-llegada')?.value || null
-        }));
+        const rawSegments = Array.from(segmentRows).map((row, index) => {
+          // Permitir escalas como JSON o lista separada por comas
+          let escalas = [];
+          const escalasValue = row.querySelector('.segment-escalas')?.value?.trim() || row.dataset?.escalas;
+          if (escalasValue) {
+            try {
+              const parsed = JSON.parse(escalasValue);
+              escalas = Array.isArray(parsed) ? parsed : [];
+            } catch {
+              escalas = escalasValue.split(',').map(e => e.trim()).filter(Boolean);
+            }
+          }
+          return {
+            numero_segmento: index + 1,
+            aeropuerto_origen: row.querySelector('.segment-origen')?.value?.trim(),
+            aeropuerto_destino: row.querySelector('.segment-destino')?.value?.trim(),
+            fecha_hora_salida_local: row.querySelector('.segment-salida')?.value || null,
+            fecha_hora_llegada_local: row.querySelector('.segment-llegada')?.value || null,
+            escalas
+          };
+        });
+
+        // Expandir segmentos basados en escalas
+        const expanded = [];
+        rawSegments.forEach(seg => {
+          const stops = Array.isArray(seg.escalas) ? seg.escalas.filter(Boolean) : [];
+          if (stops.length === 0) {
+            expanded.push({ ...seg });
+            return;
+          }
+
+          let prev = seg.aeropuerto_origen;
+          stops.forEach((stop, idx) => {
+            expanded.push({
+              ...seg,
+              aeropuerto_origen: prev,
+              aeropuerto_destino: stop,
+              fecha_hora_salida_local: idx === 0 ? seg.fecha_hora_salida_local : null,
+              fecha_hora_llegada_local: null
+            });
+            prev = stop;
+          });
+          expanded.push({
+            ...seg,
+            aeropuerto_origen: prev,
+            aeropuerto_destino: seg.aeropuerto_destino,
+            fecha_hora_salida_local: null,
+            fecha_hora_llegada_local: seg.fecha_hora_llegada_local
+          });
+        });
+
+        // Reasignar números de segmento y limpiar escalas
+        expanded.forEach((seg, idx) => {
+          seg.numero_segmento = idx + 1;
+          delete seg.escalas;
+        });
+
+        // Agregar resumen del vuelo
+        const departureTimes = expanded
+          .map(s => (s.fecha_hora_salida_local ? new Date(s.fecha_hora_salida_local).getTime() : null))
+          .filter(Boolean);
+        const arrivalTimes = expanded
+          .map(s => (s.fecha_hora_llegada_local ? new Date(s.fecha_hora_llegada_local).getTime() : null))
+          .filter(Boolean);
+
+        let tiempo_total_vuelo = 0;
+        if (departureTimes.length && arrivalTimes.length) {
+          tiempo_total_vuelo = Math.round((Math.max(...arrivalTimes) - Math.min(...departureTimes)) / 60000);
+        }
+
         return {
           ...baseData,
-          origen: document.getElementById('vuelo-origen')?.value?.trim(),
-          destino: document.getElementById('vuelo-destino')?.value?.trim(),
+          origen: expanded[0]?.aeropuerto_origen || '',
+          destino: expanded[expanded.length - 1]?.aeropuerto_destino || '',
           fecha: document.getElementById('vuelo-fecha')?.value,
           pasajeros: parseInt(document.getElementById('vuelo-pasajeros')?.value) || 1,
           aerolinea: document.getElementById('vuelo-aerolinea')?.value?.trim(),
-          segmentos
+          tiempo_total_vuelo,
+          cantidad_escalas: Math.max(expanded.length - 1, 0),
+          segmentos: expanded
         };
       case 'hotel':
         return {
