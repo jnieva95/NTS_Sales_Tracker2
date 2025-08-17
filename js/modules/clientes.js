@@ -1,5 +1,16 @@
 console.log('👥 Cargando módulo de clientes...');
 
+// ===== UTILIDADES =====
+function showNotification(message, type = 'info') {
+    if (window.app && typeof window.app.showNotification === 'function') {
+        window.app.showNotification(message, type);
+    } else if (window.NTS_UTILS && typeof window.NTS_UTILS.showNotification === 'function') {
+        window.NTS_UTILS.showNotification(message, type);
+    } else {
+        console[type === 'error' ? 'error' : 'log'](message);
+    }
+}
+
 // ===== ESTADO DEL MÓDULO =====
 const ClientesModule = {
     clientes: [],
