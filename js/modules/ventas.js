@@ -61,8 +61,8 @@ async function loadVentasData() {
         const { data: ventas, error: ventasError } = await supabase
             .from('ventas')
             .select(`
-                id, numero_venta, fecha_venta, fecha_inicio_viaje, fecha_fin_viaje,
-                subtotal, descuentos, total_final, total_pagado, estado, estado_pago,
+                id, numero_venta, fecha_venta, fecha_viaje_inicio, fecha_viaje_fin,
+                total_final, total_pagado, saldo_pendiente, estado, estado_pago,
                 observaciones, created_at,
                 clientes (id, nombre, email, telefono),
                 vendedores (id, nombre, codigo_vendedor)
@@ -74,7 +74,12 @@ async function loadVentasData() {
         // Cargar clientes
         const { data: clientes, error: clientesError } = await supabase
             .from('clientes')
-            .select('id, nombre, email, telefono')
+            .select(`
+                id, nombre, email, telefono, DNI, dni_expiracion,
+                Pasaporte, pasaporte_expiracion, direccion, ciudad,
+                pais, vendedor_id, created_at,
+                vendedores (id, nombre, codigo_vendedor)
+            `)
             .order('nombre');
 
         if (clientesError) throw clientesError;
@@ -110,12 +115,11 @@ function loadMockVentasData() {
             id: 1,
             numero_venta: 'NTS-2024-001',
             fecha_venta: '2024-01-15',
-            fecha_inicio_viaje: '2024-02-01',
-            fecha_fin_viaje: '2024-02-10',
-            subtotal: 125000,
-            descuentos: 5000,
+            fecha_viaje_inicio: '2024-02-01',
+            fecha_viaje_fin: '2024-02-10',
             total_final: 120000,
             total_pagado: 60000,
+            saldo_pendiente: 60000,
             estado: 'confirmada',
             estado_pago: 'parcialmente_pagado',
             observaciones: 'Viaje familiar a Europa',
@@ -127,12 +131,11 @@ function loadMockVentasData() {
             id: 2,
             numero_venta: 'NTS-2024-002',
             fecha_venta: '2024-01-10',
-            fecha_inicio_viaje: '2024-03-15',
-            fecha_fin_viaje: '2024-03-22',
-            subtotal: 85000,
-            descuentos: 0,
+            fecha_viaje_inicio: '2024-03-15',
+            fecha_viaje_fin: '2024-03-22',
             total_final: 85000,
             total_pagado: 85000,
+            saldo_pendiente: 0,
             estado: 'finalizada',
             estado_pago: 'pagado_completo',
             observaciones: 'Luna de miel en Caribe',
@@ -143,8 +146,32 @@ function loadMockVentasData() {
     ];
 
     VentasModule.clientes = [
-        { id: 1, nombre: 'Juan Pérez', email: 'juan@email.com', telefono: '+54 9 11 1234-5678' },
-        { id: 2, nombre: 'María González', email: 'maria@email.com', telefono: '+54 9 11 9876-5432' }
+        { 
+            id: 1, 
+            nombre: 'Juan Pérez', 
+            email: 'juan@email.com', 
+            telefono: '+54 9 11 1234-5678',
+            DNI: '12345678',
+            dni_expiracion: '2030-01-15',
+            ciudad: 'Buenos Aires',
+            pais: 'Argentina',
+            vendedor_id: 1,
+            created_at: '2023-06-10T10:30:00Z',
+            vendedores: { id: 1, nombre: 'Ana García', codigo_vendedor: 'V001' }
+        },
+        { 
+            id: 2, 
+            nombre: 'María González', 
+            email: 'maria@email.com', 
+            telefono: '+54 9 11 9876-5432',
+            Pasaporte: 'ABC123456',
+            pasaporte_expiracion: '2028-08-20',
+            ciudad: 'Córdoba',
+            pais: 'Argentina',
+            vendedor_id: 2,
+            created_at: '2023-08-22T14:20:00Z',
+            vendedores: { id: 2, nombre: 'Carlos López', codigo_vendedor: 'V002' }
+        }
     ];
 
     VentasModule.vendedores = [
@@ -178,11 +205,15 @@ function getVentasHTML() {
                 <p>Administrar todas las ventas del sistema</p>
             </div>
             <div class="page-actions">
+                <button class="btn btn-secondary" id="gestionar-clientes-btn">
+                    <i data-lucide="users"></i>
+                    Gestionar Clientes
+                </button>
                 <button class="btn btn-secondary" id="export-ventas">
                     <i data-lucide="download"></i>
                     Exportar
                 </button>
-                <button class="btn btn-primary" onclick="showTab('nueva-venta')">
+                <button class="btn btn-primary" id="crear-venta-btn">
                     <i data-lucide="plus"></i>
                     Nueva Venta
                 </button>
@@ -295,7 +326,7 @@ function getVentasHTML() {
                     <i data-lucide="shopping-cart"></i>
                     <h3>No hay ventas</h3>
                     <p>No se encontraron ventas con los filtros aplicados</p>
-                    <button class="btn btn-primary" onclick="showTab('nueva-venta')">
+                    <button class="btn btn-primary" id="crear-primera-venta-btn">
                         <i data-lucide="plus"></i>
                         Crear Primera Venta
                     </button>
@@ -303,6 +334,146 @@ function getVentasHTML() {
             </div>
         </div>
 
+        <!-- Modal Gestión de Clientes -->
+        <div id="clientes-gestion-modal" class="modal-overlay" style="display:none;">
+            <div class="modal-content" style="max-width:1200px; max-height:90vh;">
+                <div class="modal-header">
+                    <h3>Gestión de Clientes</h3>
+                    <button class="btn-icon" id="close-clientes-gestion"><i data-lucide="x"></i></button>
+                </div>
+                <div class="modal-body" style="overflow-y: auto;">
+                    <div class="page-actions" style="margin-bottom: var(--spacing-lg);">
+                        <button class="btn btn-primary" id="nuevo-cliente-desde-ventas">
+                            <i data-lucide="user-plus"></i>
+                            Nuevo Cliente
+                        </button>
+                    </div>
+                    
+                    <!-- Filtros de clientes -->
+                    <div class="form-grid" style="grid-template-columns: 2fr 1fr auto; margin-bottom: var(--spacing-lg);">
+                        <div class="form-group">
+                            <label for="buscar-cliente-modal">Buscar Cliente</label>
+                            <input type="text" id="buscar-cliente-modal" class="form-control" placeholder="Nombre, email, teléfono...">
+                        </div>
+                        <div class="form-group">
+                            <label for="filtro-vendedor-modal">Vendedor</label>
+                            <select id="filtro-vendedor-modal" class="form-control">
+                                <option value="">Todos los vendedores</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <button class="btn btn-secondary" id="limpiar-filtros-clientes-modal">
+                                <i data-lucide="x"></i>
+                                Limpiar
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Tabla de clientes -->
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: var(--gray-50); border-bottom: 1px solid var(--gray-200);">
+                                    <th style="padding: var(--spacing-md); text-align: left; font-weight: 600;">Cliente</th>
+                                    <th style="padding: var(--spacing-md); text-align: left; font-weight: 600;">Contacto</th>
+                                    <th style="padding: var(--spacing-md); text-align: left; font-weight: 600;">Documentos</th>
+                                    <th style="padding: var(--spacing-md); text-align: left; font-weight: 600;">Vendedor</th>
+                                    <th style="padding: var(--spacing-md); text-align: center; font-weight: 600;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clientes-modal-table-body"></tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="clientes-modal-empty-state" class="empty-state" style="display:none;">
+                        <i data-lucide="users"></i>
+                        <h3>No hay clientes</h3>
+                        <p>No se encontraron clientes con los filtros aplicados</p>
+                        <button class="btn btn-primary" id="crear-primer-cliente-modal">
+                            <i data-lucide="user-plus"></i>
+                            Crear Primer Cliente
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="close-clientes-gestion-btn">Cerrar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Cliente (Crear/Editar) -->
+        <div id="cliente-ventas-modal" class="modal-overlay" style="display:none;">
+            <div class="modal-content" style="max-width:800px;">
+                <div class="modal-header">
+                    <h3 id="cliente-ventas-modal-title">Nuevo Cliente</h3>
+                    <button class="btn-icon" id="close-cliente-ventas-modal"><i data-lucide="x"></i></button>
+                </div>
+                <div class="modal-body">
+                    <form id="cliente-ventas-form">
+                        <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                            <div class="form-group">
+                                <label for="ventas-cliente-nombre">Nombre *</label>
+                                <input type="text" id="ventas-cliente-nombre" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="ventas-cliente-apellido">Apellido *</label>
+                                <input type="text" id="ventas-cliente-apellido" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="ventas-cliente-email">Email</label>
+                                <input type="email" id="ventas-cliente-email" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="ventas-cliente-telefono">Teléfono</label>
+                                <input type="tel" id="ventas-cliente-telefono" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="ventas-cliente-vendedor">Vendedor Asignado</label>
+                                <select id="ventas-cliente-vendedor" class="form-control">
+                                    <option value="">Sin asignar</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="ventas-cliente-dni">DNI</label>
+                                <input type="text" id="ventas-cliente-dni" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="ventas-cliente-dni-exp">DNI Vencimiento</label>
+                                <input type="date" id="ventas-cliente-dni-exp" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="ventas-cliente-pasaporte">Pasaporte</label>
+                                <input type="text" id="ventas-cliente-pasaporte" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="ventas-cliente-pasaporte-exp">Pasaporte Vencimiento</label>
+                                <input type="date" id="ventas-cliente-pasaporte-exp" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="ventas-cliente-direccion">Dirección</label>
+                                <input type="text" id="ventas-cliente-direccion" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="ventas-cliente-ciudad">Ciudad</label>
+                                <input type="text" id="ventas-cliente-ciudad" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="ventas-cliente-pais">País</label>
+                                <input type="text" id="ventas-cliente-pais" class="form-control" value="Argentina">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancel-cliente-ventas">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="save-cliente-ventas">
+                        <i data-lucide="save"></i>
+                        Guardar Cliente
+                    </button>
+                </div>
+            </div>
+        </div>
         <!-- Modal Detalle Venta -->
         <div id="venta-detalle-modal" class="modal-overlay" style="display:none;">
             <div class="modal-content" style="max-width:900px;">
@@ -335,6 +506,30 @@ function setupVentasFilters() {
             option.value = cliente.id;
             option.textContent = cliente.nombre;
             clienteSelect.appendChild(option);
+        });
+    }
+    
+    // Configurar filtros del modal de clientes
+    const vendedorModalSelect = document.getElementById('filtro-vendedor-modal');
+    if (vendedorModalSelect) {
+        vendedorModalSelect.innerHTML = '<option value="">Todos los vendedores</option>';
+        VentasModule.vendedores.forEach(vendedor => {
+            const option = document.createElement('option');
+            option.value = vendedor.id;
+            option.textContent = `${vendedor.nombre} (${vendedor.codigo_vendedor})`;
+            vendedorModalSelect.appendChild(option);
+        });
+    }
+    
+    // Configurar select de vendedores en el formulario de cliente
+    const clienteVendedorSelect = document.getElementById('ventas-cliente-vendedor');
+    if (clienteVendedorSelect) {
+        clienteVendedorSelect.innerHTML = '<option value="">Sin asignar</option>';
+        VentasModule.vendedores.forEach(vendedor => {
+            const option = document.createElement('option');
+            option.value = vendedor.id;
+            option.textContent = `${vendedor.nombre} (${vendedor.codigo_vendedor})`;
+            clienteVendedorSelect.appendChild(option);
         });
     }
 }
@@ -385,13 +580,44 @@ function setupVentasEvents() {
     }
 
     // Botones
+    const crearVentaBtn = document.getElementById('crear-venta-btn');
+    const crearPrimeraVentaBtn = document.getElementById('crear-primera-venta-btn');
+    const gestionarClientesBtn = document.getElementById('gestionar-clientes-btn');
     const exportBtn = document.getElementById('export-ventas');
+    
+    if (crearVentaBtn) {
+        crearVentaBtn.addEventListener('click', () => {
+            if (typeof showTab === 'function') {
+                showTab('nueva-venta');
+            } else {
+                showNotification('Función de nueva venta no disponible', 'warning');
+            }
+        });
+    }
+    
+    if (crearPrimeraVentaBtn) {
+        crearPrimeraVentaBtn.addEventListener('click', () => {
+            if (typeof showTab === 'function') {
+                showTab('nueva-venta');
+            } else {
+                showNotification('Función de nueva venta no disponible', 'warning');
+            }
+        });
+    }
+    
+    if (gestionarClientesBtn) {
+        gestionarClientesBtn.addEventListener('click', () => {
+            showClientesGestionModal();
+        });
+    }
+    
     if (exportBtn) {
         exportBtn.addEventListener('click', () => exportarVentas());
     }
 
     // Modal eventos
     setupVentaModalEvents();
+    setupClientesModalEvents();
 }
 
 function setupVentaModalEvents() {
@@ -411,6 +637,67 @@ function setupVentaModalEvents() {
     }
 }
 
+function setupClientesModalEvents() {
+    // Modal de gestión de clientes
+    const gestionModal = document.getElementById('clientes-gestion-modal');
+    const closeGestionBtn = document.getElementById('close-clientes-gestion');
+    const closeGestionBtnFooter = document.getElementById('close-clientes-gestion-btn');
+    
+    if (closeGestionBtn) closeGestionBtn.addEventListener('click', () => hideClientesGestionModal());
+    if (closeGestionBtnFooter) closeGestionBtnFooter.addEventListener('click', () => hideClientesGestionModal());
+    
+    if (gestionModal) {
+        gestionModal.addEventListener('click', e => {
+            if (e.target === gestionModal) hideClientesGestionModal();
+        });
+    }
+    
+    // Botones de cliente
+    const nuevoClienteBtn = document.getElementById('nuevo-cliente-desde-ventas');
+    const crearPrimerClienteBtn = document.getElementById('crear-primer-cliente-modal');
+    
+    if (nuevoClienteBtn) nuevoClienteBtn.addEventListener('click', () => showClienteVentasModal());
+    if (crearPrimerClienteBtn) crearPrimerClienteBtn.addEventListener('click', () => showClienteVentasModal());
+    
+    // Filtros de clientes en modal
+    const buscarClienteModal = document.getElementById('buscar-cliente-modal');
+    const vendedorModalFilter = document.getElementById('filtro-vendedor-modal');
+    const limpiarFiltrosClientesBtn = document.getElementById('limpiar-filtros-clientes-modal');
+    
+    if (buscarClienteModal) {
+        buscarClienteModal.addEventListener('input', debounce(() => {
+            renderClientesModalTable();
+        }, 300));
+    }
+    
+    if (vendedorModalFilter) {
+        vendedorModalFilter.addEventListener('change', () => {
+            renderClientesModalTable();
+        });
+    }
+    
+    if (limpiarFiltrosClientesBtn) {
+        limpiarFiltrosClientesBtn.addEventListener('click', () => {
+            limpiarFiltrosClientesModal();
+        });
+    }
+    
+    // Modal de cliente (crear/editar)
+    const clienteModal = document.getElementById('cliente-ventas-modal');
+    const closeClienteBtn = document.getElementById('close-cliente-ventas-modal');
+    const cancelClienteBtn = document.getElementById('cancel-cliente-ventas');
+    const saveClienteBtn = document.getElementById('save-cliente-ventas');
+    
+    if (closeClienteBtn) closeClienteBtn.addEventListener('click', () => hideClienteVentasModal());
+    if (cancelClienteBtn) cancelClienteBtn.addEventListener('click', () => hideClienteVentasModal());
+    if (saveClienteBtn) saveClienteBtn.addEventListener('click', () => saveClienteVentas());
+    
+    if (clienteModal) {
+        clienteModal.addEventListener('click', e => {
+            if (e.target === clienteModal) hideClienteVentasModal();
+        });
+    }
+}
 // ===== RENDERIZAR TABLA =====
 async function renderVentasTable() {
     const tbody = document.getElementById('ventas-table-body');
@@ -432,11 +719,12 @@ async function renderVentasTable() {
     if (countElement) countElement.textContent = `${ventasFiltradas.length} venta${ventasFiltradas.length !== 1 ? 's' : ''}`;
 
     tbody.innerHTML = ventasFiltradas.map(venta => {
-        const { formatCurrency, formatDate, createEnumBadge } = window.NTS_CONFIG || {};
+        const { createEnumBadge } = window.NTS_CONFIG || {};
+        const { formatCurrency, formatDate } = window.NTS_UTILS || {};
         
         const cliente = venta.clientes ? venta.clientes.nombre : 'Sin cliente';
         const fechaVenta = formatDate ? formatDate(venta.fecha_venta) : venta.fecha_venta;
-        const fechaViaje = venta.fecha_inicio_viaje ? (formatDate ? formatDate(venta.fecha_inicio_viaje) : venta.fecha_inicio_viaje) : '-';
+        const fechaViaje = venta.fecha_viaje_inicio ? (formatDate ? formatDate(venta.fecha_viaje_inicio) : venta.fecha_viaje_inicio) : '-';
         const total = formatCurrency ? formatCurrency(venta.total_final) : `$${venta.total_final}`;
         
         const estadoBadge = createEnumBadge ? createEnumBadge('ESTADO_VENTA', venta.estado) : venta.estado;
@@ -580,15 +868,15 @@ function getVentaDetalleHTML(venta) {
             </div>
             <div class="form-group">
                 <label>Fecha de Viaje</label>
-                <div>${venta.fecha_inicio_viaje ? (formatDate ? formatDate(venta.fecha_inicio_viaje) : venta.fecha_inicio_viaje) : '-'}</div>
+                <div>${venta.fecha_viaje_inicio ? (formatDate ? formatDate(venta.fecha_viaje_inicio) : venta.fecha_viaje_inicio) : '-'}</div>
             </div>
             <div class="form-group">
                 <label>Subtotal</label>
-                <div>${formatCurrency ? formatCurrency(venta.subtotal) : `$${venta.subtotal}`}</div>
+                <div>${formatCurrency ? formatCurrency(venta.total_final) : `$${venta.total_final}`}</div>
             </div>
             <div class="form-group">
                 <label>Descuentos</label>
-                <div>${formatCurrency ? formatCurrency(venta.descuentos || 0) : `$${venta.descuentos || 0}`}</div>
+                <div>${formatCurrency ? formatCurrency(0) : `$0`}</div>
             </div>
             <div class="form-group">
                 <label>Total Final</label>
@@ -685,6 +973,316 @@ function limpiarFiltrosVentas() {
     updateVentasStats();
 }
 
+// ===== GESTIÓN DE CLIENTES DESDE VENTAS =====
+
+// Variable para almacenar filtros de clientes en modal
+VentasModule.clientesFiltros = {
+    busqueda: '',
+    vendedor: ''
+};
+
+VentasModule.currentClienteVentas = null;
+
+function showClientesGestionModal() {
+    const modal = document.getElementById('clientes-gestion-modal');
+    if (!modal) return;
+    
+    modal.style.display = 'flex';
+    renderClientesModalTable();
+    
+    if (window.lucide) window.lucide.createIcons();
+}
+
+function hideClientesGestionModal() {
+    const modal = document.getElementById('clientes-gestion-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+function renderClientesModalTable() {
+    const tbody = document.getElementById('clientes-modal-table-body');
+    const emptyState = document.getElementById('clientes-modal-empty-state');
+    
+    if (!tbody) return;
+    
+    const clientesFiltrados = filtrarClientesModal();
+    
+    if (clientesFiltrados.length === 0) {
+        tbody.innerHTML = '';
+        if (emptyState) emptyState.style.display = 'block';
+        return;
+    }
+    
+    if (emptyState) emptyState.style.display = 'none';
+    
+    tbody.innerHTML = clientesFiltrados.map(cliente => {
+        const documentos = getDocumentosDisplay(cliente);
+        const vendedor = cliente.vendedores ? cliente.vendedores.nombre : 'Sin asignar';
+        
+        return `
+            <tr style="border-bottom:1px solid var(--gray-200);">
+                <td style="padding:var(--spacing-md);">
+                    <div style="font-weight:500;">${cliente.nombre}</div>
+                    <div style="font-size:var(--font-size-sm); color:var(--gray-600);">
+                        ${cliente.ciudad ? `${cliente.ciudad}, ` : ''}${cliente.pais || 'Argentina'}
+                    </div>
+                </td>
+                <td style="padding:var(--spacing-md);">
+                    <div>${cliente.email || '-'}</div>
+                    <div style="font-size:var(--font-size-sm); color:var(--gray-600);">${cliente.telefono || '-'}</div>
+                </td>
+                <td style="padding:var(--spacing-md);">${documentos}</td>
+                <td style="padding:var(--spacing-md);"><div style="font-weight:500;">${vendedor}</div></td>
+                <td style="padding:var(--spacing-md); text-align:center;">
+                    <div style="display:flex; gap:var(--spacing-xs); justify-content:center;">
+                        <button class="btn-icon" onclick="editarClienteVentas(${cliente.id})" title="Editar">
+                            <i data-lucide="edit"></i>
+                        </button>
+                        <button class="btn-icon" onclick="crearVentaParaClienteVentas(${cliente.id})" title="Nueva Venta">
+                            <i data-lucide="plus-circle"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+    
+    if (window.lucide) window.lucide.createIcons();
+}
+
+function filtrarClientesModal() {
+    let clientes = [...VentasModule.clientes];
+    
+    const busqueda = document.getElementById('buscar-cliente-modal')?.value.toLowerCase() || '';
+    const vendedor = document.getElementById('filtro-vendedor-modal')?.value || '';
+    
+    if (busqueda) {
+        clientes = clientes.filter(c =>
+            c.nombre.toLowerCase().includes(busqueda) ||
+            (c.email && c.email.toLowerCase().includes(busqueda)) ||
+            (c.telefono && c.telefono.includes(busqueda)) ||
+            (c.DNI && c.DNI.includes(busqueda)) ||
+            (c.Pasaporte && c.Pasaporte.toLowerCase().includes(busqueda))
+        );
+    }
+    
+    if (vendedor) {
+        clientes = clientes.filter(c => c.vendedor_id == vendedor);
+    }
+    
+    return clientes;
+}
+
+function limpiarFiltrosClientesModal() {
+    const buscarInput = document.getElementById('buscar-cliente-modal');
+    const vendedorFilter = document.getElementById('filtro-vendedor-modal');
+    
+    if (buscarInput) buscarInput.value = '';
+    if (vendedorFilter) vendedorFilter.value = '';
+    
+    renderClientesModalTable();
+}
+
+function showClienteVentasModal(cliente = null) {
+    const modal = document.getElementById('cliente-ventas-modal');
+    const title = document.getElementById('cliente-ventas-modal-title');
+    
+    if (!modal) return;
+    
+    VentasModule.currentClienteVentas = cliente;
+    
+    if (cliente) {
+        title.textContent = 'Editar Cliente';
+        fillClienteVentasForm(cliente);
+    } else {
+        title.textContent = 'Nuevo Cliente';
+        clearClienteVentasForm();
+    }
+    
+    modal.style.display = 'flex';
+    setTimeout(() => { document.getElementById('ventas-cliente-nombre')?.focus(); }, 100);
+}
+
+function hideClienteVentasModal() {
+    const modal = document.getElementById('cliente-ventas-modal');
+    if (modal) modal.style.display = 'none';
+    VentasModule.currentClienteVentas = null;
+}
+
+function fillClienteVentasForm(cliente) {
+    const [nombre, ...apellidos] = (cliente.nombre || '').split(' ');
+    const fields = {
+        'ventas-cliente-nombre': nombre,
+        'ventas-cliente-apellido': apellidos.join(' '),
+        'ventas-cliente-email': cliente.email,
+        'ventas-cliente-telefono': cliente.telefono,
+        'ventas-cliente-vendedor': cliente.vendedor_id,
+        'ventas-cliente-dni': cliente.DNI,
+        'ventas-cliente-dni-exp': cliente.dni_expiracion,
+        'ventas-cliente-pasaporte': cliente.Pasaporte,
+        'ventas-cliente-pasaporte-exp': cliente.pasaporte_expiracion,
+        'ventas-cliente-direccion': cliente.direccion,
+        'ventas-cliente-ciudad': cliente.ciudad,
+        'ventas-cliente-pais': cliente.pais
+    };
+    
+    Object.entries(fields).forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val || '';
+    });
+}
+
+function clearClienteVentasForm() {
+    const form = document.getElementById('cliente-ventas-form');
+    if (form) form.reset();
+    const pais = document.getElementById('ventas-cliente-pais');
+    if (pais) pais.value = 'Argentina';
+}
+
+async function saveClienteVentas() {
+    try {
+        const clienteData = getClienteVentasFormData();
+        if (!validateClienteVentasData(clienteData)) return;
+        
+        window.NTS_UTILS?.showLoader('Guardando cliente...');
+        
+        const { supabase, isSupabaseConnected } = window.NTS_CONFIG || {};
+        
+        if (isSupabaseConnected && supabase) {
+            if (VentasModule.currentClienteVentas) {
+                await updateClienteVentasInDB(clienteData);
+            } else {
+                await createClienteVentasInDB(clienteData);
+            }
+        } else {
+            if (VentasModule.currentClienteVentas) {
+                updateClienteVentasLocally(clienteData);
+            } else {
+                createClienteVentasLocally(clienteData);
+            }
+        }
+        
+        hideClienteVentasModal();
+        showNotification('Cliente guardado correctamente', 'success');
+        renderClientesModalTable();
+        setupVentasFilters(); // Actualizar filtros de ventas
+        
+    } catch (error) {
+        console.error('❌ Error guardando cliente:', error);
+        showNotification('Error guardando cliente', 'error');
+    } finally {
+        window.NTS_UTILS?.hideLoader();
+    }
+}
+
+function getClienteVentasFormData() {
+    const nombre = document.getElementById('ventas-cliente-nombre')?.value.trim();
+    const apellido = document.getElementById('ventas-cliente-apellido')?.value.trim();
+    
+    return {
+        id: VentasModule.currentClienteVentas?.id,
+        nombre: [nombre, apellido].join(' '),
+        email: document.getElementById('ventas-cliente-email')?.value.trim(),
+        telefono: document.getElementById('ventas-cliente-telefono')?.value.trim(),
+        vendedor_id: document.getElementById('ventas-cliente-vendedor')?.value || null,
+        DNI: document.getElementById('ventas-cliente-dni')?.value.trim(),
+        dni_expiracion: document.getElementById('ventas-cliente-dni-exp')?.value || null,
+        Pasaporte: document.getElementById('ventas-cliente-pasaporte')?.value.trim(),
+        pasaporte_expiracion: document.getElementById('ventas-cliente-pasaporte-exp')?.value || null,
+        direccion: document.getElementById('ventas-cliente-direccion')?.value.trim(),
+        ciudad: document.getElementById('ventas-cliente-ciudad')?.value.trim(),
+        pais: document.getElementById('ventas-cliente-pais')?.value.trim() || 'Argentina'
+    };
+}
+
+function validateClienteVentasData(data) {
+    const nombre = document.getElementById('ventas-cliente-nombre')?.value.trim();
+    const apellido = document.getElementById('ventas-cliente-apellido')?.value.trim();
+    
+    if (!nombre || !apellido) {
+        showNotification('Ingrese nombre y apellido del cliente', 'warning');
+        return false;
+    }
+    
+    return true;
+}
+
+async function createClienteVentasInDB(data) {
+    const { supabase } = window.NTS_CONFIG || {};
+    if (!supabase) throw new Error('Supabase no disponible');
+    
+    const { data: nuevo, error } = await supabase
+        .from('clientes')
+        .insert(data)
+        .select()
+        .single();
+    
+    if (error || !nuevo) throw error || new Error('No se pudo crear cliente');
+    
+    VentasModule.clientes.unshift(nuevo);
+}
+
+async function updateClienteVentasInDB(data) {
+    const { supabase } = window.NTS_CONFIG || {};
+    const { error } = await supabase
+        .from('clientes')
+        .update(data)
+        .eq('id', data.id);
+    
+    if (error) throw error;
+    
+    const idx = VentasModule.clientes.findIndex(c => c.id === data.id);
+    if (idx !== -1) {
+        VentasModule.clientes[idx] = { ...VentasModule.clientes[idx], ...data };
+    }
+}
+
+function createClienteVentasLocally(data) {
+    data.id = Date.now();
+    data.created_at = new Date().toISOString();
+    VentasModule.clientes.unshift(data);
+}
+
+function updateClienteVentasLocally(data) {
+    const idx = VentasModule.clientes.findIndex(c => c.id === data.id);
+    if (idx !== -1) {
+        VentasModule.clientes[idx] = { ...VentasModule.clientes[idx], ...data };
+    }
+}
+
+function editarClienteVentas(id) {
+    const cliente = VentasModule.clientes.find(c => c.id === id);
+    if (cliente) showClienteVentasModal(cliente);
+}
+
+function crearVentaParaClienteVentas(id) {
+    hideClientesGestionModal();
+    if (typeof showTab === 'function') {
+        showTab('nueva-venta');
+        // Aquí podrías preseleccionar el cliente en el formulario de nueva venta
+        showNotification(`Cliente seleccionado para nueva venta`, 'success');
+    } else {
+        showNotification('Función de nueva venta no disponible', 'warning');
+    }
+}
+
+function getDocumentosDisplay(cliente) {
+    const { formatDate } = window.NTS_UTILS || {};
+    const partes = [];
+    
+    if (cliente.DNI) {
+        const vencimiento = cliente.dni_expiracion ? 
+            ` (venc. ${formatDate ? formatDate(cliente.dni_expiracion) : cliente.dni_expiracion})` : '';
+        partes.push(`DNI: ${cliente.DNI}${vencimiento}`);
+    }
+    
+    if (cliente.Pasaporte) {
+        const vencimiento = cliente.pasaporte_expiracion ? 
+            ` (venc. ${formatDate ? formatDate(cliente.pasaporte_expiracion) : cliente.pasaporte_expiracion})` : '';
+        partes.push(`Pasaporte: ${cliente.Pasaporte}${vencimiento}`);
+    }
+    
+    return partes.length ? partes.join('<br>') : '-';
+}
 // ===== UTILIDADES =====
 function showNotification(message, type = 'info') {
     if (window.NTS_UTILS && typeof window.NTS_UTILS.showNotification === 'function') {
@@ -712,5 +1310,7 @@ window.initVentasModule = initVentasModule;
 window.verDetalleVenta = verDetalleVenta;
 window.editarVenta = editarVenta;
 window.duplicarVenta = duplicarVenta;
+window.editarClienteVentas = editarClienteVentas;
+window.crearVentaParaClienteVentas = crearVentaParaClienteVentas;
 
 console.log('✅ Módulo de ventas cargado correctamente');
